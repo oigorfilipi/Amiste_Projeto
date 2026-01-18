@@ -6,6 +6,7 @@ import {
   Document,
   StyleSheet,
   Image,
+  Link, // <--- Importado
 } from "@react-pdf/renderer";
 
 const styles = StyleSheet.create({
@@ -34,26 +35,32 @@ const styles = StyleSheet.create({
   // Corpo
   body: { padding: 30, flex: 1 },
 
-  // Hero (Imagem + Título) - Mudei para flex-col para evitar empurrar texto
+  // Hero (Imagem + Título)
   heroContainer: {
     flexDirection: "row",
     marginBottom: 20,
     alignItems: "flex-start",
+    width: "100%", // Garante largura total
   },
 
-  // Imagem MAIOR (Aumentei width de 45% para 50% e altura fixa maior)
+  // Imagem
   heroImageContainer: {
-    width: "50%",
+    width: "48%", // Ajuste fino para não colar
     height: 250,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#fff",
     borderRadius: 8,
-    marginRight: 20,
+    marginRight: "2%",
   },
   heroImage: { width: "100%", height: "100%", objectFit: "contain" },
 
-  heroContent: { width: "50%", justifyContent: "flex-start" }, // Garante que começa do topo
+  // Conteúdo de Texto
+  heroContent: {
+    width: "50%",
+    justifyContent: "flex-start",
+    flexDirection: "column", // Garante fluxo vertical
+  },
   machineTitle: {
     fontSize: 26,
     fontWeight: "bold",
@@ -67,12 +74,34 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
 
-  // Descrição com wrap para não quebrar layout
+  // Descrição CORRIGIDA
   description: {
     fontSize: 11,
     color: "#444",
-    lineHeight: 1.6,
-    textAlign: "justify",
+    lineHeight: 1.5,
+    textAlign: "left", // Justify as vezes causa o bug da linha infinita
+    width: "100%", // Força a respeitar a largura do pai
+  },
+
+  // Link de Vídeo
+  videoLinkContainer: {
+    marginTop: 10,
+    padding: 8,
+    backgroundColor: "#f0fdf4",
+    borderWidth: 1,
+    borderColor: "#bbf7d0",
+    borderRadius: 4,
+  },
+  videoLinkLabel: {
+    fontSize: 8,
+    color: "#166534",
+    fontWeight: "bold",
+    marginBottom: 2,
+  },
+  videoLinkText: {
+    fontSize: 9,
+    color: "#2563eb",
+    textDecoration: "underline",
   },
 
   // Specs
@@ -99,14 +128,14 @@ const styles = StyleSheet.create({
   specLabel: { fontSize: 9, width: 80, fontWeight: "bold", color: "#475569" },
   specValue: { fontSize: 9, color: "#1e293b", flex: 1 },
 
-  // Footer VERMELHO (#A82020)
+  // Footer VERMELHO
   footer: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     height: 100,
-    backgroundColor: "#A82020", // <--- MUDANÇA DE COR
+    backgroundColor: "#A82020",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -131,7 +160,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     marginBottom: 2,
   },
-  totalValue: { color: "#ffffff", fontSize: 32, fontWeight: "bold" }, // Branco no fundo vermelho
+  totalValue: { color: "#ffffff", fontSize: 32, fontWeight: "bold" },
   installments: { color: "#ffe4e6", fontSize: 11, marginTop: 2 },
 });
 
@@ -176,6 +205,18 @@ export function PortfolioPDF({ data }) {
                 {m.brand} | {m.model}
               </Text>
               <Text style={styles.description}>{data.description}</Text>
+
+              {/* LINK DO VÍDEO (NOVO) */}
+              {data.video_url && (
+                <View style={styles.videoLinkContainer}>
+                  <Text style={styles.videoLinkLabel}>
+                    APRESENTAÇÃO / VÍDEO:
+                  </Text>
+                  <Link src={data.video_url} style={styles.videoLinkText}>
+                    {data.video_url}
+                  </Link>
+                </View>
+              )}
             </View>
           </View>
 

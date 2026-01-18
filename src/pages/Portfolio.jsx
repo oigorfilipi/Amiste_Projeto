@@ -7,14 +7,13 @@ import {
   Save,
   Search,
   Plus,
-  ArrowRight,
   DollarSign,
-  Calendar,
   ChevronLeft,
   Trash2,
   History,
-  RotateCcw,
   Clock,
+  Youtube, // Icone para o link
+  ExternalLink,
 } from "lucide-react";
 
 export function Portfolio() {
@@ -34,6 +33,9 @@ export function Portfolio() {
   const [installments, setInstallments] = useState(1);
   const [description, setDescription] = useState("");
   const [installmentValue, setInstallmentValue] = useState(0);
+
+  // NOVO ESTADO
+  const [videoUrl, setVideoUrl] = useState("");
 
   // Inicialização
   useEffect(() => {
@@ -72,6 +74,7 @@ export function Portfolio() {
     setNegotiationType("Venda");
     setTotalValue(0);
     setInstallments(1);
+    setVideoUrl(""); // Reset
     setDescription(
       "Equipamento de alta performance, ideal para seu estabelecimento. Design moderno e extração perfeita.",
     );
@@ -88,14 +91,15 @@ export function Portfolio() {
     setTotalValue(p.total_value);
     setInstallments(p.installments);
     setDescription(p.description);
+    setVideoUrl(p.video_url || ""); // Carrega link
 
     setView("editor");
   }
 
-  // Restaurar Versão (Via Dropdown)
+  // Restaurar Versão
   function handleRestoreVersion(e) {
     const index = e.target.value;
-    if (index === "") return; // Seleção vazia
+    if (index === "") return;
 
     const v = versions[index];
     if (
@@ -103,7 +107,7 @@ export function Portfolio() {
         `Restaurar para a versão de ${new Date(v.saved_at).toLocaleString()}?`,
       )
     ) {
-      e.target.value = ""; // Reseta o select se cancelar
+      e.target.value = "";
       return;
     }
 
@@ -112,8 +116,9 @@ export function Portfolio() {
     setTotalValue(v.total_value);
     setInstallments(v.installments);
     setDescription(v.description);
+    setVideoUrl(v.video_url || ""); // Restaura link
     alert("Dados restaurados! Clique em Salvar para confirmar essa alteração.");
-    e.target.value = ""; // Reseta o select após restaurar
+    e.target.value = "";
   }
 
   function handleSelectMachine(e) {
@@ -135,12 +140,13 @@ export function Portfolio() {
       installments: installments,
       installment_value: installmentValue,
       description: description,
+      video_url: videoUrl, // Salva link
       status: "Gerado",
     };
 
     try {
       if (editingId) {
-        // Salva histórico (Máximo 10 versões, mas vamos mostrar só 5 no dropdown)
+        // Salva histórico
         const oldVersion = {
           saved_at: new Date().toISOString(),
           customer_name: customerName,
@@ -148,6 +154,7 @@ export function Portfolio() {
           total_value: totalValue,
           installments: installments,
           description: description,
+          video_url: videoUrl,
         };
         const newVersionsList = [oldVersion, ...versions].slice(0, 10);
 
@@ -186,6 +193,7 @@ export function Portfolio() {
     installments: parseInt(installments),
     installment_value: parseFloat(installmentValue),
     description: description,
+    video_url: videoUrl,
   };
 
   const formatMoney = (val) =>
@@ -249,7 +257,7 @@ export function Portfolio() {
 
   return (
     <div className="min-h-screen pb-20 bg-gray-100">
-      {/* --- MODO LISTA (GRID VISUAL A4) --- */}
+      {/* --- MODO LISTA --- */}
       {view === "list" && (
         <div className="p-8">
           <div className="mb-8 flex justify-between items-center">
@@ -281,11 +289,9 @@ export function Portfolio() {
                 onClick={() => handleEditPortfolio(p)}
                 className="group cursor-pointer flex flex-col items-center"
               >
-                {/* Thumbnail que imita o A4 */}
+                {/* Thumbnail */}
                 <div className="w-full relative transition-transform duration-300 hover:-translate-y-2">
                   <MiniA4Thumbnail portfolio={p} />
-
-                  {/* Botão Deletar (Hover) */}
                   <button
                     onClick={(e) => handleDelete(p.id, e)}
                     className="absolute -top-2 -right-2 bg-red-500 text-white p-1.5 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
@@ -331,7 +337,6 @@ export function Portfolio() {
               </div>
             </div>
             <div className="flex gap-3">
-              {/* Botão Baixar PDF direto do Editor */}
               {selectedMachine && (
                 <PDFDownloadLink
                   document={<PortfolioPDF data={previewData} />}
@@ -345,7 +350,7 @@ export function Portfolio() {
                 onClick={handleSave}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center gap-2 text-sm font-bold shadow-lg transition"
               >
-                <Save size={18} />{" "}
+                <Save size={18} />
                 {editingId ? "Salvar Edição" : "Criar Proposta"}
               </button>
             </div>
@@ -355,7 +360,7 @@ export function Portfolio() {
             {/* SIDEBAR DE CONTROLE */}
             <div className="w-96 bg-white border-r border-gray-200 flex flex-col shadow-xl z-10">
               <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-6">
-                {/* DROPDOWN DE HISTÓRICO (Últimas 5 Versões) */}
+                {/* Histórico */}
                 {versions.length > 0 && (
                   <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
                     <label className="text-xs font-bold text-blue-800 mb-2 flex items-center gap-1">
@@ -417,6 +422,25 @@ export function Portfolio() {
                     onChange={(e) => setCustomerName(e.target.value)}
                     placeholder="Nome do Cliente"
                   />
+                </div>
+
+                {/* NOVO CAMPO: LINK DE VÍDEO */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-600 mb-1">
+                    Link de Vídeo/Apresentação
+                  </label>
+                  <div className="relative">
+                    <input
+                      className="w-full p-3 pl-10 border rounded-lg bg-gray-50 text-sm"
+                      value={videoUrl}
+                      onChange={(e) => setVideoUrl(e.target.value)}
+                      placeholder="Ex: youtube.com/..."
+                    />
+                    <Youtube
+                      size={18}
+                      className="absolute left-3 top-3.5 text-red-500"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -524,9 +548,20 @@ export function Portfolio() {
                         <p className="text-gray-500 uppercase tracking-wide text-sm mb-4 font-bold">
                           {selectedMachine.brand} | {selectedMachine.model}
                         </p>
-                        <p className="text-sm text-gray-600 leading-relaxed text-justify whitespace-pre-wrap">
+                        <p className="text-sm text-gray-600 leading-relaxed text-left whitespace-pre-wrap">
                           {description}
                         </p>
+
+                        {/* Preview do Link */}
+                        {videoUrl && (
+                          <div className="mt-4 p-2 bg-blue-50 border border-blue-100 rounded text-xs text-blue-800 flex items-center gap-2">
+                            <ExternalLink size={14} />
+                            Link incluso no PDF:{" "}
+                            <span className="underline truncate max-w-[200px]">
+                              {videoUrl}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
 

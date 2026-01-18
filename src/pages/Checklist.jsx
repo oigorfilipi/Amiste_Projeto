@@ -14,6 +14,8 @@ import {
   Edit,
   MoreHorizontal,
   X,
+  Coffee,
+  Calendar, // <--- ADICIONE ESTES DOIS
 } from "lucide-react";
 
 export function Checklist() {
@@ -22,6 +24,7 @@ export function Checklist() {
   // --- CONTROLE DE TELA ---
   const [view, setView] = useState("list"); // 'list' ou 'wizard'
   const [editingId, setEditingId] = useState(null); // ID do checklist sendo editado
+  const [filterStatus, setFilterStatus] = useState("Todos"); // Todos, Finalizado, Rascunho
 
   // --- ESTADOS GERAIS ---
   const [currentStep, setCurrentStep] = useState(1);
@@ -555,12 +558,15 @@ export function Checklist() {
       {/* TELA 1: LISTA */}
       {view === "list" && (
         <div className="p-8">
-          <div className="flex justify-between items-center mb-8">
+          {/* Cabeçalho */}
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
             <div>
               <h1 className="text-3xl font-display font-bold text-gray-800">
                 Checklists de Instalação
               </h1>
-              <p className="text-gray-500">Gerencie as ordens de serviço.</p>
+              <p className="text-gray-500">
+                Gerencie as ordens de serviço e instalações.
+              </p>
             </div>
             <button
               onClick={handleNewChecklist}
@@ -570,73 +576,168 @@ export function Checklist() {
             </button>
           </div>
 
+          {/* BARRA DE FILTROS (NOVO) */}
+          <div className="bg-white p-2 rounded-lg border border-gray-200 inline-flex mb-6 shadow-sm">
+            {["Todos", "Finalizado", "Rascunho"].map((status) => (
+              <button
+                key={status}
+                onClick={() => setFilterStatus(status)}
+                className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${
+                  filterStatus === status
+                    ? "bg-gray-800 text-white shadow-md"
+                    : "text-gray-500 hover:bg-gray-50"
+                }`}
+              >
+                {status === "Todos"
+                  ? "Todos"
+                  : status === "Finalizado"
+                    ? "Finalizados"
+                    : "Rascunhos"}
+              </button>
+            ))}
+          </div>
+
+          {/* TABELA ATUALIZADA */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {checklistsHistory.length === 0 ? (
-              <div className="p-10 text-center text-gray-400">
-                Nenhum checklist encontrado.
+            {checklistsHistory.filter(
+              (c) => filterStatus === "Todos" || c.status === filterStatus,
+            ).length === 0 ? (
+              <div className="p-12 text-center text-gray-400 flex flex-col items-center">
+                <Search size={48} className="mb-4 opacity-20" />
+                <p>
+                  Nenhum checklist encontrado com o filtro "{filterStatus}".
+                </p>
               </div>
             ) : (
-              <table className="w-full text-left">
-                <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-bold border-b">
-                  <tr>
-                    <th className="p-4">Cliente / Evento</th>
-                    <th className="p-4">Máquina</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4 text-right">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y text-sm">
-                  {checklistsHistory.map((c) => (
-                    <tr key={c.id} className="hover:bg-gray-50 group">
-                      <td className="p-4">
-                        <p className="font-bold text-gray-800">
-                          {c.client_name || c.event_name}
-                        </p>
-                        <span className="text-xs text-gray-400">
-                          {c.install_type} -{" "}
-                          {c.install_date
-                            ? new Date(c.install_date).toLocaleDateString()
-                            : "Data n/a"}
-                        </span>
-                      </td>
-                      <td className="p-4">{c.machine_name}</td>
-                      <td className="p-4">
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-bold ${c.status === "Finalizado" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}
-                        >
-                          {c.status}
-                        </span>
-                      </td>
-                      <td className="p-4 text-right flex justify-end gap-2">
-                        {/* Botão Editar/Continuar */}
-                        <button
-                          onClick={() => handleEdit(c)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded"
-                          title="Editar / Continuar"
-                        >
-                          <Edit size={18} />
-                        </button>
-                        {/* Botão Ver Detalhes (PDF) */}
-                        <Link
-                          to={`/checklists/${c.id}`}
-                          className="p-2 text-gray-500 hover:bg-gray-100 rounded"
-                          title="Ver Detalhes e PDF"
-                        >
-                          <Search size={18} />
-                        </Link>
-                        {/* Botão Excluir */}
-                        <button
-                          onClick={() => handleDelete(c.id)}
-                          className="p-2 text-red-500 hover:bg-red-50 rounded"
-                          title="Excluir"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-bold border-b">
+                    <tr>
+                      <th className="p-4">Data Criação / Usuário</th>
+                      <th className="p-4">Cliente / Evento</th>
+                      <th className="p-4">Máquina</th>
+                      <th className="p-4">Data Instalação</th>
+                      <th className="p-4">Status</th>
+                      <th className="p-4 text-right">Ações</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y text-sm">
+                    {checklistsHistory
+                      .filter(
+                        (c) =>
+                          filterStatus === "Todos" || c.status === filterStatus,
+                      )
+                      .map((c) => (
+                        <tr
+                          key={c.id}
+                          className="hover:bg-gray-50 group transition-colors"
+                        >
+                          {/* Coluna 1: Criação e Usuário */}
+                          <td className="p-4">
+                            <div className="flex flex-col">
+                              <span className="font-bold text-gray-700">
+                                {new Date(c.created_at).toLocaleDateString()}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {new Date(c.created_at).toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                              <span className="mt-1 text-xs bg-gray-100 px-2 py-0.5 rounded w-fit text-gray-500 border border-gray-200">
+                                {c.user_id === user?.id
+                                  ? "Você"
+                                  : "Outro Usuário"}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Coluna 2: Cliente */}
+                          <td className="p-4">
+                            <p className="font-bold text-gray-800 text-lg">
+                              {c.client_name || c.event_name}
+                            </p>
+                            <span className="text-xs font-bold text-amiste-primary bg-red-50 px-2 py-0.5 rounded border border-red-100">
+                              {c.install_type}
+                            </span>
+                          </td>
+
+                          {/* Coluna 3: Máquina */}
+                          <td className="p-4">
+                            <div className="flex items-center gap-2">
+                              <Coffee size={16} className="text-gray-400" />
+                              <span className="font-medium text-gray-700">
+                                {c.machine_name}
+                              </span>
+                              <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                                x{c.quantity}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Coluna 4: Data Instalação */}
+                          <td className="p-4 text-gray-600">
+                            {c.install_date ? (
+                              <div className="flex items-center gap-2">
+                                <Calendar size={16} className="text-gray-400" />
+                                {new Date(c.install_date).toLocaleDateString()}
+                              </div>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
+
+                          {/* Coluna 5: Status */}
+                          <td className="p-4">
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                                c.status === "Finalizado"
+                                  ? "bg-green-50 text-green-700 border-green-200"
+                                  : "bg-amber-50 text-amber-700 border-amber-200"
+                              }`}
+                            >
+                              {c.status}
+                            </span>
+                          </td>
+
+                          {/* Coluna 6: Ações */}
+                          <td className="p-4 text-right">
+                            <div className="flex justify-end gap-1">
+                              {/* Botão Editar */}
+                              <button
+                                onClick={() => handleEdit(c)}
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                title="Editar / Continuar"
+                              >
+                                <Edit size={18} />
+                              </button>
+
+                              {/* Botão PDF (Só aparece se estiver finalizado, senão é inútil) */}
+                              {c.status === "Finalizado" && (
+                                <Link
+                                  to={`/checklists/${c.id}`}
+                                  className="p-2 text-gray-500 hover:bg-gray-100 rounded transition-colors"
+                                  title="Ver PDF"
+                                >
+                                  <Search size={18} />
+                                </Link>
+                              )}
+
+                              {/* Botão Excluir */}
+                              <button
+                                onClick={() => handleDelete(c.id)}
+                                className="p-2 text-red-500 hover:bg-red-50 rounded transition-colors"
+                                title="Excluir"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>

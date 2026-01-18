@@ -14,6 +14,7 @@ import {
   Trash2,
   History,
   RotateCcw,
+  Clock,
 } from "lucide-react";
 
 export function Portfolio() {
@@ -23,8 +24,8 @@ export function Portfolio() {
   const [loading, setLoading] = useState(true);
 
   // --- ESTADOS DO EDITOR ---
-  const [editingId, setEditingId] = useState(null); // ID se estiver editando
-  const [versions, setVersions] = useState([]); // Histórico de versões
+  const [editingId, setEditingId] = useState(null);
+  const [versions, setVersions] = useState([]); // Histórico
 
   const [selectedMachine, setSelectedMachine] = useState(null);
   const [customerName, setCustomerName] = useState("");
@@ -40,7 +41,6 @@ export function Portfolio() {
     fetchPortfolios();
   }, []);
 
-  // Recalculo automático de parcela
   useEffect(() => {
     if (totalValue > 0 && installments > 0) {
       setInstallmentValue(totalValue / installments);
@@ -80,9 +80,8 @@ export function Portfolio() {
 
   function handleEditPortfolio(p) {
     setEditingId(p.id);
-    setVersions(p.versions || []); // Carrega histórico
+    setVersions(p.versions || []);
 
-    // Carrega dados atuais
     setSelectedMachine(p.machine_data);
     setCustomerName(p.customer_name);
     setNegotiationType(p.negotiation_type);
@@ -93,14 +92,20 @@ export function Portfolio() {
     setView("editor");
   }
 
-  // Restaurar Versão Antiga
-  function handleRestoreVersion(v) {
+  // Restaurar Versão (Via Dropdown)
+  function handleRestoreVersion(e) {
+    const index = e.target.value;
+    if (index === "") return; // Seleção vazia
+
+    const v = versions[index];
     if (
       !confirm(
         `Restaurar para a versão de ${new Date(v.saved_at).toLocaleString()}?`,
       )
-    )
+    ) {
+      e.target.value = ""; // Reseta o select se cancelar
       return;
+    }
 
     setCustomerName(v.customer_name);
     setNegotiationType(v.negotiation_type);
@@ -108,6 +113,7 @@ export function Portfolio() {
     setInstallments(v.installments);
     setDescription(v.description);
     alert("Dados restaurados! Clique em Salvar para confirmar essa alteração.");
+    e.target.value = ""; // Reseta o select após restaurar
   }
 
   function handleSelectMachine(e) {
@@ -120,7 +126,6 @@ export function Portfolio() {
     if (!selectedMachine || !customerName)
       return alert("Selecione a máquina e informe o cliente.");
 
-    // Dados atuais
     const currentData = {
       machine_id: selectedMachine.id,
       machine_data: selectedMachine,
@@ -135,16 +140,16 @@ export function Portfolio() {
 
     try {
       if (editingId) {
-        // MODO EDIÇÃO: Salva versão anterior no histórico antes de atualizar
+        // Salva histórico (Máximo 10 versões, mas vamos mostrar só 5 no dropdown)
         const oldVersion = {
           saved_at: new Date().toISOString(),
-          customer_name,
-          negotiationType,
-          totalValue,
-          installments,
-          description,
+          customer_name: customerName,
+          negotiation_type: negotiationType,
+          total_value: totalValue,
+          installments: installments,
+          description: description,
         };
-        const newVersionsList = [oldVersion, ...versions];
+        const newVersionsList = [oldVersion, ...versions].slice(0, 10);
 
         const { error } = await supabase
           .from("portfolios")
@@ -152,9 +157,8 @@ export function Portfolio() {
           .eq("id", editingId);
 
         if (error) throw error;
-        alert("Proposta atualizada com sucesso!");
+        alert("Proposta atualizada!");
       } else {
-        // MODO CRIAÇÃO
         const { error } = await supabase.from("portfolios").insert(currentData);
         if (error) throw error;
         alert("Proposta criada!");
@@ -167,15 +171,13 @@ export function Portfolio() {
     }
   }
 
-  // --- LÓGICA DE EXCLUSÃO ---
   async function handleDelete(id, e) {
-    e.stopPropagation(); // Evita abrir o editor
+    e.stopPropagation();
     if (!confirm("Excluir esta proposta?")) return;
     await supabase.from("portfolios").delete().eq("id", id);
     fetchPortfolios();
   }
 
-  // Objeto de dados para o Preview e PDF
   const previewData = {
     machine_data: selectedMachine,
     customer_name: customerName,
@@ -191,9 +193,63 @@ export function Portfolio() {
       ? `R$ ${val.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
       : "R$ 0,00";
 
+  // Componente "Mini A4" para a lista
+  const MiniA4Thumbnail = ({ portfolio }) => {
+    return (
+      <div className="w-full aspect-[210/297] bg-white relative flex flex-col shadow-sm border border-gray-100 overflow-hidden group-hover:shadow-md transition-all">
+        {/* Mini Header Vermelho */}
+        <div className="h-[10%] bg-white border-b border-amiste-primary px-3 flex flex-col justify-center">
+          <div className="text-[10px] font-bold text-gray-800 uppercase leading-none">
+            AMISTE CAFÉ
+          </div>
+          <div className="text-[6px] font-bold text-amiste-primary uppercase tracking-widest mt-0.5">
+            Proposta
+          </div>
+        </div>
+
+        {/* Mini Corpo */}
+        <div className="flex-1 p-3 flex flex-col items-center">
+          <div className="w-full h-1/2 flex items-center justify-center mb-2">
+            <img
+              src={portfolio.machine_data?.photo_url}
+              className="max-h-full max-w-full object-contain mix-blend-multiply"
+            />
+          </div>
+          <div className="w-full">
+            <div className="text-[10px] font-bold text-gray-900 leading-tight truncate">
+              {portfolio.machine_data?.name}
+            </div>
+            <div className="text-[8px] text-gray-500 uppercase font-bold truncate mb-1">
+              {portfolio.machine_data?.brand}
+            </div>
+            <div className="w-full h-[1px] bg-gray-100 mb-1"></div>
+            <div className="text-[7px] text-gray-400 line-clamp-3 leading-tight">
+              {portfolio.description}
+            </div>
+          </div>
+        </div>
+
+        {/* Mini Footer Vermelho */}
+        <div className="h-[12%] bg-amiste-primary text-white px-3 flex justify-between items-center">
+          <div>
+            <div className="text-[6px] text-red-200 uppercase">Para</div>
+            <div className="text-[8px] font-bold truncate max-w-[60px]">
+              {portfolio.customer_name}
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-[8px] font-bold">
+              {formatMoney(portfolio.total_value)}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen pb-20 bg-gray-100">
-      {/* --- MODO LISTA (GRID VISUAL) --- */}
+      {/* --- MODO LISTA (GRID VISUAL A4) --- */}
       {view === "list" && (
         <div className="p-8">
           <div className="mb-8 flex justify-between items-center">
@@ -211,7 +267,7 @@ export function Portfolio() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 animate-fade-in">
             {savedPortfolios.length === 0 && !loading && (
               <div className="col-span-full text-center py-20 text-gray-400 bg-white rounded-xl border border-dashed">
                 <FileText size={48} className="mx-auto mb-2 opacity-20" />
@@ -223,44 +279,29 @@ export function Portfolio() {
               <div
                 key={p.id}
                 onClick={() => handleEditPortfolio(p)}
-                className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-xl hover:border-amiste-primary transition-all group cursor-pointer overflow-hidden flex flex-col"
+                className="group cursor-pointer flex flex-col items-center"
               >
-                {/* Imagem de Capa */}
-                <div className="h-48 bg-gray-50 p-4 flex items-center justify-center relative border-b border-gray-100">
-                  <img
-                    src={p.machine_data?.photo_url}
-                    alt={p.machine_data?.name}
-                    className="h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <span className="absolute top-3 right-3 bg-white/90 px-2 py-1 text-xs font-bold rounded shadow-sm text-gray-600">
-                    {p.negotiation_type}
-                  </span>
+                {/* Thumbnail que imita o A4 */}
+                <div className="w-full relative transition-transform duration-300 hover:-translate-y-2">
+                  <MiniA4Thumbnail portfolio={p} />
+
+                  {/* Botão Deletar (Hover) */}
+                  <button
+                    onClick={(e) => handleDelete(p.id, e)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white p-1.5 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                    title="Excluir"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
 
-                <div className="p-5 flex-1 flex flex-col">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3
-                      className="font-bold text-gray-800 text-lg truncate flex-1"
-                      title={p.customer_name}
-                    >
-                      {p.customer_name}
-                    </h3>
-                  </div>
-                  <p className="text-sm text-gray-500 mb-4">
-                    {p.machine_data?.name}
+                <div className="mt-3 text-center">
+                  <p className="font-bold text-gray-800 text-sm truncate w-40">
+                    {p.customer_name}
                   </p>
-
-                  <div className="mt-auto flex items-center justify-between">
-                    <span className="font-bold text-green-600 bg-green-50 px-2 py-1 rounded text-sm">
-                      {formatMoney(p.total_value)}
-                    </span>
-                    <button
-                      onClick={(e) => handleDelete(p.id, e)}
-                      className="p-2 text-gray-300 hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
+                  <p className="text-xs text-gray-500">
+                    {new Date(p.created_at).toLocaleDateString()}
+                  </p>
                 </div>
               </div>
             ))}
@@ -286,7 +327,6 @@ export function Portfolio() {
                   {selectedMachine
                     ? selectedMachine.name
                     : "Selecione uma máquina"}
-                  {editingId && " • (Modo Edição)"}
                 </p>
               </div>
             </div>
@@ -315,32 +355,32 @@ export function Portfolio() {
             {/* SIDEBAR DE CONTROLE */}
             <div className="w-96 bg-white border-r border-gray-200 flex flex-col shadow-xl z-10">
               <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-6">
-                {/* Seção Histórico (Só aparece se tiver versões) */}
+                {/* DROPDOWN DE HISTÓRICO (Últimas 5 Versões) */}
                 {versions.length > 0 && (
                   <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                    <h4 className="font-bold text-blue-800 text-sm mb-2 flex items-center gap-2">
-                      <History size={16} /> Histórico de Alterações
-                    </h4>
-                    <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
-                      {versions.map((v, i) => (
-                        <button
-                          key={i}
-                          onClick={() => handleRestoreVersion(v)}
-                          className="w-full text-left text-xs p-2 bg-white border rounded hover:bg-blue-100 transition flex justify-between items-center group"
-                        >
-                          <span className="text-gray-600">
-                            {new Date(v.saved_at).toLocaleDateString()}{" "}
-                            {new Date(v.saved_at).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                          <RotateCcw
-                            size={12}
-                            className="text-blue-500 opacity-0 group-hover:opacity-100"
-                          />
-                        </button>
-                      ))}
+                    <label className="text-xs font-bold text-blue-800 mb-2 flex items-center gap-1">
+                      <History size={14} /> Restaurar Versão Anterior:
+                    </label>
+                    <div className="relative">
+                      <select
+                        className="w-full p-2 pl-8 border border-blue-200 rounded text-sm bg-white focus:outline-none focus:border-blue-400 text-gray-600"
+                        onChange={handleRestoreVersion}
+                        defaultValue=""
+                      >
+                        <option value="" disabled>
+                          Selecione para restaurar...
+                        </option>
+                        {versions.slice(0, 5).map((v, i) => (
+                          <option key={i} value={i}>
+                            {new Date(v.saved_at).toLocaleString()} - R${" "}
+                            {v.total_value}
+                          </option>
+                        ))}
+                      </select>
+                      <Clock
+                        size={14}
+                        className="absolute left-2 top-2.5 text-gray-400"
+                      />
                     </div>
                   </div>
                 )}
@@ -470,10 +510,8 @@ export function Portfolio() {
                 {selectedMachine ? (
                   <div className="flex flex-col flex-1 px-8 pb-32">
                     {/* Hero com Imagem Grande */}
-                    <div className="flex gap-8 mb-6 h-[250px]">
-                      {" "}
-                      {/* Altura fixa maior */}
-                      <div className="w-1/2 bg-gray-50 rounded-lg flex items-center justify-center p-2">
+                    <div className="flex gap-8 mb-6">
+                      <div className="w-1/2 h-[250px] bg-gray-50 rounded-lg flex items-center justify-center p-2">
                         <img
                           src={selectedMachine.photo_url}
                           className="w-full h-full object-contain mix-blend-multiply"
@@ -486,7 +524,7 @@ export function Portfolio() {
                         <p className="text-gray-500 uppercase tracking-wide text-sm mb-4 font-bold">
                           {selectedMachine.brand} | {selectedMachine.model}
                         </p>
-                        <p className="text-sm text-gray-600 leading-relaxed text-justify">
+                        <p className="text-sm text-gray-600 leading-relaxed text-justify whitespace-pre-wrap">
                           {description}
                         </p>
                       </div>
@@ -526,7 +564,7 @@ export function Portfolio() {
                   </div>
                 )}
 
-                {/* FOOTER VERMELHO (CORRIGIDO) */}
+                {/* FOOTER VERMELHO */}
                 <div className="absolute bottom-0 left-0 right-0 h-28 bg-amiste-primary text-white px-8 flex justify-between items-center">
                   <div>
                     <p className="text-red-200 text-xs font-bold uppercase mb-1">

@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import clsx from "clsx"; // Biblioteca para ajudar nas classes condicionais
 
+import logoImg from "../assets/img/logo.png";
+
 export function DefaultLayout() {
   const location = useLocation();
 
@@ -26,10 +28,12 @@ export function DefaultLayout() {
       {/* Sidebar Lateral */}
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
         {/* Logo / Topo */}
-        <div className="h-16 flex items-center px-6 border-b border-gray-100">
-          <span className="text-2xl font-display font-bold text-amiste-primary">
-            AMISTE
-          </span>
+        <div className="h-21 flex items-center justify-center border-b border-gray-100 bg-amiste-primary p-4">
+          <img
+            src={logoImg}
+            alt="Logo Amiste"
+            className="h-full w-auto object-contain"
+          />
         </div>
 
         {/* Perfil do Usuário (Simplificado por enquanto) */}

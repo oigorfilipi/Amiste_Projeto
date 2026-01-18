@@ -54,21 +54,30 @@ export function Home() {
   }
 
   // Componente do Botão Quadrado (Card)
-  function MenuCard({ to, icon: Icon, title, desc, color }) {
+  function MenuCard({ to, icon, title, desc, color }) {
+    // Truque para garantir que o React entenda que é um componente
+    const IconComponent = icon;
+
     return (
       <Link
         to={to}
-        className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:border-amiste-primary/30 transition-all duration-300 transform hover:-translate-y-1"
+        className="group relative overflow-hidden bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 p-6 flex flex-col items-start gap-4 hover:-translate-y-1"
       >
         <div
-          className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-colors ${color}`}
+          className={`p-3 rounded-xl bg-${color}-50 text-${color}-600 group-hover:scale-110 transition-transform`}
         >
-          <Icon size={24} className="text-white" />
+          {/* Usamos a variável nova aqui */}
+          <IconComponent size={28} strokeWidth={1.5} />
         </div>
-        <h3 className="text-xl font-bold text-gray-800 group-hover:text-amiste-primary transition-colors">
-          {title}
-        </h3>
-        <p className="text-sm text-gray-500 mt-1">{desc}</p>
+        <div>
+          <h3 className="font-bold text-gray-800 text-lg group-hover:text-amiste-primary transition-colors">
+            {title}
+          </h3>
+          <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
+        </div>
+        <div
+          className={`absolute top-0 right-0 w-24 h-24 bg-${color}-50 rounded-full blur-3xl opacity-0 group-hover:opacity-50 transition-opacity -mr-10 -mt-10`}
+        ></div>
       </Link>
     );
   }

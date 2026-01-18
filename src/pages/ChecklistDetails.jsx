@@ -231,7 +231,7 @@ export function ChecklistDetails() {
                 <p className="text-sm">
                   {Object.entries(data.tools_list || {})
                     .filter(
-                      ([key, val]) =>
+                      ([, val]) =>
                         val === true || (typeof val === "string" && val !== ""),
                     )
                     .map(([key]) => key.replace(/([A-Z])/g, " $1"))

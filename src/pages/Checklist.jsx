@@ -29,7 +29,6 @@ export function Checklist() {
   // --- ESTADOS GERAIS ---
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 9;
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [machinesList, setMachinesList] = useState([]);
   const [checklistsHistory, setChecklistsHistory] = useState([]);
@@ -53,7 +52,6 @@ export function Checklist() {
   const [waterInstall, setWaterInstall] = useState("Não");
   const [sewageInstall, setSewageInstall] = useState("Não");
   const [paymentSystem, setPaymentSystem] = useState("Não");
-  const [paymentType, setPaymentType] = useState("");
   const [steamWand, setSteamWand] = useState("Não");
 
   // --- PASSO 3: APARATOS ---
@@ -175,7 +173,6 @@ export function Checklist() {
       .select("*")
       .order("created_at", { ascending: false });
     if (data) setChecklistsHistory(data);
-    setLoading(false);
   }
 
   // --- LÓGICA DE EXCLUSÃO ---
@@ -307,7 +304,6 @@ export function Checklist() {
     setWaterInstall("Não");
     setSewageInstall("Não");
     setPaymentSystem("Não");
-    setPaymentType("");
     setSteamWand("Não");
     // Reset tools...
     const cleanTools = {

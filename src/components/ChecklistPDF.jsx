@@ -70,8 +70,6 @@ const styles = StyleSheet.create({
 // Funções Auxiliares
 const formatDate = (date) =>
   date ? new Date(date).toLocaleDateString("pt-BR") : "-";
-const formatBool = (val) =>
-  val === true ? "Sim" : val === false ? "Não" : val;
 
 export function ChecklistPDF({ data }) {
   if (!data)

@@ -11,6 +11,8 @@ import {
   Wrench,
   DollarSign,
 } from "lucide-react";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import { ChecklistPDF } from "../components/ChecklistPDF";
 
 export function ChecklistDetails() {
   const { id } = useParams(); // Pega o ID da URL
@@ -74,15 +76,21 @@ export function ChecklistDetails() {
           </p>
         </div>
 
-        <button
-          onClick={() =>
-            alert("Aguarde! No próximo passo vamos gerar o PDF real aqui.")
-          }
-          className="flex items-center gap-2 bg-gray-800 hover:bg-gray-900 text-white px-5 py-3 rounded-lg font-bold shadow-lg transition-all"
+        <PDFDownloadLink
+          document={<ChecklistPDF data={data} />}
+          fileName={`checklist_${data.id}_${data.client_name || "evento"}.pdf`}
+          className="flex items-center gap-2 bg-gray-800 hover:bg-gray-900 text-white px-5 py-3 rounded-lg font-bold shadow-lg transition-all decoration-0"
         >
-          <Printer size={20} />
-          Imprimir PDF
-        </button>
+          {({ loading }) =>
+            loading ? (
+              "Gerando PDF..."
+            ) : (
+              <>
+                <Printer size={20} /> Baixar PDF
+              </>
+            )
+          }
+        </PDFDownloadLink>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

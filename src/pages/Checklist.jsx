@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
+import { AuthContext } from "../contexts/AuthContext"; // Importando Contexto
+import { useNavigate } from "react-router-dom"; // Importando Navegação
 import {
   ArrowRight,
   ArrowLeft,
@@ -11,9 +13,13 @@ import {
 } from "lucide-react";
 
 export function Checklist() {
+  const navigate = useNavigate();
+  const { user } = useContext(AuthContext); // Pegando usuário logado
+
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 9;
   const [loadingMachines, setLoadingMachines] = useState(true);
+  const [saving, setSaving] = useState(false); // Estado de carregamento ao salvar
   const [machinesList, setMachinesList] = useState([]);
 
   // --- PASSO 1: DADOS BÁSICOS ---
@@ -31,14 +37,12 @@ export function Checklist() {
   const [machineItems, setMachineItems] = useState([
     { voltage: "220v", patrimony: "", serial: "" },
   ]);
-  const [hasGrinder, setHasGrinder] = useState("Não");
-  const [waterInstall, setWaterInstall] = useState("Não"); // "Como será instalado?"
+  const [waterInstall, setWaterInstall] = useState("Não");
   const [sewageInstall, setSewageInstall] = useState("Não");
   const [paymentSystem, setPaymentSystem] = useState("Não");
-  const [paymentType, setPaymentType] = useState("");
   const [steamWand, setSteamWand] = useState("Não");
 
-  // --- PASSO 3: APARATOS (Checkboxes simples) ---
+  // --- PASSO 3: APARATOS ---
   const [tools, setTools] = useState({
     caixaFerramentas: false,
     luvas: false,
@@ -49,9 +53,9 @@ export function Checklist() {
     adaptador: false,
     conexoes: false,
     filtro: false,
-    mangueiras: false, // Hídrica Sim
+    mangueiras: false,
     galao: false,
-    mangueiraEsgoto: false, // Hídrica Não / Esgoto Sim
+    mangueiraEsgoto: false,
   });
   const [gallonQty, setGallonQty] = useState("");
 
@@ -61,29 +65,25 @@ export function Checklist() {
   const [testStatus, setTestStatus] = useState("Não");
   const [testDate, setTestDate] = useState("");
 
-  // --- PASSO 5: BEBIDAS (Objeto: { 'Café': '50ml' }) ---
+  // --- PASSO 5: BEBIDAS ---
   const [selectedDrinks, setSelectedDrinks] = useState({});
-  const [customDrinks, setCustomDrinks] = useState([]); // [{ name: '', ml: '' }]
+  const [customDrinks, setCustomDrinks] = useState([]);
 
-  // --- PASSO 6: ACESSÓRIOS (Objeto: { 'Pitcher': '2' }) ---
+  // --- PASSO 6: ACESSÓRIOS ---
   const [selectedAccessories, setSelectedAccessories] = useState({});
-  const [customAccessories, setCustomAccessories] = useState([]); // [{ name: '', qty: '' }]
 
-  // --- PASSO 7: INSUMOS (Objeto: { 'Café Grão': '1kg' }) ---
+  // --- PASSO 7: INSUMOS ---
   const [selectedSupplies, setSelectedSupplies] = useState({});
-  const [customSupplies, setCustomSupplies] = useState([]); // [{ category: '', name: '', qty: '' }]
 
   // --- PASSO 8: PREPARAÇÃO LOCAL ---
-  const [localSocket, setLocalSocket] = useState(""); // 10A ou 20A
-  const [localWater, setLocalWater] = useState(""); // Tem ou Não Tem
-  const [localSewage, setLocalSewage] = useState(""); // Tem ou Não Tem
-  const [trainedPeople, setTrainedPeople] = useState("");
+  const [localSocket, setLocalSocket] = useState("");
+  const [localWater, setLocalWater] = useState("");
 
   // --- PASSO 9: FINALIZAÇÃO ---
   const [contractNum, setContractNum] = useState("");
   const [installFileNum, setInstallFileNum] = useState("");
   const [salesObs, setSalesObs] = useState("");
-  const [clientChanges, setClientChanges] = useState("");
+
   // Valores
   const [valMachine, setValMachine] = useState(0);
   const [valSupplies, setValSupplies] = useState(0);
@@ -103,7 +103,7 @@ export function Checklist() {
     fetchMachines();
   }, []);
 
-  // --- LÓGICA PASSO 2 (Recapitulando) ---
+  // --- HELPERS ---
   function handleMachineSelect(e) {
     const id = e.target.value;
     setSelectedMachineId(id);
@@ -140,12 +140,10 @@ export function Checklist() {
     setMachineItems(newItems);
   }
 
-  // --- HELPERS PARA LISTAS (Bebidas/Acessórios) ---
   const toggleItem = (state, setState, key, defaultValue = " ") => {
     const newState = { ...state };
-    if (newState[key])
-      delete newState[key]; // Se existe, remove
-    else newState[key] = defaultValue; // Se não, adiciona
+    if (newState[key]) delete newState[key];
+    else newState[key] = defaultValue;
     setState(newState);
   };
 
@@ -155,14 +153,12 @@ export function Checklist() {
 
   // --- NAVEGAÇÃO ---
   function nextStep() {
-    // Validação Passo 1
     if (currentStep === 1) {
       if (installType === "Cliente" && !clientName)
         return alert("Preencha o Nome do Cliente");
       if (installType === "Evento" && !eventName)
         return alert("Preencha o Nome do Evento");
     }
-    // Validação Passo 2
     if (currentStep === 2 && !selectedMachineId)
       return alert("Selecione a Máquina");
 
@@ -179,7 +175,79 @@ export function Checklist() {
     }
   }
 
-  // --- LISTAS PADRÃO (Para renderizar fácil) ---
+  // --- FUNÇÃO FINAL: SALVAR NO BANCO ---
+  async function handleFinish() {
+    if (!contractNum)
+      return alert("Por favor, preencha o número do Contrato no passo 9.");
+
+    setSaving(true);
+
+    try {
+      // Montando o Pacotão de Dados
+      const payload = {
+        user_id: user.id, // ID de quem criou
+        status: "Finalizado",
+
+        // Passo 1
+        install_type: installType,
+        client_name: installType === "Cliente" ? clientName : null,
+        event_name: installType === "Evento" ? eventName : null,
+        event_days: installType === "Evento" ? eventDays : null,
+        install_date: installDate || null, // Se tiver vazio manda null para não dar erro de data
+        pickup_date: pickupDate || null,
+
+        // Passo 2
+        machine_id: selectedMachineId,
+        machine_name: selectedMachineData?.name,
+        quantity: quantity,
+        machine_data: selectedMachineData, // JSON com dados técnicos originais
+        machine_units: machineItems, // JSON com Array de series
+
+        // Tech
+        tech_water: waterInstall,
+        tech_sewage: sewageInstall,
+        tech_payment: paymentSystem,
+        tech_steam: steamWand,
+
+        // Listas (Passos 3 a 7)
+        tools_list: { ...tools, gallonQty },
+        preparations: { configStatus, configDate, testStatus, testDate },
+        drinks_list: { standard: selectedDrinks, custom: customDrinks },
+        accessories_list: selectedAccessories,
+        supplies_list: selectedSupplies,
+
+        // Passo 8
+        local_validation: { localSocket, localWater },
+
+        // Passo 9
+        contract_num: contractNum,
+        install_file_num: installFileNum,
+        sales_obs: salesObs,
+        financials: {
+          machine: valMachine,
+          supplies: valSupplies,
+          services: valServices,
+          extras: valExtras,
+          total: valMachine + valSupplies + valServices + valExtras,
+        },
+      };
+
+      // Enviando pro Supabase
+      const { error } = await supabase.from("checklists").insert(payload);
+
+      if (error) throw error;
+
+      alert("Checklist Finalizado com Sucesso!");
+      navigate("/home"); // Volta pra Home
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao salvar checklist: " + error.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // --- LISTAS PARA RENDERIZAR ---
   const drinksList = [
     "Café Expresso",
     "Café Longo",
@@ -360,8 +428,6 @@ export function Checklist() {
                   />
                 </div>
               </div>
-
-              {/* Tabela Repeater */}
               <div className="bg-gray-50 p-4 rounded-lg border">
                 {machineItems.map((item, idx) => (
                   <div key={idx} className="flex gap-2 mb-2 items-center">
@@ -395,8 +461,6 @@ export function Checklist() {
                   </div>
                 ))}
               </div>
-
-              {/* Configs Técnicas */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-50 p-3 rounded">
                   <span className="block font-bold text-sm mb-2">Hídrica?</span>
@@ -453,10 +517,10 @@ export function Checklist() {
           </div>
         )}
 
-        {/* === PASSO 3: APARATOS === */}
+        {/* === PASSO 3 === */}
         {currentStep === 3 && (
           <div className="p-8">
-            <h2 className="text-xl font-bold mb-6">3. Aparatos Necessários</h2>
+            <h2 className="text-xl font-bold mb-6">3. Aparatos</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {[
                 "caixaFerramentas",
@@ -484,32 +548,25 @@ export function Checklist() {
                   </span>
                 </label>
               ))}
-
-              {/* Condicionais Hídrica */}
-              {waterInstall === "Sim" && (
-                <>
-                  {["conexoes", "filtro", "mangueiras"].map((key) => (
-                    <label
-                      key={key}
-                      className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer bg-blue-50 border-blue-200"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={tools[key]}
-                        onChange={(e) =>
-                          setTools({ ...tools, [key]: e.target.checked })
-                        }
-                        className="accent-blue-500 w-5 h-5"
-                      />
-                      <span className="capitalize font-medium text-blue-900">
-                        {key}
-                      </span>
-                    </label>
-                  ))}
-                </>
-              )}
-
-              {/* Condicionais Sem Hídrica */}
+              {waterInstall === "Sim" &&
+                ["conexoes", "filtro", "mangueiras"].map((key) => (
+                  <label
+                    key={key}
+                    className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer bg-blue-50 border-blue-200"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={tools[key]}
+                      onChange={(e) =>
+                        setTools({ ...tools, [key]: e.target.checked })
+                      }
+                      className="accent-blue-500 w-5 h-5"
+                    />
+                    <span className="capitalize font-medium text-blue-900">
+                      {key}
+                    </span>
+                  </label>
+                ))}
               {waterInstall === "Não" && (
                 <div className="col-span-2 bg-amber-50 p-3 rounded-lg border border-amber-200">
                   <label className="flex items-center gap-2 mb-2 font-bold text-amber-900">
@@ -538,7 +595,7 @@ export function Checklist() {
           </div>
         )}
 
-        {/* === PASSO 4: PREPARATIVOS === */}
+        {/* === PASSO 4 === */}
         {currentStep === 4 && (
           <div className="p-8">
             <h2 className="text-xl font-bold mb-6">4. Preparativos</h2>
@@ -571,7 +628,6 @@ export function Checklist() {
                   />
                 )}
               </div>
-
               <div className="bg-gray-50 p-4 rounded-lg">
                 <p className="font-bold mb-2">Bebidas Testadas?</p>
                 <div className="flex gap-4 mb-2">
@@ -604,12 +660,10 @@ export function Checklist() {
           </div>
         )}
 
-        {/* === PASSO 5: BEBIDAS === */}
+        {/* === PASSO 5 === */}
         {currentStep === 5 && (
           <div className="p-8">
-            <h2 className="text-xl font-bold mb-6">
-              5. Configuração de Bebidas
-            </h2>
+            <h2 className="text-xl font-bold mb-6">5. Bebidas</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {drinksList.map((drink) => (
                 <div
@@ -644,14 +698,12 @@ export function Checklist() {
                 </div>
               ))}
             </div>
-
-            {/* Outros (Dinâmico) */}
             <div className="mt-6">
               <p className="font-bold text-sm mb-2">Outras Bebidas:</p>
               {customDrinks.map((cd, idx) => (
                 <div key={idx} className="flex gap-2 mb-2">
                   <input
-                    placeholder="Nome da Bebida"
+                    placeholder="Nome"
                     className="flex-1 p-2 border rounded"
                     value={cd.name}
                     onChange={(e) => {
@@ -688,13 +740,13 @@ export function Checklist() {
                 }
                 className="flex items-center gap-1 text-sm text-amiste-primary font-bold mt-2"
               >
-                <Plus size={16} /> Adicionar Bebida
+                <Plus size={16} /> Adicionar
               </button>
             </div>
           </div>
         )}
 
-        {/* === PASSO 6: ACESSÓRIOS === */}
+        {/* === PASSO 6 === */}
         {currentStep === 6 && (
           <div className="p-8">
             <h2 className="text-xl font-bold mb-6">6. Acessórios</h2>
@@ -742,10 +794,10 @@ export function Checklist() {
           </div>
         )}
 
-        {/* === PASSO 7: INSUMOS === */}
+        {/* === PASSO 7 === */}
         {currentStep === 7 && (
           <div className="p-8">
-            <h2 className="text-xl font-bold mb-6">7. Insumos Iniciais</h2>
+            <h2 className="text-xl font-bold mb-6">7. Insumos</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {suppliesList.map((item) => (
                 <div
@@ -788,12 +840,10 @@ export function Checklist() {
           </div>
         )}
 
-        {/* === PASSO 8: PREPARAÇÃO DO LOCAL (Com Validação) === */}
+        {/* === PASSO 8 === */}
         {currentStep === 8 && (
           <div className="p-8">
-            <h2 className="text-xl font-bold mb-6">8. Validação do Local</h2>
-
-            {/* Tomada */}
+            <h2 className="text-xl font-bold mb-6">8. Validação Local</h2>
             <div className="mb-6 p-4 border rounded-lg bg-gray-50">
               <p className="font-bold mb-2">Tomada do Cliente (Parede)</p>
               <div className="flex gap-4 mb-2">
@@ -816,22 +866,17 @@ export function Checklist() {
                   20A
                 </label>
               </div>
-              {/* Lógica de Aviso: Se máquina é 20A e local é 10A */}
               {machineItems[0]?.voltage &&
                 localSocket &&
                 machineItems.some((m) => m.voltage !== localSocket) && (
-                  // Nota: Aqui estou comparando string voltage x socket, idealmente teríamos a amperagem da máquina no state.
-                  // Vou assumir a lógica visual: se o usuário marcar diferente, avisa.
                   <div className="text-amber-600 text-sm flex items-center gap-1">
-                    <AlertCircle size={14} /> Verifique se a tomada é compatível
-                    com a máquina ({selectedMachineData?.amperage}).
+                    <AlertCircle size={14} /> Verifique se a tomada é
+                    compatível.
                   </div>
                 )}
             </div>
-
-            {/* Hídrica */}
             <div className="mb-6 p-4 border rounded-lg bg-gray-50">
-              <p className="font-bold mb-2">O Local possui Ponto de Água?</p>
+              <p className="font-bold mb-2">Ponto de Água?</p>
               <div className="flex gap-4 mb-2">
                 <label>
                   <input
@@ -855,20 +900,17 @@ export function Checklist() {
               {waterInstall === "Sim" && localWater === "Não" && (
                 <div className="bg-red-100 text-red-700 p-2 rounded text-sm font-bold flex items-center gap-2">
                   <AlertCircle size={16} /> ATENÇÃO: Máquina precisa de rede
-                  hídrica, mas local não tem! Avise o cliente.
+                  hídrica!
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* === PASSO 9: FINALIZAÇÃO === */}
+        {/* === PASSO 9 === */}
         {currentStep === 9 && (
           <div className="p-8">
-            <h2 className="text-xl font-bold mb-6">
-              9. Finalização e Contrato
-            </h2>
-
+            <h2 className="text-xl font-bold mb-6">9. Finalização</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
                 <label className="block text-sm font-bold mb-1">
@@ -882,7 +924,7 @@ export function Checklist() {
               </div>
               <div>
                 <label className="block text-sm font-bold mb-1">
-                  Ficha Instalação (Opcional)
+                  Ficha Instalação
                 </label>
                 <input
                   className="w-full p-3 border rounded-lg"
@@ -891,15 +933,13 @@ export function Checklist() {
                 />
               </div>
             </div>
-
-            {/* Financeiro */}
             <div className="bg-gray-800 text-white p-6 rounded-xl mb-6">
               <h3 className="font-bold border-b border-gray-600 pb-2 mb-4">
-                Valores Negociados
+                Valores
               </h3>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="text-xs text-gray-400">Valor Máquina</label>
+                  <label className="text-xs text-gray-400">Máquina</label>
                   <input
                     type="number"
                     className="w-full bg-gray-700 border-none rounded text-white"
@@ -942,10 +982,9 @@ export function Checklist() {
                 )}
               </div>
             </div>
-
             <div>
               <label className="block text-sm font-bold mb-1">
-                Observações da Venda
+                Observações
               </label>
               <textarea
                 className="w-full p-3 border rounded-lg"
@@ -957,36 +996,34 @@ export function Checklist() {
           </div>
         )}
 
-        {/* === BOTÕES DE NAVEGAÇÃO === */}
+        {/* === RODAPÉ === */}
         <div className="bg-gray-50 p-6 border-t border-gray-100 flex justify-between items-center">
           <button
             onClick={prevStep}
             disabled={currentStep === 1}
             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-medium transition-colors ${currentStep === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-gray-200"}`}
           >
-            <ArrowLeft size={20} />
-            Voltar
+            <ArrowLeft size={20} /> Voltar
           </button>
-
           <div className="flex gap-4">
             <button className="flex items-center gap-2 px-4 py-2 text-amiste-primary font-bold hover:bg-red-50 rounded-lg transition-colors">
-              <Save size={20} />
+              <Save size={20} />{" "}
               <span className="hidden md:inline">Salvar Rascunho</span>
             </button>
-
             <button
-              onClick={nextStep}
-              className="flex items-center gap-2 bg-amiste-primary hover:bg-amiste-secondary text-white px-6 py-3 rounded-lg font-bold transition-all shadow-md hover:shadow-lg"
+              onClick={currentStep === totalSteps ? handleFinish : nextStep}
+              disabled={saving}
+              className="flex items-center gap-2 bg-amiste-primary hover:bg-amiste-secondary text-white px-6 py-3 rounded-lg font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50"
             >
-              {currentStep === totalSteps ? (
+              {saving ? (
+                "Salvando..."
+              ) : currentStep === totalSteps ? (
                 <>
-                  {" "}
-                  <Check size={20} /> Finalizar{" "}
+                  <Check size={20} /> Finalizar
                 </>
               ) : (
                 <>
-                  {" "}
-                  Próximo <ArrowRight size={20} />{" "}
+                  Próximo <ArrowRight size={20} />
                 </>
               )}
             </button>

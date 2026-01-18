@@ -10,6 +10,7 @@ import { Checklist } from "./pages/Checklist";
 import { Wiki } from "./pages/Wiki";
 import { Portfolio } from "./pages/Portfolio";
 import { Machines } from "./pages/Machines";
+import { History } from "./pages/History";
 
 // Importando o Contexto
 import { AuthProvider, AuthContext } from "./contexts/AuthContext";
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="/wiki" element={<Wiki />} />
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/machines" element={<Machines />} />
+            <Route path="/history" element={<History />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

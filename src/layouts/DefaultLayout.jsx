@@ -6,6 +6,7 @@ import {
   FileText,
   Coffee,
   LogOut,
+  History,
 } from "lucide-react";
 import clsx from "clsx"; // Biblioteca para ajudar nas classes condicionais
 
@@ -21,6 +22,7 @@ export function DefaultLayout() {
     { path: "/wiki", icon: Wrench, label: "Manutenção" },
     { path: "/portfolio", icon: FileText, label: "Portfólio" },
     { path: "/machines", icon: Coffee, label: "Máquinas" },
+    { path: "/history", icon: History, label: "Histórico" },
   ];
 
   return (

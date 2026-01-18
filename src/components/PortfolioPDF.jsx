@@ -6,100 +6,119 @@ import {
   Document,
   StyleSheet,
   Image,
-  Font,
 } from "@react-pdf/renderer";
 
-// Estilos
 const styles = StyleSheet.create({
-  page: { padding: 0, fontFamily: "Helvetica" },
-  header: {
-    backgroundColor: "#A82020",
-    height: 80,
-    padding: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  headerText: { color: "white", fontSize: 24, fontWeight: "bold" },
-  subHeader: { color: "#ffcccc", fontSize: 10 },
+  page: { padding: 0, fontFamily: "Helvetica", backgroundColor: "#fff" },
 
-  body: { padding: 40 },
-
-  heroSection: { flexDirection: "row", marginBottom: 30, gap: 20 },
-  heroImage: {
-    width: 200,
-    height: 200,
-    objectFit: "contain",
-    borderRadius: 8,
-    backgroundColor: "#f9f9f9",
-  },
-  heroContent: { flex: 1 },
-
-  machineTitle: {
-    fontSize: 22,
+  // Header
+  header: { padding: 30, borderBottomWidth: 2, borderBottomColor: "#A82020" },
+  brandTitle: {
+    fontSize: 28,
     fontWeight: "bold",
-    color: "#333",
+    color: "#1f2937",
+    textTransform: "uppercase",
+  },
+  brandSub: {
+    fontSize: 10,
+    color: "#A82020",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+  },
+
+  // Corpo
+  body: { padding: 30, flex: 1 },
+
+  // Hero (Imagem + Título)
+  heroContainer: { flexDirection: "row", marginBottom: 20, height: 200 },
+  heroImageContainer: {
+    width: "45%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f9fafb",
+    borderRadius: 8,
+  },
+  heroImage: { width: "90%", height: "90%", objectFit: "contain" },
+
+  heroContent: { width: "55%", paddingLeft: 20, justifyContent: "center" },
+  machineTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#111",
     marginBottom: 4,
   },
   machineSubtitle: {
     fontSize: 12,
     color: "#666",
-    marginBottom: 15,
+    marginBottom: 10,
     textTransform: "uppercase",
   },
   description: {
     fontSize: 10,
-    color: "#555",
+    color: "#444",
     lineHeight: 1.5,
     textAlign: "justify",
   },
 
-  specsBox: {
-    marginTop: 20,
+  // Specs
+  specsContainer: {
+    marginTop: 10,
     padding: 15,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#f8fafc",
     borderRadius: 8,
   },
   specsTitle: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "bold",
-    marginBottom: 10,
     color: "#A82020",
+    marginBottom: 8,
+    textTransform: "uppercase",
   },
   specRow: {
     flexDirection: "row",
-    marginBottom: 5,
-    borderBottom: "1pt solid #ddd",
+    marginBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
     paddingBottom: 2,
   },
-  specLabel: { fontSize: 9, width: 100, fontWeight: "bold", color: "#444" },
-  specValue: { fontSize: 9, color: "#333" },
+  specLabel: { fontSize: 9, width: 80, fontWeight: "bold", color: "#475569" },
+  specValue: { fontSize: 9, color: "#1e293b", flex: 1 },
 
+  // Footer Financeiro (O estilo Dark que você gostou)
   footer: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    height: 120,
-    backgroundColor: "#222",
-    padding: 30,
+    height: 100,
+    backgroundColor: "#111827",
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 30,
   },
-  priceBox: { alignItems: "flex-end" },
-  priceLabel: { color: "#aaa", fontSize: 10, marginBottom: 4 },
-  priceValue: { color: "#4ade80", fontSize: 32, fontWeight: "bold" },
-  installments: { color: "white", fontSize: 12 },
 
   clientBox: { justifyContent: "center" },
-  clientLabel: {
+  labelSmall: {
     color: "#A82020",
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: "bold",
-    marginBottom: 4,
+    textTransform: "uppercase",
+    marginBottom: 2,
   },
-  clientName: { color: "white", fontSize: 16 },
+  clientName: { color: "white", fontSize: 14, fontWeight: "bold" },
+  negotiationTag: { color: "#9ca3af", fontSize: 10, marginTop: 2 },
+
+  priceBox: { alignItems: "flex-end" },
+  priceLabel: {
+    color: "#6b7280",
+    fontSize: 9,
+    textTransform: "uppercase",
+    marginBottom: 2,
+  },
+  totalValue: { color: "#4ade80", fontSize: 28, fontWeight: "bold" }, // Verde Neon
+  installments: { color: "white", fontSize: 10, marginTop: 2 },
 });
 
 const formatMoney = (val) =>
@@ -116,52 +135,41 @@ export function PortfolioPDF({ data }) {
         </Page>
       </Document>
     );
-
   const m = data.machine_data;
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* TOPO VERMELHO */}
+        {/* Header Clean */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.headerText}>AMISTE CAFÉ</Text>
-            <Text style={styles.subHeader}>Proposta Comercial</Text>
-          </View>
+          <Text style={styles.brandTitle}>AMISTE CAFÉ</Text>
+          <Text style={styles.brandSub}>Proposta Comercial</Text>
         </View>
 
         <View style={styles.body}>
-          {/* HERO: FOTO E TEXTO */}
-          <View style={styles.heroSection}>
-            {m.photo_url ? (
-              <Image src={m.photo_url} style={styles.heroImage} />
-            ) : (
-              <View
-                style={[
-                  styles.heroImage,
-                  { justifyContent: "center", alignItems: "center" },
-                ]}
-              >
-                <Text>Sem Foto</Text>
-              </View>
-            )}
+          {/* Hero Section */}
+          <View style={styles.heroContainer}>
+            <View style={styles.heroImageContainer}>
+              {m.photo_url ? (
+                <Image src={m.photo_url} style={styles.heroImage} />
+              ) : (
+                <Text>Sem Imagem</Text>
+              )}
+            </View>
             <View style={styles.heroContent}>
               <Text style={styles.machineTitle}>{m.name}</Text>
               <Text style={styles.machineSubtitle}>
                 {m.brand} | {m.model}
               </Text>
-              <Text style={styles.description}>
-                {data.description ||
-                  "Equipamento de alta performance, ideal para seu estabelecimento. Design moderno e extração perfeita de café expresso e bebidas quentes."}
-              </Text>
+              <Text style={styles.description}>{data.description}</Text>
             </View>
           </View>
 
-          {/* TABELA TÉCNICA */}
-          <View style={styles.specsBox}>
+          {/* Specs Técnicas */}
+          <View style={styles.specsContainer}>
             <Text style={styles.specsTitle}>Especificações Técnicas</Text>
             <View style={styles.specRow}>
-              <Text style={styles.specLabel}>Tipo:</Text>
+              <Text style={styles.specLabel}>Categoria:</Text>
               <Text style={styles.specValue}>{m.type}</Text>
             </View>
             <View style={styles.specRow}>
@@ -169,44 +177,44 @@ export function PortfolioPDF({ data }) {
               <Text style={styles.specValue}>{m.voltage}</Text>
             </View>
             <View style={styles.specRow}>
-              <Text style={styles.specLabel}>Reservatórios:</Text>
-              <Text style={styles.specValue}>{m.reservoirs || "-"}</Text>
-            </View>
-            <View style={styles.specRow}>
               <Text style={styles.specLabel}>Dimensões:</Text>
               <Text style={styles.specValue}>{m.dimensions || "-"}</Text>
             </View>
             <View style={styles.specRow}>
-              <Text style={styles.specLabel}>Cor:</Text>
-              <Text style={styles.specValue}>{m.color}</Text>
+              <Text style={styles.specLabel}>Reservatórios:</Text>
+              <Text style={styles.specValue}>{m.reservoirs || "-"}</Text>
             </View>
             <View style={styles.specRow}>
               <Text style={styles.specLabel}>Hídrica:</Text>
               <Text style={styles.specValue}>{m.water_system}</Text>
             </View>
+            <View style={styles.specRow}>
+              <Text style={styles.specLabel}>Cor:</Text>
+              <Text style={styles.specValue}>{m.color}</Text>
+            </View>
           </View>
         </View>
 
-        {/* RODAPÉ FINANCEIRO (PRETO) */}
+        {/* Footer Dark */}
         <View style={styles.footer}>
           <View style={styles.clientBox}>
-            <Text style={styles.clientLabel}>Proposta para:</Text>
+            <Text style={styles.labelSmall}>Proposta preparada para</Text>
             <Text style={styles.clientName}>
               {data.customer_name || "Cliente"}
             </Text>
-            <Text style={{ color: "#ccc", fontSize: 10, marginTop: 5 }}>
+            <Text style={styles.negotiationTag}>
               Modalidade: {data.negotiation_type}
             </Text>
           </View>
 
           <View style={styles.priceBox}>
             <Text style={styles.priceLabel}>Investimento Total</Text>
-            <Text style={styles.priceValue}>
+            <Text style={styles.totalValue}>
               {formatMoney(data.total_value)}
             </Text>
             {data.installments > 1 && (
               <Text style={styles.installments}>
-                ou {data.installments}x de {formatMoney(data.installment_value)}
+                {data.installments}x de {formatMoney(data.installment_value)}
               </Text>
             )}
           </View>

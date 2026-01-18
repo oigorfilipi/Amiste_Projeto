@@ -1,4 +1,7 @@
+import { db } from "./services/firebaseConnection";
+
 export default function App() {
+  console.log("Conectado ao Firebase:", db);
   return (
     <div className="flex h-screen w-full items-center justify-center bg-gray-100">
       <div className="text-center">

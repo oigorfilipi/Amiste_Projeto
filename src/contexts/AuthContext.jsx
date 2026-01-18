@@ -1,56 +1,58 @@
 import { useState, useEffect, createContext } from "react";
-import { auth } from "../services/firebaseConnection";
-import {
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-} from "firebase/auth";
+import { supabase } from "../services/supabaseClient"; // Importando o novo cliente
 import { Navigate } from "react-router-dom";
 
 export const AuthContext = createContext({});
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loadingAuth, setLoadingAuth] = useState(true); // Para não mostrar a tela antes de saber se tá logado
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
   useEffect(() => {
-    // Fica a "ouvir" se o utilizador logou ou deslogou no Firebase
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUser({
-          uid: user.uid,
-          email: user.email,
-        });
-      } else {
-        setUser(null);
-      }
+    // Verifica sessão atual ao carregar a página
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
       setLoadingAuth(false);
     });
 
-    return () => unsubscribe();
+    // Fica ouvindo mudanças (Login/Logout)
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
+        setLoadingAuth(false);
+      },
+    );
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   // Função de Login
   async function signIn(email, password) {
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      // O onAuthStateChanged lá em cima vai detetar a mudança automaticamente
-    } catch (error) {
-      console.log(error);
-      throw error; // Lança o erro para a tela de login tratar (ex: senha errada)
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password,
+    });
+
+    if (error) {
+      throw error;
     }
+
+    return data;
   }
 
   // Função de Logout
   async function logOut() {
-    await signOut(auth);
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
     setUser(null);
   }
 
   return (
     <AuthContext.Provider
       value={{
-        signed: !!user, // Converte o objeto user para verdadeiro/falso
+        signed: !!user,
         user,
         signIn,
         logOut,

@@ -200,9 +200,12 @@ export function Home() {
                       </span>
                     </td>
                     <td className="p-4 text-right">
-                      <button className="text-gray-400 hover:text-amiste-primary transition-colors font-medium text-xs border border-gray-200 hover:border-amiste-primary px-3 py-1 rounded-lg">
+                      <Link
+                        to={`/checklists/${item.id}`}
+                        className="text-gray-400 hover:text-amiste-primary transition-colors font-medium text-xs border border-gray-200 hover:border-amiste-primary px-3 py-1 rounded-lg inline-block"
+                      >
                         Ver Detalhes
-                      </button>
+                      </Link>
                     </td>
                   </tr>
                 ))

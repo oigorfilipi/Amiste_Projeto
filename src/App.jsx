@@ -1,5 +1,6 @@
 import { useContext } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { ChecklistDetails } from "./pages/ChecklistDetails";
 
 // Importando o Layout e Páginas
 import { DefaultLayout } from "./layouts/DefaultLayout";
@@ -51,6 +52,7 @@ export default function App() {
           >
             <Route path="/home" element={<Home />} />
             <Route path="/checklists" element={<Checklist />} />
+            <Route path="/checklists/:id" element={<ChecklistDetails />} />
             <Route path="/wiki" element={<Wiki />} />
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/machines" element={<Machines />} />

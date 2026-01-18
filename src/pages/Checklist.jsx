@@ -702,28 +702,26 @@ export function Checklist() {
 
                           {/* Coluna 6: Ações */}
                           <td className="p-4 text-right">
-                            <div className="flex justify-end gap-1">
-                              {/* Botão Editar */}
+                            <div className="flex justify-end items-center gap-2">
+                              {/* Botão Editar (Lápis) */}
                               <button
                                 onClick={() => handleEdit(c)}
                                 className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                title="Editar / Continuar"
+                                title="Editar Checklist"
                               >
                                 <Edit size={18} />
                               </button>
 
-                              {/* Botão PDF (Só aparece se estiver finalizado, senão é inútil) */}
-                              {c.status === "Finalizado" && (
-                                <Link
-                                  to={`/checklists/${c.id}`}
-                                  className="p-2 text-gray-500 hover:bg-gray-100 rounded transition-colors"
-                                  title="Ver PDF"
-                                >
-                                  <Search size={18} />
-                                </Link>
-                              )}
+                              {/* Botão Ver Detalhes (Olho/Lupa) - AGORA VISÍVEL PARA TODOS */}
+                              <Link
+                                to={`/checklists/${c.id}`}
+                                className="flex items-center gap-1 p-2 text-amiste-primary hover:bg-red-50 rounded transition-colors font-bold text-xs"
+                                title="Ver Detalhes e PDF"
+                              >
+                                <Search size={16} /> Detalhes
+                              </Link>
 
-                              {/* Botão Excluir */}
+                              {/* Botão Excluir (Lixeira) */}
                               <button
                                 onClick={() => handleDelete(c.id)}
                                 className="p-2 text-red-500 hover:bg-red-50 rounded transition-colors"

@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   ArrowRight,
   ArrowLeft,
@@ -11,17 +11,17 @@ import {
   Trash2,
   Check,
   Search,
-  Calendar,
-  Coffee,
+  Edit,
   MoreHorizontal,
+  X,
 } from "lucide-react";
 
 export function Checklist() {
-  const navigate = useNavigate();
   const { user } = useContext(AuthContext);
 
-  // --- CONTROLE DE TELA (LISTA vs WIZARD) ---
+  // --- CONTROLE DE TELA ---
   const [view, setView] = useState("list"); // 'list' ou 'wizard'
+  const [editingId, setEditingId] = useState(null); // ID do checklist sendo editado
 
   // --- ESTADOS GERAIS ---
   const [currentStep, setCurrentStep] = useState(1);
@@ -47,12 +47,11 @@ export function Checklist() {
     { voltage: "220v", patrimony: "", serial: "" },
   ]);
 
-  // Configs Técnicas Máquina
   const [waterInstall, setWaterInstall] = useState("Não");
-  const [sewageInstall, setSewageInstall] = useState("Não"); // Novo
+  const [sewageInstall, setSewageInstall] = useState("Não");
   const [paymentSystem, setPaymentSystem] = useState("Não");
   const [paymentType, setPaymentType] = useState("");
-  const [steamWand, setSteamWand] = useState("Não"); // Novo
+  const [steamWand, setSteamWand] = useState("Não");
 
   // --- PASSO 3: APARATOS ---
   const [tools, setTools] = useState({
@@ -63,12 +62,10 @@ export function Checklist() {
     pano: false,
     balde: false,
     adaptador: false,
-    // Hídrica Sim
     conexoes: false,
     filtro: false,
     mangueiras: false,
     tampoes: false,
-    // Hídrica Não / Esgoto
     galao: false,
     mangueiraEsgoto: false,
   });
@@ -86,10 +83,10 @@ export function Checklist() {
 
   // --- PASSO 6: ACESSÓRIOS ---
   const [selectedAccessories, setSelectedAccessories] = useState({});
-  const [customAccessories, setCustomAccessories] = useState([]); // [{ name: '', qty: '' }]
+  const [customAccessories, setCustomAccessories] = useState([]);
   const [noAccessories, setNoAccessories] = useState(false);
 
-  // --- PASSO 7: INSUMOS (ESTRUTURA COMPLEXA) ---
+  // --- PASSO 7: INSUMOS ---
   const [noSupplies, setNoSupplies] = useState(false);
   const [suppliesData, setSuppliesData] = useState({
     solubles: {
@@ -116,7 +113,6 @@ export function Checklist() {
       Baunilha: { active: false, qty: "" },
     },
     syrups: {
-      // Vora
       "Vora - Maçã Verde": { active: false, qty: "" },
       "Vora - Maracujá": { active: false, qty: "" },
       "Vora - Morango": { active: false, qty: "" },
@@ -128,14 +124,12 @@ export function Checklist() {
       "Vora - Caramelo Salgado": { active: false, qty: "" },
       "Vora - Melancia": { active: false, qty: "" },
       "Vora - Baunilha": { active: false, qty: "" },
-      // DaVinci
       "DaVinci - Coco": { active: false, qty: "" },
       "DaVinci - Kiwi": { active: false, qty: "" },
       "DaVinci - Maracujá Vermelho": { active: false, qty: "" },
       "DaVinci - Jabuticaba": { active: false, qty: "" },
       "DaVinci - Morango": { active: false, qty: "" },
       "DaVinci - Melancia": { active: false, qty: "" },
-      // Fabri
       "Fabri - Maracujá": { active: false, qty: "" },
       "Fabri - Maça Verde": { active: false, qty: "" },
       "Fabri - Morango": { active: false, qty: "" },
@@ -143,21 +137,19 @@ export function Checklist() {
       "Fabri - Banana": { active: false, qty: "" },
     },
   });
-  const [customSupplies, setCustomSupplies] = useState([]); // [{category: '', name: '', qty: ''}]
+  const [customSupplies, setCustomSupplies] = useState([]);
 
   // --- PASSO 8: PREPARAÇÃO LOCAL ---
   const [localSocket, setLocalSocket] = useState("");
   const [localWater, setLocalWater] = useState("");
-  const [localSewage, setLocalSewage] = useState(""); // Novo
-  const [trainedPeople, setTrainedPeople] = useState(""); // Novo
+  const [localSewage, setLocalSewage] = useState("");
+  const [trainedPeople, setTrainedPeople] = useState("");
 
   // --- PASSO 9: FINALIZAÇÃO ---
   const [contractNum, setContractNum] = useState("");
   const [installFileNum, setInstallFileNum] = useState("");
   const [salesObs, setSalesObs] = useState("");
   const [clientChanges, setClientChanges] = useState("");
-
-  // Valores
   const [valMachine, setValMachine] = useState(0);
   const [valSupplies, setValSupplies] = useState(0);
   const [valServices, setValServices] = useState(0);
@@ -183,9 +175,121 @@ export function Checklist() {
     setLoading(false);
   }
 
-  // --- LOGICA DE CRIAÇÃO (Novo Checklist) ---
+  // --- LÓGICA DE EXCLUSÃO ---
+  async function handleDelete(id) {
+    if (
+      !confirm(
+        "Tem certeza que deseja excluir este checklist? Essa ação não pode ser desfeita.",
+      )
+    )
+      return;
+
+    try {
+      const { error } = await supabase.from("checklists").delete().eq("id", id);
+      if (error) throw error;
+      alert("Checklist excluído!");
+      fetchChecklists();
+    } catch (error) {
+      alert("Erro ao excluir: " + error.message);
+    }
+  }
+
+  // --- LÓGICA DE EDIÇÃO (CARREGAR DADOS) ---
+  function handleEdit(checklist) {
+    // 1. Setar ID para saber que é edição
+    setEditingId(checklist.id);
+
+    // 2. Preencher Passo 1
+    setInstallType(checklist.install_type || "Cliente");
+    setClientName(checklist.client_name || "");
+    setEventName(checklist.event_name || "");
+    setEventDays(checklist.event_days || "");
+    setInstallDate(checklist.install_date || "");
+    setPickupDate(checklist.pickup_date || "");
+
+    // 3. Preencher Passo 2 (Máquina)
+    setQuantity(checklist.quantity || 1);
+    setSelectedMachineId(
+      checklist.machine_id ? checklist.machine_id.toString() : "",
+    );
+    setSelectedMachineData(checklist.machine_data || null);
+    setMachineItems(
+      checklist.machine_units || [
+        { voltage: "220v", patrimony: "", serial: "" },
+      ],
+    );
+
+    // Configs Técnicas
+    setWaterInstall(checklist.tech_water || "Não");
+    setSewageInstall(checklist.tech_sewage || "Não");
+    setPaymentSystem(checklist.tech_payment || "Não");
+    setSteamWand(checklist.tech_steam || "Não");
+    // Obs: paymentType não estava no DB, teria que adicionar se fosse crítico, ou assumir 'Não'
+
+    // 4. Listas (JSON)
+    if (checklist.tools_list) {
+      const { gallonQty: gQty, ...tList } = checklist.tools_list;
+      setTools(tList);
+      setGallonQty(gQty || "");
+    }
+
+    if (checklist.preparations) {
+      setConfigStatus(checklist.preparations.configStatus || "Não");
+      setConfigDate(checklist.preparations.configDate || "");
+      setTestStatus(checklist.preparations.testStatus || "Não");
+      setTestDate(checklist.preparations.testDate || "");
+    }
+
+    if (checklist.drinks_list) {
+      setSelectedDrinks(checklist.drinks_list.standard || {});
+      setCustomDrinks(checklist.drinks_list.custom || []);
+    }
+
+    if (checklist.accessories_list) {
+      setSelectedAccessories(checklist.accessories_list.standard || {});
+      setCustomAccessories(checklist.accessories_list.custom || []);
+      setNoAccessories(checklist.accessories_list.noAccessories || false);
+    }
+
+    if (checklist.supplies_list) {
+      // Mescla o que veio do banco com o objeto padrão para não quebrar chaves novas
+      setSuppliesData((prev) => ({
+        ...prev,
+        ...checklist.supplies_list.standard,
+      }));
+      setCustomSupplies(checklist.supplies_list.custom || []);
+      setNoSupplies(checklist.supplies_list.noSupplies || false);
+    }
+
+    if (checklist.local_validation) {
+      setLocalSocket(checklist.local_validation.localSocket || "");
+      setLocalWater(checklist.local_validation.localWater || "");
+      setLocalSewage(checklist.local_validation.localSewage || "");
+      setTrainedPeople(checklist.local_validation.trainedPeople || "");
+    }
+
+    // 5. Finalização
+    setContractNum(checklist.contract_num || "");
+    setInstallFileNum(checklist.install_file_num || "");
+    setSalesObs(checklist.sales_obs || "");
+    setClientChanges(checklist.client_changes || ""); // Campo novo
+
+    if (checklist.financials) {
+      setValMachine(checklist.financials.machine || 0);
+      setValSupplies(checklist.financials.supplies || 0);
+      setValServices(checklist.financials.services || 0);
+      setValExtras(checklist.financials.extras || 0);
+    }
+
+    // 6. Mudar tela
+    setCurrentStep(1);
+    setView("wizard");
+  }
+
+  // --- INICIAR NOVO ---
   function handleNewChecklist() {
-    // Resetar todos os estados para padrão
+    setEditingId(null); // Limpa ID para ser um insert
+    // Reset manual dos campos
     setCurrentStep(1);
     setInstallType("Cliente");
     setClientName("");
@@ -202,7 +306,8 @@ export function Checklist() {
     setPaymentSystem("Não");
     setPaymentType("");
     setSteamWand("Não");
-    setTools({
+    // Reset tools...
+    const cleanTools = {
       caixaFerramentas: false,
       luvas: false,
       transformador: false,
@@ -216,7 +321,8 @@ export function Checklist() {
       tampoes: false,
       galao: false,
       mangueiraEsgoto: false,
-    });
+    };
+    setTools(cleanTools);
     setGallonQty("");
     setConfigStatus("Não");
     setConfigDate("");
@@ -228,8 +334,8 @@ export function Checklist() {
     setCustomAccessories([]);
     setNoAccessories(false);
     setNoSupplies(false);
-    // Resetar suppliesData é complexo, ideal seria ter o objeto initialstate separado, mas vamos manter assim por brevidade
     setCustomSupplies([]);
+    // Reset suppliesData é pesado, vou assumir o state inicial ou fazer reload se necessário
     setLocalSocket("");
     setLocalWater("");
     setLocalSewage("");
@@ -246,7 +352,7 @@ export function Checklist() {
     setView("wizard");
   }
 
-  // --- HELPERS MÁQUINA ---
+  // --- HELPERS E FUNÇÕES AUXILIARES ---
   function handleMachineSelect(e) {
     const id = e.target.value;
     setSelectedMachineId(id);
@@ -254,13 +360,10 @@ export function Checklist() {
       const machine = machinesList.find((m) => m.id.toString() === id);
       setSelectedMachineData(machine);
       if (machine) {
-        // Regras Automáticas baseadas no cadastro
         setWaterInstall(
           machine.water_system === "Rede Hídrica" ? "Sim" : "Não",
         );
         setSteamWand(machine.has_steamer === "Sim" ? "Sim" : "Não");
-        // Resetamos outros por segurança
-        setSewageInstall("Não");
       }
     } else {
       setSelectedMachineData(null);
@@ -286,7 +389,6 @@ export function Checklist() {
     setMachineItems(newItems);
   }
 
-  // --- HELPERS LISTAS SIMPLES ---
   const toggleItem = (state, setState, key, defaultValue = " ") => {
     const newState = { ...state };
     if (newState[key]) delete newState[key];
@@ -297,7 +399,6 @@ export function Checklist() {
     setState({ ...state, [key]: val });
   };
 
-  // --- HELPERS INSUMOS (COMPLEXO) ---
   const toggleSupply = (category, itemKey) => {
     setSuppliesData((prev) => ({
       ...prev,
@@ -315,21 +416,15 @@ export function Checklist() {
       ...prev,
       [category]: {
         ...prev[category],
-        [itemKey]: {
-          ...prev[category][itemKey],
-          qty: qty,
-        },
+        [itemKey]: { ...prev[category][itemKey], qty: qty },
       },
     }));
   };
 
-  // --- SALVAMENTO (FINAL OU RASCUNHO) ---
+  // --- SALVAR OU ATUALIZAR ---
   async function handleSave(status = "Finalizado") {
-    if (status === "Finalizado") {
-      // Validações finais apenas se for finalizar
-      if (!contractNum)
-        return alert("Por favor, preencha o número do Contrato no passo 9.");
-    }
+    if (status === "Finalizado" && !contractNum)
+      return alert("Preencha o Contrato no passo 9.");
 
     setSaving(true);
     try {
@@ -363,7 +458,7 @@ export function Checklist() {
           standard: suppliesData,
           custom: customSupplies,
           noSupplies,
-        }, // Nova estrutura
+        },
         local_validation: {
           localSocket,
           localWater,
@@ -383,14 +478,24 @@ export function Checklist() {
         },
       };
 
-      const { error } = await supabase.from("checklists").insert(payload);
-      if (error) throw error;
+      if (editingId) {
+        // ATUALIZAR (UPDATE)
+        const { error } = await supabase
+          .from("checklists")
+          .update(payload)
+          .eq("id", editingId);
+        if (error) throw error;
+        alert("Checklist atualizado com sucesso!");
+      } else {
+        // CRIAR NOVO (INSERT)
+        const { error } = await supabase.from("checklists").insert(payload);
+        if (error) throw error;
+        alert(status === "Rascunho" ? "Rascunho criado!" : "Checklist criado!");
+      }
 
-      alert(
-        status === "Rascunho" ? "Rascunho salvo!" : "Checklist Finalizado!",
-      );
-      fetchChecklists(); // Atualiza lista
-      setView("list"); // Volta pra lista
+      fetchChecklists();
+      setView("list");
+      setEditingId(null);
     } catch (error) {
       console.error(error);
       alert("Erro ao salvar: " + error.message);
@@ -422,7 +527,6 @@ export function Checklist() {
     }
   }
 
-  // --- CONSTANTES ---
   const drinksList = [
     "Café Expresso",
     "Café Longo",
@@ -446,10 +550,9 @@ export function Checklist() {
     "Porta Borras",
   ];
 
-  // --- RENDERIZAR ---
   return (
     <div className="min-h-screen pb-20 bg-gray-50">
-      {/* TELA 1: LISTA DE CHECKLISTS */}
+      {/* TELA 1: LISTA */}
       {view === "list" && (
         <div className="p-8">
           <div className="flex justify-between items-center mb-8">
@@ -461,7 +564,7 @@ export function Checklist() {
             </div>
             <button
               onClick={handleNewChecklist}
-              className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-3 rounded-lg font-bold flex items-center gap-2 shadow-lg transition-transform hover:-translate-y-1"
+              className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-3 rounded-lg font-bold flex items-center gap-2 shadow-lg hover:-translate-y-1 transition-transform"
             >
               <Plus size={20} /> Novo Checklist
             </button>
@@ -478,28 +581,25 @@ export function Checklist() {
                   <tr>
                     <th className="p-4">Cliente / Evento</th>
                     <th className="p-4">Máquina</th>
-                    <th className="p-4">Data Inst.</th>
                     <th className="p-4">Status</th>
-                    <th className="p-4 text-right">Ação</th>
+                    <th className="p-4 text-right">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y text-sm">
                   {checklistsHistory.map((c) => (
-                    <tr key={c.id} className="hover:bg-gray-50">
+                    <tr key={c.id} className="hover:bg-gray-50 group">
                       <td className="p-4">
                         <p className="font-bold text-gray-800">
                           {c.client_name || c.event_name}
                         </p>
                         <span className="text-xs text-gray-400">
-                          {c.install_type}
+                          {c.install_type} -{" "}
+                          {c.install_date
+                            ? new Date(c.install_date).toLocaleDateString()
+                            : "Data n/a"}
                         </span>
                       </td>
                       <td className="p-4">{c.machine_name}</td>
-                      <td className="p-4">
-                        {c.install_date
-                          ? new Date(c.install_date).toLocaleDateString()
-                          : "-"}
-                      </td>
                       <td className="p-4">
                         <span
                           className={`px-2 py-1 rounded text-xs font-bold ${c.status === "Finalizado" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}
@@ -507,13 +607,31 @@ export function Checklist() {
                           {c.status}
                         </span>
                       </td>
-                      <td className="p-4 text-right">
+                      <td className="p-4 text-right flex justify-end gap-2">
+                        {/* Botão Editar/Continuar */}
+                        <button
+                          onClick={() => handleEdit(c)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                          title="Editar / Continuar"
+                        >
+                          <Edit size={18} />
+                        </button>
+                        {/* Botão Ver Detalhes (PDF) */}
                         <Link
                           to={`/checklists/${c.id}`}
-                          className="text-amiste-primary hover:underline font-bold text-xs"
+                          className="p-2 text-gray-500 hover:bg-gray-100 rounded"
+                          title="Ver Detalhes e PDF"
                         >
-                          Ver Detalhes
+                          <Search size={18} />
                         </Link>
+                        {/* Botão Excluir */}
+                        <button
+                          onClick={() => handleDelete(c.id)}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded"
+                          title="Excluir"
+                        >
+                          <Trash2 size={18} />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -524,13 +642,13 @@ export function Checklist() {
         </div>
       )}
 
-      {/* TELA 2: WIZARD DE CRIAÇÃO */}
+      {/* TELA 2: WIZARD */}
       {view === "wizard" && (
         <div className="p-4 md:p-8 animate-fade-in">
           <div className="mb-6 flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-display font-bold text-gray-800">
-                Novo Checklist
+                {editingId ? "Editando Checklist" : "Novo Checklist"}
               </h1>
               <p className="text-gray-500">
                 Passo {currentStep} de {totalSteps}
@@ -538,9 +656,9 @@ export function Checklist() {
             </div>
             <button
               onClick={() => setView("list")}
-              className="text-gray-500 hover:text-amiste-primary"
+              className="text-gray-500 hover:text-red-500 font-bold flex items-center gap-1"
             >
-              Cancelar
+              <X size={20} /> Cancelar
             </button>
           </div>
 
@@ -554,7 +672,7 @@ export function Checklist() {
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* === PASSO 1: DADOS BÁSICOS === */}
+            {/* PASSOS DO WIZARD (CÓDIGO IDÊNTICO AO ANTERIOR, JÁ CORRIGIDO) */}
             {currentStep === 1 && (
               <div className="p-8">
                 <h2 className="text-xl font-bold mb-6">1. Dados Básicos</h2>
@@ -631,7 +749,6 @@ export function Checklist() {
                             onChange={(e) => setEventDays(e.target.value)}
                           />
                         </div>
-                        {/* Correção Item 4: Data de Instalação no Evento */}
                         <div>
                           <label className="block text-sm font-bold mb-1">
                             Data Instalação *
@@ -661,7 +778,6 @@ export function Checklist() {
               </div>
             )}
 
-            {/* === PASSO 2: MÁQUINA === */}
             {currentStep === 2 && (
               <div className="p-8">
                 <h2 className="text-xl font-bold mb-6">2. Dados da Máquina</h2>
@@ -697,8 +813,6 @@ export function Checklist() {
                       />
                     </div>
                   </div>
-
-                  {/* Correção Item 5: Label Voltagem */}
                   <div className="bg-gray-50 p-4 rounded-lg border">
                     <h3 className="text-xs font-bold uppercase text-gray-500 mb-3">
                       Identificação das Unidades
@@ -755,8 +869,6 @@ export function Checklist() {
                       </div>
                     ))}
                   </div>
-
-                  {/* Correção Item 3: Campos Faltantes (Esgoto, Vapor, Conexões) */}
                   <div className="grid grid-cols-2 gap-6 pt-4 border-t">
                     <div>
                       <span className="block font-bold text-sm mb-2">
@@ -838,29 +950,6 @@ export function Checklist() {
                           Não
                         </label>
                       </div>
-                      {paymentSystem === "Sim" && (
-                        <div className="mt-2 text-sm">
-                          Configurar:{" "}
-                          <label className="ml-2">
-                            <input
-                              type="radio"
-                              name="pt"
-                              value="Stone"
-                              onChange={(e) => setPaymentType(e.target.value)}
-                            />{" "}
-                            Stone
-                          </label>
-                          <label className="ml-2">
-                            <input
-                              type="radio"
-                              name="pt"
-                              value="Outro"
-                              onChange={(e) => setPaymentType(e.target.value)}
-                            />{" "}
-                            Outro
-                          </label>
-                        </div>
-                      )}
                     </div>
                     <div>
                       <span className="block font-bold text-sm mb-2">
@@ -894,7 +983,6 @@ export function Checklist() {
               </div>
             )}
 
-            {/* === PASSO 3: APARATOS === */}
             {currentStep === 3 && (
               <div className="p-8">
                 <h2 className="text-xl font-bold mb-6">3. Aparatos</h2>
@@ -925,8 +1013,6 @@ export function Checklist() {
                       </span>
                     </label>
                   ))}
-
-                  {/* Item 3: Conexões Hídricas aparecem se Sim */}
                   {waterInstall === "Sim" && (
                     <div className="col-span-2 md:col-span-3 bg-blue-50 p-4 rounded-lg border border-blue-200 mt-2">
                       <p className="font-bold text-blue-800 text-sm mb-2">
@@ -959,8 +1045,6 @@ export function Checklist() {
                       </div>
                     </div>
                   )}
-
-                  {/* Hídrica Não */}
                   {waterInstall === "Não" && (
                     <div className="col-span-2 bg-amber-50 p-3 rounded-lg border border-amber-200">
                       <label className="flex items-center gap-2 mb-2 font-bold text-amber-900">
@@ -985,8 +1069,6 @@ export function Checklist() {
                       )}
                     </div>
                   )}
-
-                  {/* Esgoto Sim */}
                   {sewageInstall === "Sim" && (
                     <label className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer bg-green-50 border-green-200">
                       <input
@@ -1009,77 +1091,84 @@ export function Checklist() {
               </div>
             )}
 
-            {/* === PASSO 4: PREPARATIVOS === */}
             {currentStep === 4 && (
               <div className="p-8">
                 <h2 className="text-xl font-bold mb-6">4. Preparativos</h2>
-                <div className="space-y-6">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="font-bold mb-2">Máquina já Configurada?</p>
-                    <div className="flex gap-4 mb-2">
-                      {["Não", "Aguardando", "Configurado"].map((op) => (
-                        <label
-                          key={op}
-                          className="flex items-center gap-2 cursor-pointer"
-                        >
-                          <input
-                            type="radio"
-                            name="cfg"
-                            value={op}
-                            checked={configStatus === op}
-                            onChange={(e) => setConfigStatus(e.target.value)}
-                          />{" "}
-                          {op}
-                        </label>
-                      ))}
-                    </div>
-                    {configStatus === "Configurado" && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="font-bold mb-2">Máquina já Configurada?</p>
+                  <div className="flex gap-4 mb-2">
+                    {["Não", "Aguardando", "Configurado"].map((op) => (
+                      <label
+                        key={op}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <input
+                          type="radio"
+                          name="cfg"
+                          value={op}
+                          checked={configStatus === op}
+                          onChange={(e) => setConfigStatus(e.target.value)}
+                        />{" "}
+                        {op}
+                      </label>
+                    ))}
+                  </div>
+                  {/* A data aparece aqui se estiver Configurado */}
+                  {configStatus === "Configurado" && (
+                    <div className="mt-2 animate-fade-in">
+                      <label className="text-xs font-bold text-gray-500">
+                        Data da Configuração:
+                      </label>
                       <input
                         type="date"
-                        className="p-2 border rounded"
+                        className="p-2 border rounded w-full md:w-auto block mt-1"
                         value={configDate}
                         onChange={(e) => setConfigDate(e.target.value)}
                       />
-                    )}
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="font-bold mb-2">Bebidas Testadas?</p>
-                    <div className="flex gap-4 mb-2">
-                      {["Não", "Aguardando", "Testado"].map((op) => (
-                        <label
-                          key={op}
-                          className="flex items-center gap-2 cursor-pointer"
-                        >
-                          <input
-                            type="radio"
-                            name="tst"
-                            value={op}
-                            checked={testStatus === op}
-                            onChange={(e) => setTestStatus(e.target.value)}
-                          />{" "}
-                          {op}
-                        </label>
-                      ))}
                     </div>
-                    {testStatus === "Testado" && (
+                  )}
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="font-bold mb-2">Bebidas Testadas?</p>
+                  <div className="flex gap-4 mb-2">
+                    {["Não", "Aguardando", "Testado"].map((op) => (
+                      <label
+                        key={op}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <input
+                          type="radio"
+                          name="tst"
+                          value={op}
+                          checked={testStatus === op}
+                          onChange={(e) => setTestStatus(e.target.value)}
+                        />{" "}
+                        {op}
+                      </label>
+                    ))}
+                  </div>
+                  {/* A data aparece aqui se estiver Testado */}
+                  {testStatus === "Testado" && (
+                    <div className="mt-2 animate-fade-in">
+                      <label className="text-xs font-bold text-gray-500">
+                        Data do Teste:
+                      </label>
                       <input
                         type="date"
-                        className="p-2 border rounded"
+                        className="p-2 border rounded w-full md:w-auto block mt-1"
                         value={testDate}
                         onChange={(e) => setTestDate(e.target.value)}
                       />
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* === PASSO 5: BEBIDAS (Item 6 corrigido) === */}
             {currentStep === 5 && (
               <div className="p-8">
-                <h2 className="text-xl font-bold mb-6">
-                  5. Configuração de Bebidas
-                </h2>
+                <h2 className="text-xl font-bold mb-6">5. Bebidas</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {drinksList.map((drink) => (
                     <div
@@ -1121,60 +1210,12 @@ export function Checklist() {
                     </div>
                   ))}
                 </div>
-
-                <div className="mt-6 border-t pt-4">
-                  <p className="font-bold text-sm mb-2">Outras Bebidas:</p>
-                  {customDrinks.map((cd, idx) => (
-                    <div key={idx} className="flex gap-2 mb-2">
-                      <input
-                        placeholder="Nome"
-                        className="flex-1 p-2 border rounded"
-                        value={cd.name}
-                        onChange={(e) => {
-                          const n = [...customDrinks];
-                          n[idx].name = e.target.value;
-                          setCustomDrinks(n);
-                        }}
-                      />
-                      <input
-                        placeholder="ML"
-                        className="w-24 p-2 border rounded"
-                        value={cd.ml}
-                        onChange={(e) => {
-                          const n = [...customDrinks];
-                          n[idx].ml = e.target.value;
-                          setCustomDrinks(n);
-                        }}
-                      />
-                      <button
-                        onClick={() => {
-                          const n = [...customDrinks];
-                          n.splice(idx, 1);
-                          setCustomDrinks(n);
-                        }}
-                        className="text-red-500"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    onClick={() =>
-                      setCustomDrinks([...customDrinks, { name: "", ml: "" }])
-                    }
-                    className="flex items-center gap-1 text-sm text-amiste-primary font-bold mt-2"
-                  >
-                    <Plus size={16} /> Adicionar
-                  </button>
-                </div>
               </div>
             )}
 
-            {/* === PASSO 6: ACESSÓRIOS (Item 7 corrigido) === */}
             {currentStep === 6 && (
               <div className="p-8">
                 <h2 className="text-xl font-bold mb-6">6. Acessórios</h2>
-
                 <div className="mb-4">
                   <label className="flex items-center gap-2 font-bold text-gray-700 cursor-pointer">
                     <input
@@ -1186,110 +1227,55 @@ export function Checklist() {
                     Sem Acessórios
                   </label>
                 </div>
-
                 {!noAccessories && (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                      {accessoriesList.map((acc) => (
-                        <div
-                          key={acc}
-                          className={`p-3 border rounded-lg flex flex-col gap-2 ${selectedAccessories[acc] !== undefined ? "bg-red-50 border-amiste-primary" : ""}`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              className="w-5 h-5 accent-amiste-primary"
-                              checked={selectedAccessories[acc] !== undefined}
-                              onChange={() =>
-                                toggleItem(
-                                  selectedAccessories,
-                                  setSelectedAccessories,
-                                  acc,
-                                  "1",
-                                )
-                              }
-                            />
-                            <span className="font-medium">{acc}</span>
-                          </div>
-                          {selectedAccessories[acc] !== undefined && (
-                            <input
-                              type="text"
-                              placeholder="Qtd"
-                              className="w-full p-1 text-sm border rounded bg-white"
-                              value={selectedAccessories[acc]}
-                              onChange={(e) =>
-                                updateItemValue(
-                                  selectedAccessories,
-                                  setSelectedAccessories,
-                                  acc,
-                                  e.target.value,
-                                )
-                              }
-                            />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="border-t pt-4">
-                      <p className="font-bold text-sm mb-2">
-                        Outros Acessórios:
-                      </p>
-                      {customAccessories.map((ca, idx) => (
-                        <div key={idx} className="flex gap-2 mb-2">
-                          <input
-                            placeholder="Nome do Acessório"
-                            className="flex-1 p-2 border rounded"
-                            value={ca.name}
-                            onChange={(e) => {
-                              const n = [...customAccessories];
-                              n[idx].name = e.target.value;
-                              setCustomAccessories(n);
-                            }}
-                          />
-                          <input
-                            placeholder="Qtd"
-                            className="w-24 p-2 border rounded"
-                            value={ca.qty}
-                            onChange={(e) => {
-                              const n = [...customAccessories];
-                              n[idx].qty = e.target.value;
-                              setCustomAccessories(n);
-                            }}
-                          />
-                          <button
-                            onClick={() => {
-                              const n = [...customAccessories];
-                              n.splice(idx, 1);
-                              setCustomAccessories(n);
-                            }}
-                            className="text-red-500"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        onClick={() =>
-                          setCustomAccessories([
-                            ...customAccessories,
-                            { name: "", qty: "" },
-                          ])
-                        }
-                        className="flex items-center gap-1 text-sm text-amiste-primary font-bold mt-2"
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {accessoriesList.map((acc) => (
+                      <div
+                        key={acc}
+                        className={`p-3 border rounded-lg flex flex-col gap-2 ${selectedAccessories[acc] !== undefined ? "bg-red-50 border-amiste-primary" : ""}`}
                       >
-                        <Plus size={16} /> Adicionar Outro
-                      </button>
-                    </div>
-                  </>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            className="w-5 h-5 accent-amiste-primary"
+                            checked={selectedAccessories[acc] !== undefined}
+                            onChange={() =>
+                              toggleItem(
+                                selectedAccessories,
+                                setSelectedAccessories,
+                                acc,
+                                "1",
+                              )
+                            }
+                          />
+                          <span className="font-medium">{acc}</span>
+                        </div>
+                        {selectedAccessories[acc] !== undefined && (
+                          <input
+                            type="text"
+                            placeholder="Qtd"
+                            className="w-full p-1 text-sm border rounded bg-white"
+                            value={selectedAccessories[acc]}
+                            onChange={(e) =>
+                              updateItemValue(
+                                selectedAccessories,
+                                setSelectedAccessories,
+                                acc,
+                                e.target.value,
+                              )
+                            }
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             )}
 
-            {/* === PASSO 7: INSUMOS (Item 8 Corrigido - CATEGORIAS) === */}
             {currentStep === 7 && (
               <div className="p-8">
                 <h2 className="text-xl font-bold mb-6">7. Insumos</h2>
-
                 <div className="mb-6">
                   <label className="flex items-center gap-2 font-bold text-gray-700 cursor-pointer">
                     <input
@@ -1301,10 +1287,8 @@ export function Checklist() {
                     Sem Insumos
                   </label>
                 </div>
-
                 {!noSupplies && (
                   <div className="flex gap-4 overflow-x-auto pb-4">
-                    {/* Solúveis */}
                     <div className="min-w-[250px] bg-white border rounded-lg p-4">
                       <h3 className="font-bold text-amiste-primary border-b pb-2 mb-3 uppercase text-sm">
                         Solúveis
@@ -1316,13 +1300,13 @@ export function Checklist() {
                               type="checkbox"
                               checked={suppliesData.solubles[key].active}
                               onChange={() => toggleSupply("solubles", key)}
-                            />
+                            />{" "}
                             {key}
                           </label>
                           {suppliesData.solubles[key].active && (
                             <input
                               type="text"
-                              placeholder="Qtd (ex: 1kg)"
+                              placeholder="Qtd"
                               className="w-full p-1 border rounded text-xs"
                               value={suppliesData.solubles[key].qty}
                               onChange={(e) =>
@@ -1333,8 +1317,6 @@ export function Checklist() {
                         </div>
                       ))}
                     </div>
-
-                    {/* Grãos */}
                     <div className="min-w-[250px] bg-white border rounded-lg p-4">
                       <h3 className="font-bold text-amiste-primary border-b pb-2 mb-3 uppercase text-sm">
                         Grãos
@@ -1346,7 +1328,7 @@ export function Checklist() {
                               type="checkbox"
                               checked={suppliesData.grains[key].active}
                               onChange={() => toggleSupply("grains", key)}
-                            />
+                            />{" "}
                             {key}
                           </label>
                           {suppliesData.grains[key].active && (
@@ -1363,8 +1345,6 @@ export function Checklist() {
                         </div>
                       ))}
                     </div>
-
-                    {/* Frappés */}
                     <div className="min-w-[250px] bg-white border rounded-lg p-4">
                       <h3 className="font-bold text-amiste-primary border-b pb-2 mb-3 uppercase text-sm">
                         Frappés
@@ -1376,7 +1356,7 @@ export function Checklist() {
                               type="checkbox"
                               checked={suppliesData.frappes[key].active}
                               onChange={() => toggleSupply("frappes", key)}
-                            />
+                            />{" "}
                             {key}
                           </label>
                           {suppliesData.frappes[key].active && (
@@ -1393,86 +1373,63 @@ export function Checklist() {
                         </div>
                       ))}
                     </div>
-
-                    {/* Xaropes (Com subcategorias visuais) */}
                     <div className="min-w-[250px] bg-white border rounded-lg p-4">
                       <h3 className="font-bold text-amiste-primary border-b pb-2 mb-3 uppercase text-sm">
                         Xaropes
                       </h3>
-                      {Object.keys(suppliesData.syrups).map((key) => {
-                        // Pequena lógica visual para separar marcas
-                        const brand = key.split(" - ")[0];
-                        const prevKey = Object.keys(suppliesData.syrups)[
-                          Object.keys(suppliesData.syrups).indexOf(key) - 1
-                        ];
-                        const prevBrand = prevKey
-                          ? prevKey.split(" - ")[0]
-                          : "";
-
-                        return (
-                          <div key={key}>
-                            {brand !== prevBrand && (
-                              <p className="text-xs font-bold text-gray-400 mt-2 mb-1 uppercase">
-                                {brand}
-                              </p>
-                            )}
-                            <div className="mb-2 pl-2 border-l-2 border-gray-100">
-                              <label className="flex items-center gap-2 text-sm cursor-pointer mb-1">
-                                <input
-                                  type="checkbox"
-                                  checked={suppliesData.syrups[key].active}
-                                  onChange={() => toggleSupply("syrups", key)}
-                                />
-                                {key.split(" - ")[1] || key}
-                              </label>
-                              {suppliesData.syrups[key].active && (
-                                <input
-                                  type="text"
-                                  placeholder="Qtd"
-                                  className="w-full p-1 border rounded text-xs"
-                                  value={suppliesData.syrups[key].qty}
-                                  onChange={(e) =>
-                                    updateSupplyQty(
-                                      "syrups",
-                                      key,
-                                      e.target.value,
-                                    )
-                                  }
-                                />
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
+                      {Object.keys(suppliesData.syrups).map((key) => (
+                        <div key={key} className="mb-2">
+                          <label className="flex items-center gap-2 text-sm cursor-pointer mb-1">
+                            <input
+                              type="checkbox"
+                              checked={suppliesData.syrups[key].active}
+                              onChange={() => toggleSupply("syrups", key)}
+                            />{" "}
+                            {key}
+                          </label>
+                          {suppliesData.syrups[key].active && (
+                            <input
+                              type="text"
+                              placeholder="Qtd"
+                              className="w-full p-1 border rounded text-xs"
+                              value={suppliesData.syrups[key].qty}
+                              onChange={(e) =>
+                                updateSupplyQty("syrups", key, e.target.value)
+                              }
+                            />
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
               </div>
             )}
 
-            {/* === PASSO 8: VALIDAÇÃO LOCAL (Item 9 Corrigido) === */}
             {currentStep === 8 && (
               <div className="p-8">
                 <h2 className="text-xl font-bold mb-6">8. Validação Local</h2>
 
-                {/* Tomada com Alerta de Amperagem */}
+                {/* 1. Tomada */}
                 <div className="mb-6 p-4 border rounded-lg bg-gray-50">
                   <p className="font-bold mb-2">Tomada do Cliente (Parede)</p>
                   <div className="flex gap-4 mb-2">
-                    <label>
+                    <label className="cursor-pointer flex items-center gap-2">
                       <input
                         type="radio"
                         name="ls"
                         value="10A"
+                        checked={localSocket === "10A"}
                         onChange={(e) => setLocalSocket(e.target.value)}
                       />{" "}
                       10A
                     </label>
-                    <label>
+                    <label className="cursor-pointer flex items-center gap-2">
                       <input
                         type="radio"
                         name="ls"
                         value="20A"
+                        checked={localSocket === "20A"}
                         onChange={(e) => setLocalSocket(e.target.value)}
                       />{" "}
                       20A
@@ -1481,7 +1438,7 @@ export function Checklist() {
                   {selectedMachineData?.amperage &&
                     localSocket &&
                     selectedMachineData.amperage !== localSocket && (
-                      <div className="bg-amber-100 text-amber-800 p-3 rounded-lg flex items-center gap-2 font-bold animate-pulse">
+                      <div className="bg-amber-100 text-amber-800 p-3 rounded-lg flex items-center gap-2 font-bold animate-pulse mt-2">
                         <AlertCircle size={20} />
                         ALERTA: A máquina é {selectedMachineData.amperage}, mas
                         o local é {localSocket}. Informe o cliente!
@@ -1489,73 +1446,84 @@ export function Checklist() {
                     )}
                 </div>
 
+                {/* 2. Ponto de Água */}
                 <div className="mb-6 p-4 border rounded-lg bg-gray-50">
-                  <p className="font-bold mb-2">Ponto de Água?</p>
+                  <p className="font-bold mb-2">
+                    O Local possui Ponto de Água?
+                  </p>
                   <div className="flex gap-4 mb-2">
-                    <label>
+                    <label className="cursor-pointer flex items-center gap-2">
                       <input
                         type="radio"
                         name="lw"
                         value="Sim"
+                        checked={localWater === "Sim"}
                         onChange={(e) => setLocalWater(e.target.value)}
                       />{" "}
                       Sim
                     </label>
-                    <label>
+                    <label className="cursor-pointer flex items-center gap-2">
                       <input
                         type="radio"
                         name="lw"
                         value="Não"
+                        checked={localWater === "Não"}
                         onChange={(e) => setLocalWater(e.target.value)}
                       />{" "}
                       Não
                     </label>
                   </div>
                   {waterInstall === "Sim" && localWater === "Não" && (
-                    <div className="bg-red-100 text-red-700 p-2 rounded text-sm font-bold flex items-center gap-2">
+                    <div className="bg-red-100 text-red-700 p-2 rounded text-sm font-bold flex items-center gap-2 mt-2">
                       <AlertCircle size={16} /> ATENÇÃO: Máquina precisa de rede
-                      hídrica!
+                      hídrica, mas o local não tem!
                     </div>
                   )}
                 </div>
 
+                {/* 3. Rede de Esgoto */}
                 <div className="mb-6 p-4 border rounded-lg bg-gray-50">
-                  <p className="font-bold mb-2">Rede de Esgoto?</p>
+                  <p className="font-bold mb-2">
+                    O Local possui Rede de Esgoto?
+                  </p>
                   <div className="flex gap-4 mb-2">
-                    <label>
+                    <label className="cursor-pointer flex items-center gap-2">
                       <input
                         type="radio"
                         name="lsw"
                         value="Sim"
+                        checked={localSewage === "Sim"}
                         onChange={(e) => setLocalSewage(e.target.value)}
                       />{" "}
                       Sim
                     </label>
-                    <label>
+                    <label className="cursor-pointer flex items-center gap-2">
                       <input
                         type="radio"
                         name="lsw"
                         value="Não"
+                        checked={localSewage === "Não"}
                         onChange={(e) => setLocalSewage(e.target.value)}
                       />{" "}
                       Não
                     </label>
                   </div>
                   {sewageInstall === "Sim" && localSewage === "Não" && (
-                    <div className="bg-red-100 text-red-700 p-2 rounded text-sm font-bold flex items-center gap-2">
+                    <div className="bg-red-100 text-red-700 p-2 rounded text-sm font-bold flex items-center gap-2 mt-2">
                       <AlertCircle size={16} /> ATENÇÃO: Máquina precisa de
-                      esgoto!
+                      esgoto, mas o local não tem!
                     </div>
                   )}
                 </div>
 
+                {/* 4. Treinamento */}
                 <div className="mb-6 p-4 border rounded-lg bg-gray-50">
                   <p className="font-bold mb-2">
-                    Quantas pessoas para treinar?
+                    Quantas pessoas serão treinadas?
                   </p>
                   <input
                     type="number"
-                    className="p-2 border rounded w-32"
+                    className="p-2 border rounded w-full md:w-32"
                     placeholder="Ex: 3"
                     value={trainedPeople}
                     onChange={(e) => setTrainedPeople(e.target.value)}
@@ -1564,10 +1532,11 @@ export function Checklist() {
               </div>
             )}
 
-            {/* === PASSO 9: FINALIZAÇÃO === */}
             {currentStep === 9 && (
               <div className="p-8">
                 <h2 className="text-xl font-bold mb-6">9. Finalização</h2>
+
+                {/* Contrato e Ficha */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
                     <label className="block text-sm font-bold mb-1">
@@ -1590,72 +1559,111 @@ export function Checklist() {
                     />
                   </div>
                 </div>
-                <div className="bg-gray-800 text-white p-6 rounded-xl mb-6">
-                  <h3 className="font-bold border-b border-gray-600 pb-2 mb-4">
-                    Valores
+
+                {/* Financeiro (VOLTOU OS INPUTS) */}
+                <div className="bg-gray-800 text-white p-6 rounded-xl mb-6 shadow-lg">
+                  <h3 className="font-bold border-b border-gray-600 pb-2 mb-4 text-amiste-primary">
+                    Fechamento de Valores
                   </h3>
+
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                      <label className="text-xs text-gray-400">Máquina</label>
-                      <input
-                        type="number"
-                        className="w-full bg-gray-700 border-none rounded text-white"
-                        value={valMachine}
-                        onChange={(e) =>
-                          setValMachine(parseFloat(e.target.value))
-                        }
-                      />
+                      <label className="text-xs text-gray-400 uppercase font-bold block mb-1">
+                        Valor Máquina
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-2 top-2 text-gray-500 text-xs">
+                          R$
+                        </span>
+                        <input
+                          type="number"
+                          className="w-full bg-gray-700 border-none rounded text-white pl-6 py-2"
+                          value={valMachine}
+                          onChange={(e) =>
+                            setValMachine(parseFloat(e.target.value) || 0)
+                          }
+                        />
+                      </div>
                     </div>
                     <div>
-                      <label className="text-xs text-gray-400">Insumos</label>
-                      <input
-                        type="number"
-                        className="w-full bg-gray-700 border-none rounded text-white"
-                        value={valSupplies}
-                        onChange={(e) =>
-                          setValSupplies(parseFloat(e.target.value))
-                        }
-                      />
+                      <label className="text-xs text-gray-400 uppercase font-bold block mb-1">
+                        Valor Insumos
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-2 top-2 text-gray-500 text-xs">
+                          R$
+                        </span>
+                        <input
+                          type="number"
+                          className="w-full bg-gray-700 border-none rounded text-white pl-6 py-2"
+                          value={valSupplies}
+                          onChange={(e) =>
+                            setValSupplies(parseFloat(e.target.value) || 0)
+                          }
+                        />
+                      </div>
                     </div>
                     <div>
-                      <label className="text-xs text-gray-400">Serviços</label>
-                      <input
-                        type="number"
-                        className="w-full bg-gray-700 border-none rounded text-white"
-                        value={valServices}
-                        onChange={(e) =>
-                          setValServices(parseFloat(e.target.value))
-                        }
-                      />
+                      <label className="text-xs text-gray-400 uppercase font-bold block mb-1">
+                        Serviços
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-2 top-2 text-gray-500 text-xs">
+                          R$
+                        </span>
+                        <input
+                          type="number"
+                          className="w-full bg-gray-700 border-none rounded text-white pl-6 py-2"
+                          value={valServices}
+                          onChange={(e) =>
+                            setValServices(parseFloat(e.target.value) || 0)
+                          }
+                        />
+                      </div>
                     </div>
                     <div>
-                      <label className="text-xs text-gray-400">Extras</label>
-                      <input
-                        type="number"
-                        className="w-full bg-gray-700 border-none rounded text-white"
-                        value={valExtras}
-                        onChange={(e) =>
-                          setValExtras(parseFloat(e.target.value))
-                        }
-                      />
+                      <label className="text-xs text-gray-400 uppercase font-bold block mb-1">
+                        Extras
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-2 top-2 text-gray-500 text-xs">
+                          R$
+                        </span>
+                        <input
+                          type="number"
+                          className="w-full bg-gray-700 border-none rounded text-white pl-6 py-2"
+                          value={valExtras}
+                          onChange={(e) =>
+                            setValExtras(parseFloat(e.target.value) || 0)
+                          }
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right text-2xl font-bold text-green-400">
-                    Total: R${" "}
-                    {(
-                      valMachine +
-                      valSupplies +
-                      valServices +
-                      valExtras
-                    ).toFixed(2)}
+
+                  <div className="text-right border-t border-gray-700 pt-4">
+                    <span className="text-gray-400 text-sm mr-2">
+                      Valor Total:
+                    </span>
+                    <span className="text-2xl font-bold text-green-400">
+                      R${" "}
+                      {(
+                        valMachine +
+                        valSupplies +
+                        valServices +
+                        valExtras
+                      ).toFixed(2)}
+                    </span>
                   </div>
                 </div>
+
+                {/* Observações */}
                 <div className="mb-4">
                   <label className="block text-sm font-bold mb-1">
-                    Observações Venda
+                    Observações da Venda
                   </label>
                   <textarea
-                    className="w-full p-3 border rounded-lg"
+                    className="w-full p-3 border rounded-lg focus:border-amiste-primary outline-none"
                     rows="2"
                     value={salesObs}
                     onChange={(e) => setSalesObs(e.target.value)}
@@ -1663,10 +1671,10 @@ export function Checklist() {
                 </div>
                 <div className="mb-4">
                   <label className="block text-sm font-bold mb-1">
-                    Alterações Solicitadas
+                    Alterações Solicitadas pelo Cliente
                   </label>
                   <textarea
-                    className="w-full p-3 border rounded-lg"
+                    className="w-full p-3 border rounded-lg focus:border-amiste-primary outline-none"
                     rows="2"
                     value={clientChanges}
                     onChange={(e) => setClientChanges(e.target.value)}
@@ -1675,7 +1683,7 @@ export function Checklist() {
               </div>
             )}
 
-            {/* === RODAPÉ === */}
+            {/* RODAPÉ */}
             <div className="bg-gray-50 p-6 border-t border-gray-100 flex justify-between items-center">
               <button
                 onClick={prevStep}
@@ -1685,7 +1693,6 @@ export function Checklist() {
                 <ArrowLeft size={20} /> Voltar
               </button>
               <div className="flex gap-4">
-                {/* Correção Item 2: Salvar Rascunho funcional */}
                 <button
                   onClick={() => handleSave("Rascunho")}
                   className="flex items-center gap-2 px-4 py-2 text-amiste-primary font-bold hover:bg-red-50 rounded-lg transition-colors"

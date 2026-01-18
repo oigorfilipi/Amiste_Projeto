@@ -11,8 +11,9 @@ import {
   DollarSign,
   Calendar,
   ChevronLeft,
-  Printer,
   Trash2,
+  History,
+  RotateCcw,
 } from "lucide-react";
 
 export function Portfolio() {
@@ -22,6 +23,9 @@ export function Portfolio() {
   const [loading, setLoading] = useState(true);
 
   // --- ESTADOS DO EDITOR ---
+  const [editingId, setEditingId] = useState(null); // ID se estiver editando
+  const [versions, setVersions] = useState([]); // Histórico de versões
+
   const [selectedMachine, setSelectedMachine] = useState(null);
   const [customerName, setCustomerName] = useState("");
   const [negotiationType, setNegotiationType] = useState("Venda");
@@ -61,6 +65,8 @@ export function Portfolio() {
 
   // --- AÇÕES ---
   function handleNewPortfolio() {
+    setEditingId(null);
+    setVersions([]);
     setSelectedMachine(null);
     setCustomerName("");
     setNegotiationType("Venda");
@@ -70,6 +76,38 @@ export function Portfolio() {
       "Equipamento de alta performance, ideal para seu estabelecimento. Design moderno e extração perfeita.",
     );
     setView("editor");
+  }
+
+  function handleEditPortfolio(p) {
+    setEditingId(p.id);
+    setVersions(p.versions || []); // Carrega histórico
+
+    // Carrega dados atuais
+    setSelectedMachine(p.machine_data);
+    setCustomerName(p.customer_name);
+    setNegotiationType(p.negotiation_type);
+    setTotalValue(p.total_value);
+    setInstallments(p.installments);
+    setDescription(p.description);
+
+    setView("editor");
+  }
+
+  // Restaurar Versão Antiga
+  function handleRestoreVersion(v) {
+    if (
+      !confirm(
+        `Restaurar para a versão de ${new Date(v.saved_at).toLocaleString()}?`,
+      )
+    )
+      return;
+
+    setCustomerName(v.customer_name);
+    setNegotiationType(v.negotiation_type);
+    setTotalValue(v.total_value);
+    setInstallments(v.installments);
+    setDescription(v.description);
+    alert("Dados restaurados! Clique em Salvar para confirmar essa alteração.");
   }
 
   function handleSelectMachine(e) {
@@ -82,7 +120,8 @@ export function Portfolio() {
     if (!selectedMachine || !customerName)
       return alert("Selecione a máquina e informe o cliente.");
 
-    const payload = {
+    // Dados atuais
+    const currentData = {
       machine_id: selectedMachine.id,
       machine_data: selectedMachine,
       customer_name: customerName,
@@ -94,19 +133,50 @@ export function Portfolio() {
       status: "Gerado",
     };
 
-    const { error } = await supabase.from("portfolios").insert(payload);
+    try {
+      if (editingId) {
+        // MODO EDIÇÃO: Salva versão anterior no histórico antes de atualizar
+        const oldVersion = {
+          saved_at: new Date().toISOString(),
+          customer_name,
+          negotiationType,
+          totalValue,
+          installments,
+          description,
+        };
+        const newVersionsList = [oldVersion, ...versions];
 
-    if (error) {
-      alert("Erro ao salvar: " + error.message);
-    } else {
-      alert("Proposta salva no histórico!");
+        const { error } = await supabase
+          .from("portfolios")
+          .update({ ...currentData, versions: newVersionsList })
+          .eq("id", editingId);
+
+        if (error) throw error;
+        alert("Proposta atualizada com sucesso!");
+      } else {
+        // MODO CRIAÇÃO
+        const { error } = await supabase.from("portfolios").insert(currentData);
+        if (error) throw error;
+        alert("Proposta criada!");
+      }
+
       fetchPortfolios();
       setView("list");
+    } catch (error) {
+      alert("Erro ao salvar: " + error.message);
     }
   }
 
+  // --- LÓGICA DE EXCLUSÃO ---
+  async function handleDelete(id, e) {
+    e.stopPropagation(); // Evita abrir o editor
+    if (!confirm("Excluir esta proposta?")) return;
+    await supabase.from("portfolios").delete().eq("id", id);
+    fetchPortfolios();
+  }
+
   // Objeto de dados para o Preview e PDF
-  const currentData = {
+  const previewData = {
     machine_data: selectedMachine,
     customer_name: customerName,
     negotiation_type: negotiationType,
@@ -123,7 +193,7 @@ export function Portfolio() {
 
   return (
     <div className="min-h-screen pb-20 bg-gray-100">
-      {/* --- MODO LISTA (HISTÓRICO) --- */}
+      {/* --- MODO LISTA (GRID VISUAL) --- */}
       {view === "list" && (
         <div className="p-8">
           <div className="mb-8 flex justify-between items-center">
@@ -152,40 +222,53 @@ export function Portfolio() {
             {savedPortfolios.map((p) => (
               <div
                 key={p.id}
-                className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-xl hover:border-amiste-primary transition-all group"
+                onClick={() => handleEditPortfolio(p)}
+                className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-xl hover:border-amiste-primary transition-all group cursor-pointer overflow-hidden flex flex-col"
               >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="bg-gray-100 p-2 rounded-lg text-gray-600">
-                    <FileText size={24} />
-                  </div>
-                  <span className="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded">
-                    {formatMoney(p.total_value)}
+                {/* Imagem de Capa */}
+                <div className="h-48 bg-gray-50 p-4 flex items-center justify-center relative border-b border-gray-100">
+                  <img
+                    src={p.machine_data?.photo_url}
+                    alt={p.machine_data?.name}
+                    className="h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <span className="absolute top-3 right-3 bg-white/90 px-2 py-1 text-xs font-bold rounded shadow-sm text-gray-600">
+                    {p.negotiation_type}
                   </span>
                 </div>
-                <h3 className="font-bold text-gray-800 text-lg truncate">
-                  {p.customer_name}
-                </h3>
-                <p className="text-sm text-gray-500 mb-1">
-                  {p.machine_data?.name}
-                </p>
-                <p className="text-xs text-gray-400 mb-4">
-                  {new Date(p.created_at).toLocaleDateString()}
-                </p>
 
-                <PDFDownloadLink
-                  document={<PortfolioPDF data={p} />}
-                  fileName={`proposta_${p.customer_name}.pdf`}
-                  className="flex items-center justify-center gap-2 w-full py-2 border border-gray-200 rounded-lg text-sm font-bold text-gray-600 hover:bg-amiste-primary hover:text-white hover:border-amiste-primary transition-colors"
-                >
-                  <ArrowRight size={16} /> Baixar PDF
-                </PDFDownloadLink>
+                <div className="p-5 flex-1 flex flex-col">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3
+                      className="font-bold text-gray-800 text-lg truncate flex-1"
+                      title={p.customer_name}
+                    >
+                      {p.customer_name}
+                    </h3>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-4">
+                    {p.machine_data?.name}
+                  </p>
+
+                  <div className="mt-auto flex items-center justify-between">
+                    <span className="font-bold text-green-600 bg-green-50 px-2 py-1 rounded text-sm">
+                      {formatMoney(p.total_value)}
+                    </span>
+                    <button
+                      onClick={(e) => handleDelete(p.id, e)}
+                      className="p-2 text-gray-300 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* --- MODO EDITOR (VISUAL IGUAL AO QUE VOCÊ MANDOU) --- */}
+      {/* --- MODO EDITOR --- */}
       {view === "editor" && (
         <div className="flex flex-col h-screen overflow-hidden">
           {/* Header Editor */}
@@ -203,119 +286,165 @@ export function Portfolio() {
                   {selectedMachine
                     ? selectedMachine.name
                     : "Selecione uma máquina"}
+                  {editingId && " • (Modo Edição)"}
                 </p>
               </div>
             </div>
             <div className="flex gap-3">
+              {/* Botão Baixar PDF direto do Editor */}
+              {selectedMachine && (
+                <PDFDownloadLink
+                  document={<PortfolioPDF data={previewData} />}
+                  fileName={`proposta_${customerName || "rascunho"}.pdf`}
+                  className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded flex items-center gap-2 text-sm font-bold transition"
+                >
+                  <Search size={18} /> Ver PDF
+                </PDFDownloadLink>
+              )}
               <button
                 onClick={handleSave}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center gap-2 text-sm font-bold shadow-lg transition"
               >
-                <Save size={18} /> Salvar
+                <Save size={18} />{" "}
+                {editingId ? "Salvar Edição" : "Criar Proposta"}
               </button>
             </div>
           </div>
 
           <div className="flex flex-1 overflow-hidden">
             {/* SIDEBAR DE CONTROLE */}
-            <div className="w-80 bg-white border-r border-gray-200 p-6 overflow-y-auto flex flex-col gap-6 shadow-xl z-10">
-              <h3 className="font-bold text-gray-800 text-lg border-b pb-2">
-                Configuração
-              </h3>
+            <div className="w-96 bg-white border-r border-gray-200 flex flex-col shadow-xl z-10">
+              <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-6">
+                {/* Seção Histórico (Só aparece se tiver versões) */}
+                {versions.length > 0 && (
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                    <h4 className="font-bold text-blue-800 text-sm mb-2 flex items-center gap-2">
+                      <History size={16} /> Histórico de Alterações
+                    </h4>
+                    <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                      {versions.map((v, i) => (
+                        <button
+                          key={i}
+                          onClick={() => handleRestoreVersion(v)}
+                          className="w-full text-left text-xs p-2 bg-white border rounded hover:bg-blue-100 transition flex justify-between items-center group"
+                        >
+                          <span className="text-gray-600">
+                            {new Date(v.saved_at).toLocaleDateString()}{" "}
+                            {new Date(v.saved_at).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                          <RotateCcw
+                            size={12}
+                            className="text-blue-500 opacity-0 group-hover:opacity-100"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-              <div>
-                <label className="block text-sm font-bold text-gray-600 mb-1">
-                  Máquina
-                </label>
-                <select
-                  className="w-full p-3 border rounded-lg bg-gray-50"
-                  onChange={handleSelectMachine}
-                >
-                  <option value="">Selecione...</option>
-                  {machines.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                <h3 className="font-bold text-gray-800 text-lg border-b pb-2">
+                  Configuração
+                </h3>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-600 mb-1">
-                  Cliente
-                </label>
-                <input
-                  className="w-full p-3 border rounded-lg bg-gray-50"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Nome do Cliente"
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-600 mb-1">
+                    Máquina
+                  </label>
+                  <select
+                    className="w-full p-3 border rounded-lg bg-gray-50"
+                    onChange={handleSelectMachine}
+                    value={selectedMachine?.id || ""}
+                  >
+                    <option value="">Selecione...</option>
+                    {machines.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-600 mb-1">
-                  Modalidade
-                </label>
-                <select
-                  className="w-full p-3 border rounded-lg bg-gray-50"
-                  value={negotiationType}
-                  onChange={(e) => setNegotiationType(e.target.value)}
-                >
-                  <option>Venda</option>
-                  <option>Aluguel</option>
-                  <option>Comodato</option>
-                  <option>Evento</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-600 mb-1">
-                  Valor Total (R$)
-                </label>
-                <div className="relative">
+                <div>
+                  <label className="block text-sm font-bold text-gray-600 mb-1">
+                    Cliente
+                  </label>
                   <input
-                    type="number"
-                    className="w-full p-3 pl-10 border rounded-lg bg-gray-50 font-bold"
-                    value={totalValue}
-                    onChange={(e) => setTotalValue(e.target.value)}
+                    className="w-full p-3 border rounded-lg bg-gray-50"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Nome do Cliente"
                   />
-                  <DollarSign
-                    size={18}
-                    className="absolute left-3 top-3.5 text-gray-400"
-                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-600 mb-1">
+                    Modalidade
+                  </label>
+                  <select
+                    className="w-full p-3 border rounded-lg bg-gray-50"
+                    value={negotiationType}
+                    onChange={(e) => setNegotiationType(e.target.value)}
+                  >
+                    <option>Venda</option>
+                    <option>Aluguel</option>
+                    <option>Comodato</option>
+                    <option>Evento</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-600 mb-1">
+                    Valor Total (R$)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      className="w-full p-3 pl-10 border rounded-lg bg-gray-50 font-bold"
+                      value={totalValue}
+                      onChange={(e) => setTotalValue(e.target.value)}
+                    />
+                    <DollarSign
+                      size={18}
+                      className="absolute left-3 top-3.5 text-gray-400"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-600 mb-1">
+                    Parcelas
+                  </label>
+                  <select
+                    className="w-full p-3 border rounded-lg bg-gray-50"
+                    value={installments}
+                    onChange={(e) => setInstallments(e.target.value)}
+                  >
+                    {[1, 2, 3, 4, 5, 6, 10, 12, 18, 24, 36, 48].map((n) => (
+                      <option key={n} value={n}>
+                        {n}x
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-600 mb-1">
+                    Descrição
+                  </label>
+                  <textarea
+                    className="w-full p-3 border rounded-lg bg-gray-50 text-sm"
+                    rows="6"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  ></textarea>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-600 mb-1">
-                  Parcelas
-                </label>
-                <select
-                  className="w-full p-3 border rounded-lg bg-gray-50"
-                  value={installments}
-                  onChange={(e) => setInstallments(e.target.value)}
-                >
-                  {[1, 2, 3, 4, 5, 6, 10, 12, 18, 24].map((n) => (
-                    <option key={n} value={n}>
-                      {n}x
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-600 mb-1">
-                  Descrição
-                </label>
-                <textarea
-                  className="w-full p-3 border rounded-lg bg-gray-50 text-sm"
-                  rows="4"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                ></textarea>
-              </div>
-
-              <div className="mt-auto bg-gray-900 text-white p-4 rounded-lg">
+              {/* Resumo Rodapé Sidebar */}
+              <div className="bg-gray-800 text-white p-4 border-t border-gray-700">
                 <p className="text-xs text-gray-400 uppercase font-bold mb-1">
                   Parcela Mensal:
                 </p>
@@ -340,15 +469,17 @@ export function Portfolio() {
 
                 {selectedMachine ? (
                   <div className="flex flex-col flex-1 px-8 pb-32">
-                    {/* Hero */}
-                    <div className="flex gap-8 mb-8 h-64">
-                      <div className="w-1/2 bg-gray-50 rounded-lg flex items-center justify-center p-4">
+                    {/* Hero com Imagem Grande */}
+                    <div className="flex gap-8 mb-6 h-[250px]">
+                      {" "}
+                      {/* Altura fixa maior */}
+                      <div className="w-1/2 bg-gray-50 rounded-lg flex items-center justify-center p-2">
                         <img
                           src={selectedMachine.photo_url}
-                          className="max-h-full object-contain mix-blend-multiply"
+                          className="w-full h-full object-contain mix-blend-multiply"
                         />
                       </div>
-                      <div className="w-1/2 flex flex-col justify-center">
+                      <div className="w-1/2 flex flex-col justify-start pt-2">
                         <h2 className="text-3xl font-bold text-gray-900 mb-1 leading-tight">
                           {selectedMachine.name}
                         </h2>
@@ -395,28 +526,28 @@ export function Portfolio() {
                   </div>
                 )}
 
-                {/* FOOTER DARK FINANCEIRO */}
-                <div className="absolute bottom-0 left-0 right-0 h-28 bg-gray-900 text-white px-8 flex justify-between items-center">
+                {/* FOOTER VERMELHO (CORRIGIDO) */}
+                <div className="absolute bottom-0 left-0 right-0 h-28 bg-amiste-primary text-white px-8 flex justify-between items-center">
                   <div>
-                    <p className="text-amiste-primary text-xs font-bold uppercase mb-1">
+                    <p className="text-red-200 text-xs font-bold uppercase mb-1">
                       Proposta preparada para
                     </p>
                     <p className="text-xl font-bold">
                       {customerName || "Cliente"}
                     </p>
-                    <p className="text-gray-500 text-xs mt-1">
+                    <p className="text-red-300 text-xs mt-1">
                       Modalidade: {negotiationType}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-gray-500 text-xs uppercase mb-1">
+                    <p className="text-red-200 text-xs uppercase mb-1">
                       Investimento Total
                     </p>
-                    <p className="text-4xl font-bold text-green-400">
+                    <p className="text-4xl font-bold text-white">
                       {formatMoney(totalValue)}
                     </p>
                     {installments > 1 && (
-                      <p className="text-sm text-white mt-1">
+                      <p className="text-sm text-red-100 mt-1">
                         {installments}x de {formatMoney(installmentValue)}
                       </p>
                     )}

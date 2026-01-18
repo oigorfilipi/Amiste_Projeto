@@ -12,7 +12,12 @@ const styles = StyleSheet.create({
   page: { padding: 0, fontFamily: "Helvetica", backgroundColor: "#fff" },
 
   // Header
-  header: { padding: 30, borderBottomWidth: 2, borderBottomColor: "#A82020" },
+  header: {
+    padding: 30,
+    paddingBottom: 20,
+    borderBottomWidth: 2,
+    borderBottomColor: "#A82020",
+  },
   brandTitle: {
     fontSize: 28,
     fontWeight: "bold",
@@ -29,21 +34,28 @@ const styles = StyleSheet.create({
   // Corpo
   body: { padding: 30, flex: 1 },
 
-  // Hero (Imagem + Título)
-  heroContainer: { flexDirection: "row", marginBottom: 20, height: 200 },
+  // Hero (Imagem + Título) - Mudei para flex-col para evitar empurrar texto
+  heroContainer: {
+    flexDirection: "row",
+    marginBottom: 20,
+    alignItems: "flex-start",
+  },
+
+  // Imagem MAIOR (Aumentei width de 45% para 50% e altura fixa maior)
   heroImageContainer: {
-    width: "45%",
-    height: "100%",
+    width: "50%",
+    height: 250,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#fff",
     borderRadius: 8,
+    marginRight: 20,
   },
-  heroImage: { width: "90%", height: "90%", objectFit: "contain" },
+  heroImage: { width: "100%", height: "100%", objectFit: "contain" },
 
-  heroContent: { width: "55%", paddingLeft: 20, justifyContent: "center" },
+  heroContent: { width: "50%", justifyContent: "flex-start" }, // Garante que começa do topo
   machineTitle: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "bold",
     color: "#111",
     marginBottom: 4,
@@ -51,19 +63,21 @@ const styles = StyleSheet.create({
   machineSubtitle: {
     fontSize: 12,
     color: "#666",
-    marginBottom: 10,
+    marginBottom: 15,
     textTransform: "uppercase",
   },
+
+  // Descrição com wrap para não quebrar layout
   description: {
-    fontSize: 10,
+    fontSize: 11,
     color: "#444",
-    lineHeight: 1.5,
+    lineHeight: 1.6,
     textAlign: "justify",
   },
 
   // Specs
   specsContainer: {
-    marginTop: 10,
+    marginTop: 20,
     padding: 15,
     backgroundColor: "#f8fafc",
     borderRadius: 8,
@@ -85,14 +99,14 @@ const styles = StyleSheet.create({
   specLabel: { fontSize: 9, width: 80, fontWeight: "bold", color: "#475569" },
   specValue: { fontSize: 9, color: "#1e293b", flex: 1 },
 
-  // Footer Financeiro (O estilo Dark que você gostou)
+  // Footer VERMELHO (#A82020)
   footer: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     height: 100,
-    backgroundColor: "#111827",
+    backgroundColor: "#A82020", // <--- MUDANÇA DE COR
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -101,24 +115,24 @@ const styles = StyleSheet.create({
 
   clientBox: { justifyContent: "center" },
   labelSmall: {
-    color: "#A82020",
+    color: "#ffcccc",
     fontSize: 9,
     fontWeight: "bold",
     textTransform: "uppercase",
     marginBottom: 2,
   },
-  clientName: { color: "white", fontSize: 14, fontWeight: "bold" },
-  negotiationTag: { color: "#9ca3af", fontSize: 10, marginTop: 2 },
+  clientName: { color: "white", fontSize: 16, fontWeight: "bold" },
+  negotiationTag: { color: "#fca5a5", fontSize: 10, marginTop: 2 },
 
   priceBox: { alignItems: "flex-end" },
   priceLabel: {
-    color: "#6b7280",
+    color: "#ffcccc",
     fontSize: 9,
     textTransform: "uppercase",
     marginBottom: 2,
   },
-  totalValue: { color: "#4ade80", fontSize: 28, fontWeight: "bold" }, // Verde Neon
-  installments: { color: "white", fontSize: 10, marginTop: 2 },
+  totalValue: { color: "#ffffff", fontSize: 32, fontWeight: "bold" }, // Branco no fundo vermelho
+  installments: { color: "#ffe4e6", fontSize: 11, marginTop: 2 },
 });
 
 const formatMoney = (val) =>
@@ -140,7 +154,7 @@ export function PortfolioPDF({ data }) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* Header Clean */}
+        {/* Header */}
         <View style={styles.header}>
           <Text style={styles.brandTitle}>AMISTE CAFÉ</Text>
           <Text style={styles.brandSub}>Proposta Comercial</Text>
@@ -195,7 +209,7 @@ export function PortfolioPDF({ data }) {
           </View>
         </View>
 
-        {/* Footer Dark */}
+        {/* Footer Vermelho */}
         <View style={styles.footer}>
           <View style={styles.clientBox}>
             <Text style={styles.labelSmall}>Proposta preparada para</Text>

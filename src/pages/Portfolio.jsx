@@ -14,6 +14,9 @@ import {
   Clock,
   Youtube,
   ExternalLink,
+  Calendar,
+  User,
+  Coffee,
 } from "lucide-react";
 
 export function Portfolio() {
@@ -21,10 +24,11 @@ export function Portfolio() {
   const [machines, setMachines] = useState([]);
   const [savedPortfolios, setSavedPortfolios] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // --- ESTADOS DO EDITOR ---
   const [editingId, setEditingId] = useState(null);
-  const [versions, setVersions] = useState([]); // Histórico
+  const [versions, setVersions] = useState([]);
 
   const [selectedMachine, setSelectedMachine] = useState(null);
   const [customerName, setCustomerName] = useState("");
@@ -33,11 +37,8 @@ export function Portfolio() {
   const [installments, setInstallments] = useState(1);
   const [description, setDescription] = useState("");
   const [installmentValue, setInstallmentValue] = useState(0);
-
-  // NOVO ESTADO
   const [videoUrl, setVideoUrl] = useState("");
 
-  // Inicialização
   useEffect(() => {
     fetchMachines();
     fetchPortfolios();
@@ -74,7 +75,7 @@ export function Portfolio() {
     setNegotiationType("Venda");
     setTotalValue(0);
     setInstallments(1);
-    setVideoUrl(""); // Reset
+    setVideoUrl("");
     setDescription(
       "Equipamento de alta performance, ideal para seu estabelecimento. Design moderno e extração perfeita.",
     );
@@ -84,23 +85,19 @@ export function Portfolio() {
   function handleEditPortfolio(p) {
     setEditingId(p.id);
     setVersions(p.versions || []);
-
     setSelectedMachine(p.machine_data);
     setCustomerName(p.customer_name);
     setNegotiationType(p.negotiation_type);
     setTotalValue(p.total_value);
     setInstallments(p.installments);
     setDescription(p.description);
-    setVideoUrl(p.video_url || ""); // Carrega link
-
+    setVideoUrl(p.video_url || "");
     setView("editor");
   }
 
-  // Restaurar Versão
   function handleRestoreVersion(e) {
     const index = e.target.value;
     if (index === "") return;
-
     const v = versions[index];
     if (
       !confirm(
@@ -110,14 +107,13 @@ export function Portfolio() {
       e.target.value = "";
       return;
     }
-
     setCustomerName(v.customer_name);
     setNegotiationType(v.negotiation_type);
     setTotalValue(v.total_value);
     setInstallments(v.installments);
     setDescription(v.description);
-    setVideoUrl(v.video_url || ""); // Restaura link
-    alert("Dados restaurados! Clique em Salvar para confirmar essa alteração.");
+    setVideoUrl(v.video_url || "");
+    alert("Dados restaurados! Clique em Salvar para confirmar.");
     e.target.value = "";
   }
 
@@ -140,13 +136,12 @@ export function Portfolio() {
       installments: installments,
       installment_value: installmentValue,
       description: description,
-      video_url: videoUrl, // Salva link
+      video_url: videoUrl,
       status: "Gerado",
     };
 
     try {
       if (editingId) {
-        // Salva histórico
         const oldVersion = {
           saved_at: new Date().toISOString(),
           customer_name: customerName,
@@ -157,12 +152,10 @@ export function Portfolio() {
           video_url: videoUrl,
         };
         const newVersionsList = [oldVersion, ...versions].slice(0, 10);
-
         const { error } = await supabase
           .from("portfolios")
           .update({ ...currentData, versions: newVersionsList })
           .eq("id", editingId);
-
         if (error) throw error;
         alert("Proposta atualizada!");
       } else {
@@ -170,7 +163,6 @@ export function Portfolio() {
         if (error) throw error;
         alert("Proposta criada!");
       }
-
       fetchPortfolios();
       setView("list");
     } catch (error) {
@@ -185,6 +177,11 @@ export function Portfolio() {
     fetchPortfolios();
   }
 
+  const formatMoney = (val) =>
+    val
+      ? `R$ ${parseFloat(val).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+      : "R$ 0,00";
+
   const previewData = {
     machine_data: selectedMachine,
     customer_name: customerName,
@@ -196,140 +193,139 @@ export function Portfolio() {
     video_url: videoUrl,
   };
 
-  const formatMoney = (val) =>
-    val
-      ? `R$ ${val.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
-      : "R$ 0,00";
-
-  // Componente "Mini A4" para a lista
-  const MiniA4Thumbnail = ({ portfolio }) => {
-    return (
-      <div className="w-full aspect-[210/297] bg-white relative flex flex-col shadow-sm border border-gray-100 overflow-hidden group-hover:shadow-md transition-all">
-        {/* Mini Header Vermelho */}
-        <div className="h-[10%] bg-white border-b border-amiste-primary px-3 flex flex-col justify-center">
-          <div className="text-[10px] font-bold text-gray-800 uppercase leading-none">
-            AMISTE CAFÉ
-          </div>
-          <div className="text-[6px] font-bold text-amiste-primary uppercase tracking-widest mt-0.5">
-            Proposta
-          </div>
-        </div>
-
-        {/* Mini Corpo */}
-        <div className="flex-1 p-3 flex flex-col items-center">
-          <div className="w-full h-1/2 flex items-center justify-center mb-2">
-            <img
-              src={portfolio.machine_data?.photo_url}
-              className="max-h-full max-w-full object-contain mix-blend-multiply"
-            />
-          </div>
-          <div className="w-full">
-            <div className="text-[10px] font-bold text-gray-900 leading-tight truncate">
-              {portfolio.machine_data?.name}
-            </div>
-            <div className="text-[8px] text-gray-500 uppercase font-bold truncate mb-1">
-              {portfolio.machine_data?.brand}
-            </div>
-            <div className="w-full h-[1px] bg-gray-100 mb-1"></div>
-            <div className="text-[7px] text-gray-400 line-clamp-3 leading-tight break-words">
-              {portfolio.description}
-            </div>
-          </div>
-        </div>
-
-        {/* Mini Footer Vermelho */}
-        <div className="h-[12%] bg-amiste-primary text-white px-3 flex justify-between items-center">
-          <div>
-            <div className="text-[6px] text-red-200 uppercase">Para</div>
-            <div className="text-[8px] font-bold truncate max-w-[60px]">
-              {portfolio.customer_name}
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-[8px] font-bold">
-              {formatMoney(portfolio.total_value)}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const filteredPortfolios = savedPortfolios.filter(
+    (p) =>
+      p.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.machine_data?.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
   return (
-    <div className="min-h-screen pb-20 bg-gray-100">
+    <div className="min-h-screen bg-gray-50/50 pb-20">
       {/* --- MODO LISTA --- */}
       {view === "list" && (
-        <div className="p-8">
-          <div className="mb-8 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto p-6 md:p-8 animate-fade-in">
+          <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
             <div>
               <h1 className="text-3xl font-display font-bold text-gray-800">
                 Portfólio & Propostas
               </h1>
-              <p className="text-gray-500">Gerador de orçamentos comerciais.</p>
+              <p className="text-gray-500 mt-1">
+                Gerador de orçamentos comerciais.
+              </p>
             </div>
-            <button
-              onClick={handleNewPortfolio}
-              className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-3 rounded-lg font-bold flex items-center gap-2 shadow-lg transition-transform hover:-translate-y-1"
-            >
-              <Plus size={20} /> Nova Proposta
-            </button>
+
+            <div className="flex gap-3 w-full md:w-auto">
+              <div className="relative flex-1 md:w-64">
+                <Search
+                  className="absolute left-3 top-3 text-gray-400"
+                  size={20}
+                />
+                <input
+                  className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
+                  placeholder="Buscar proposta..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <button
+                onClick={handleNewPortfolio}
+                className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-2"
+              >
+                <Plus size={20} />{" "}
+                <span className="hidden md:inline">Nova Proposta</span>
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 animate-fade-in">
-            {savedPortfolios.length === 0 && !loading && (
-              <div className="col-span-full text-center py-20 text-gray-400 bg-white rounded-xl border border-dashed">
-                <FileText size={48} className="mx-auto mb-2 opacity-20" />
-                <p>Nenhuma proposta criada ainda.</p>
-              </div>
-            )}
-
-            {savedPortfolios.map((p) => (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {filteredPortfolios.map((p) => (
               <div
                 key={p.id}
                 onClick={() => handleEditPortfolio(p)}
-                className="group cursor-pointer flex flex-col items-center"
+                className="group cursor-pointer flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden hover:-translate-y-1"
               >
-                {/* Thumbnail */}
-                <div className="w-full relative transition-transform duration-300 hover:-translate-y-2">
-                  <MiniA4Thumbnail portfolio={p} />
+                {/* Mini A4 Preview */}
+                <div className="w-full aspect-[210/297] bg-white relative flex flex-col border-b border-gray-100">
+                  {/* Header Mini */}
+                  <div className="h-[15%] bg-white px-4 pt-4">
+                    <div className="w-8 h-1 bg-amiste-primary mb-1"></div>
+                    <div className="text-[8px] font-black text-gray-800 uppercase tracking-widest">
+                      AMISTE
+                    </div>
+                  </div>
+                  {/* Body Mini */}
+                  <div className="flex-1 flex flex-col items-center justify-center p-4">
+                    {p.machine_data?.photo_url ? (
+                      <img
+                        src={p.machine_data.photo_url}
+                        className="w-20 h-20 object-contain mix-blend-multiply mb-2"
+                      />
+                    ) : (
+                      <Coffee size={24} className="text-gray-300" />
+                    )}
+                    <div className="text-[9px] font-bold text-gray-800 text-center leading-tight line-clamp-2">
+                      {p.machine_data?.name}
+                    </div>
+                  </div>
+                  {/* Footer Mini */}
+                  <div className="h-[15%] bg-amiste-primary flex items-center justify-between px-3 text-white">
+                    <div className="text-[8px] font-bold truncate max-w-[60px]">
+                      {p.customer_name}
+                    </div>
+                    <div className="text-[8px] font-bold">
+                      {formatMoney(p.total_value)}
+                    </div>
+                  </div>
+
+                  {/* Delete Button (Hover) */}
                   <button
                     onClick={(e) => handleDelete(p.id, e)}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white p-1.5 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                    title="Excluir"
+                    className="absolute top-2 right-2 bg-white text-red-500 p-1.5 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50 z-10"
                   >
                     <Trash2 size={14} />
                   </button>
                 </div>
 
-                <div className="mt-3 text-center">
-                  <p className="font-bold text-gray-800 text-sm truncate w-40">
+                <div className="p-4 bg-white">
+                  <h3
+                    className="font-bold text-gray-800 text-sm truncate"
+                    title={p.customer_name}
+                  >
                     {p.customer_name}
-                  </p>
-                  <p className="text-xs text-gray-500">
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
+                    <Calendar size={12} />{" "}
                     {new Date(p.created_at).toLocaleDateString()}
-                  </p>
+                  </div>
                 </div>
               </div>
             ))}
+            {loading && (
+              <p className="col-span-full text-center py-10 text-gray-400">
+                Carregando propostas...
+              </p>
+            )}
           </div>
         </div>
       )}
 
       {/* --- MODO EDITOR --- */}
       {view === "editor" && (
-        <div className="flex flex-col h-screen overflow-hidden">
+        <div className="flex flex-col h-screen overflow-hidden bg-gray-100">
           {/* Header Editor */}
-          <div className="bg-gray-900 text-white p-4 shadow-md z-10 flex justify-between items-center">
+          <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center z-20 shadow-sm">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setView("list")}
-                className="p-2 hover:bg-gray-700 rounded-full transition"
+                className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"
               >
                 <ChevronLeft size={24} />
               </button>
               <div>
-                <h1 className="text-lg font-bold">Editor de Proposta</h1>
-                <p className="text-xs text-gray-400">
+                <h1 className="text-lg font-bold text-gray-800 leading-tight">
+                  Editor de Proposta
+                </h1>
+                <p className="text-xs text-gray-500">
                   {selectedMachine
                     ? selectedMachine.name
                     : "Selecione uma máquina"}
@@ -341,39 +337,40 @@ export function Portfolio() {
                 <PDFDownloadLink
                   document={<PortfolioPDF data={previewData} />}
                   fileName={`proposta_${customerName || "rascunho"}.pdf`}
-                  className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded flex items-center gap-2 text-sm font-bold transition"
+                  className="px-4 py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors"
                 >
-                  <Search size={18} /> Ver PDF
+                  <Search size={16} />{" "}
+                  <span className="hidden md:inline">Visualizar PDF</span>
                 </PDFDownloadLink>
               )}
               <button
                 onClick={handleSave}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center gap-2 text-sm font-bold shadow-lg transition"
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-md flex items-center gap-2 transition-all"
               >
-                <Save size={18} />
-                {editingId ? "Salvar Edição" : "Criar Proposta"}
+                <Save size={18} />{" "}
+                {editingId ? "Salvar Alterações" : "Criar Proposta"}
               </button>
             </div>
           </div>
 
           <div className="flex flex-1 overflow-hidden">
-            {/* SIDEBAR DE CONTROLE */}
-            <div className="w-96 bg-white border-r border-gray-200 flex flex-col shadow-xl z-10">
-              <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-6">
+            {/* SIDEBAR DE EDIÇÃO (Esquerda) */}
+            <div className="w-96 bg-white border-r border-gray-200 flex flex-col z-10 overflow-y-auto">
+              <div className="p-6 space-y-6">
                 {/* Histórico */}
                 {versions.length > 0 && (
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                  <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
                     <label className="text-xs font-bold text-blue-800 mb-2 flex items-center gap-1">
-                      <History size={14} /> Restaurar Versão Anterior:
+                      <History size={14} /> Histórico de Versões
                     </label>
                     <div className="relative">
                       <select
-                        className="w-full p-2 pl-8 border border-blue-200 rounded text-sm bg-white focus:outline-none focus:border-blue-400 text-gray-600"
+                        className="w-full p-2 pl-8 border border-blue-200 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-200 text-gray-600 appearance-none"
                         onChange={handleRestoreVersion}
                         defaultValue=""
                       >
                         <option value="" disabled>
-                          Selecione para restaurar...
+                          Restaurar versão anterior...
                         </option>
                         {versions.slice(0, 5).map((v, i) => (
                           <option key={i} value={i}>
@@ -384,250 +381,253 @@ export function Portfolio() {
                       </select>
                       <Clock
                         size={14}
-                        className="absolute left-2 top-2.5 text-gray-400"
+                        className="absolute left-3 top-3 text-blue-400"
                       />
                     </div>
                   </div>
                 )}
 
-                <h3 className="font-bold text-gray-800 text-lg border-b pb-2">
-                  Configuração
-                </h3>
+                <div className="space-y-4">
+                  <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide border-b border-gray-100 pb-2">
+                    Configuração Básica
+                  </h3>
 
-                <div>
-                  <label className="block text-sm font-bold text-gray-600 mb-1">
-                    Máquina
-                  </label>
-                  <select
-                    className="w-full p-3 border rounded-lg bg-gray-50"
-                    onChange={handleSelectMachine}
-                    value={selectedMachine?.id || ""}
-                  >
-                    <option value="">Selecione...</option>
-                    {machines.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Máquina
+                    </label>
+                    <select
+                      className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
+                      onChange={handleSelectMachine}
+                      value={selectedMachine?.id || ""}
+                    >
+                      <option value="">Selecione...</option>
+                      {machines.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-gray-600 mb-1">
-                    Cliente
-                  </label>
-                  <input
-                    className="w-full p-3 border rounded-lg bg-gray-50"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Nome do Cliente"
-                  />
-                </div>
-
-                {/* NOVO CAMPO: LINK DE VÍDEO */}
-                <div>
-                  <label className="block text-sm font-bold text-gray-600 mb-1">
-                    Link de Vídeo/Apresentação
-                  </label>
-                  <div className="relative">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Cliente
+                    </label>
                     <input
-                      className="w-full p-3 pl-10 border rounded-lg bg-gray-50 text-sm"
-                      value={videoUrl}
-                      onChange={(e) => setVideoUrl(e.target.value)}
-                      placeholder="Ex: youtube.com/..."
+                      className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="Nome da Empresa/Pessoa"
                     />
-                    <Youtube
-                      size={18}
-                      className="absolute left-3 top-3.5 text-red-500"
-                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Link de Vídeo (Opcional)
+                    </label>
+                    <div className="relative">
+                      <input
+                        className="w-full p-3 pl-10 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
+                        value={videoUrl}
+                        onChange={(e) => setVideoUrl(e.target.value)}
+                        placeholder="youtube.com/..."
+                      />
+                      <Youtube
+                        size={18}
+                        className="absolute left-3 top-3.5 text-red-500"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-gray-600 mb-1">
-                    Modalidade
-                  </label>
-                  <select
-                    className="w-full p-3 border rounded-lg bg-gray-50"
-                    value={negotiationType}
-                    onChange={(e) => setNegotiationType(e.target.value)}
-                  >
-                    <option>Venda</option>
-                    <option>Aluguel</option>
-                    <option>Comodato</option>
-                    <option>Evento</option>
-                  </select>
-                </div>
+                <div className="space-y-4">
+                  <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide border-b border-gray-100 pb-2 pt-4">
+                    Valores e Condições
+                  </h3>
 
-                <div>
-                  <label className="block text-sm font-bold text-gray-600 mb-1">
-                    Valor Total (R$)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      className="w-full p-3 pl-10 border rounded-lg bg-gray-50 font-bold"
-                      value={totalValue}
-                      onChange={(e) => setTotalValue(e.target.value)}
-                    />
-                    <DollarSign
-                      size={18}
-                      className="absolute left-3 top-3.5 text-gray-400"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                        Modalidade
+                      </label>
+                      <select
+                        className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none"
+                        value={negotiationType}
+                        onChange={(e) => setNegotiationType(e.target.value)}
+                      >
+                        <option>Venda</option>
+                        <option>Aluguel</option>
+                        <option>Comodato</option>
+                        <option>Evento</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                        Parcelas
+                      </label>
+                      <select
+                        className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none"
+                        value={installments}
+                        onChange={(e) => setInstallments(e.target.value)}
+                      >
+                        {[1, 2, 3, 4, 5, 6, 10, 12, 18, 24, 36, 48].map((n) => (
+                          <option key={n} value={n}>
+                            {n}x
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Valor Total
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        className="w-full p-3 pl-10 border border-gray-200 rounded-xl bg-gray-50 font-bold text-gray-800 focus:bg-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                        value={totalValue}
+                        onChange={(e) => setTotalValue(e.target.value)}
+                      />
+                      <DollarSign
+                        size={18}
+                        className="absolute left-3 top-3.5 text-gray-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Texto da Proposta
+                    </label>
+                    <textarea
+                      className="w-full p-3 border border-gray-200 rounded-xl h-32 focus:ring-2 focus:ring-amiste-primary outline-none text-sm leading-relaxed resize-none"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                    ></textarea>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-gray-600 mb-1">
-                    Parcelas
-                  </label>
-                  <select
-                    className="w-full p-3 border rounded-lg bg-gray-50"
-                    value={installments}
-                    onChange={(e) => setInstallments(e.target.value)}
-                  >
-                    {[1, 2, 3, 4, 5, 6, 10, 12, 18, 24, 36, 48].map((n) => (
-                      <option key={n} value={n}>
-                        {n}x
-                      </option>
-                    ))}
-                  </select>
+                {/* Resumo Sidebar */}
+                <div className="bg-gray-900 text-white p-5 rounded-2xl shadow-lg mt-4">
+                  <p className="text-xs text-gray-400 uppercase font-bold mb-1">
+                    Parcela Mensal Estimada
+                  </p>
+                  <p className="text-3xl font-bold text-green-400 tracking-tight">
+                    {formatMoney(installmentValue)}
+                  </p>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-600 mb-1">
-                    Descrição
-                  </label>
-                  <textarea
-                    className="w-full p-3 border rounded-lg bg-gray-50 text-sm"
-                    rows="6"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                  ></textarea>
-                </div>
-              </div>
-
-              {/* Resumo Rodapé Sidebar */}
-              <div className="bg-gray-800 text-white p-4 border-t border-gray-700">
-                <p className="text-xs text-gray-400 uppercase font-bold mb-1">
-                  Parcela Mensal:
-                </p>
-                <p className="text-xl font-bold text-green-400">
-                  {formatMoney(installmentValue)}
-                </p>
               </div>
             </div>
 
             {/* PREVIEW DA FOLHA (Direita) */}
-            <div className="flex-1 bg-gray-200 overflow-y-auto p-8 flex justify-center items-start">
-              <div className="bg-white w-full max-w-[210mm] min-h-[297mm] shadow-2xl flex flex-col relative overflow-hidden">
+            <div className="flex-1 bg-gray-100 overflow-y-auto p-8 flex justify-center items-start">
+              <div className="bg-white w-[210mm] min-h-[297mm] shadow-2xl rounded-sm flex flex-col relative overflow-hidden transition-all scale-[0.8] md:scale-100 origin-top">
                 {/* Header Folha */}
-                <div className="border-b-2 border-amiste-primary pb-4 m-8 mb-4">
-                  <h1 className="text-4xl font-extrabold text-gray-900 uppercase tracking-tight">
+                <div className="h-24 border-b-4 border-amiste-primary mx-8 mt-8 flex flex-col justify-center">
+                  <h1 className="text-4xl font-black text-gray-900 uppercase tracking-tighter">
                     AMISTE CAFÉ
                   </h1>
-                  <p className="text-amiste-primary font-bold tracking-[0.2em] text-xs uppercase">
-                    Proposta Comercial
+                  <p className="text-amiste-primary font-bold tracking-[0.3em] text-xs uppercase mt-1">
+                    Soluções em Café Corporativo
                   </p>
                 </div>
 
                 {selectedMachine ? (
-                  <div className="flex flex-col flex-1 px-8 pb-32">
-                    {/* Hero com Imagem Grande */}
-                    <div className="flex gap-8 mb-6">
-                      <div className="w-1/2 h-[250px] bg-gray-50 rounded-lg flex items-center justify-center p-2">
+                  <div className="flex flex-col flex-1 px-8 py-8 relative">
+                    {/* Hero */}
+                    <div className="flex gap-8 mb-12">
+                      <div className="w-1/2 h-[300px] bg-gray-50 rounded-xl flex items-center justify-center p-4">
                         <img
                           src={selectedMachine.photo_url}
                           className="w-full h-full object-contain mix-blend-multiply"
                         />
                       </div>
-                      <div className="w-1/2 flex flex-col justify-start pt-2">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-1 leading-tight">
+                      <div className="w-1/2 flex flex-col justify-center">
+                        <span className="text-amiste-primary font-bold uppercase tracking-widest text-xs mb-2">
+                          Equipamento Selecionado
+                        </span>
+                        <h2 className="text-4xl font-bold text-gray-900 leading-none mb-2">
                           {selectedMachine.name}
                         </h2>
-                        <p className="text-gray-500 uppercase tracking-wide text-sm mb-4 font-bold">
+                        <p className="text-gray-500 font-medium text-sm mb-6">
                           {selectedMachine.brand} | {selectedMachine.model}
                         </p>
-
-                        {/* AQUI ESTÁ A CORREÇÃO DO TEXTO: break-words */}
-                        <p className="text-sm text-gray-600 leading-relaxed text-left whitespace-pre-wrap break-words w-full">
+                        <div className="w-12 h-1 bg-gray-200 mb-6"></div>
+                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
                           {description}
                         </p>
 
-                        {/* Preview do Link */}
                         {videoUrl && (
-                          <div className="mt-4 p-2 bg-blue-50 border border-blue-100 rounded text-xs text-blue-800 flex items-center gap-2">
-                            <ExternalLink size={14} />
-                            Link incluso no PDF:{" "}
-                            <span className="underline truncate max-w-[200px]">
-                              {videoUrl}
-                            </span>
+                          <div className="mt-6 flex items-center gap-2 text-xs text-blue-600 bg-blue-50 p-2 rounded-lg border border-blue-100 w-fit">
+                            <ExternalLink size={14} /> Link interativo no PDF
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Specs */}
-                    <div className="mt-4">
-                      <h3 className="text-amiste-primary font-bold uppercase text-sm mb-3 border-l-4 border-amiste-primary pl-2">
-                        Especificações Técnicas
-                      </h3>
-                      <div className="bg-gray-50 p-6 rounded-lg border border-gray-100 grid grid-cols-2 gap-y-2 text-sm text-gray-700">
-                        <p>
-                          <b>Tipo:</b> {selectedMachine.type}
+                    {/* Specs Grid */}
+                    <div className="grid grid-cols-2 gap-x-12 gap-y-4 mb-12">
+                      {[
+                        { l: "Tipo", v: selectedMachine.type },
+                        { l: "Voltagem", v: selectedMachine.voltage },
+                        { l: "Cor", v: selectedMachine.color },
+                        { l: "Abastecimento", v: selectedMachine.water_system },
+                        { l: "Reservatórios", v: selectedMachine.reservoirs },
+                        { l: "Dimensões", v: selectedMachine.dimensions },
+                      ].map((item, i) => (
+                        <div
+                          key={i}
+                          className="flex justify-between border-b border-gray-100 pb-2"
+                        >
+                          <span className="text-gray-400 text-xs font-bold uppercase">
+                            {item.l}
+                          </span>
+                          <span className="text-gray-800 text-sm font-bold">
+                            {item.v}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Footer Vermelho (Absolute Bottom) */}
+                    <div className="absolute bottom-0 left-0 w-full h-32 bg-amiste-primary text-white px-8 flex justify-between items-center">
+                      <div>
+                        <p className="text-red-200 text-xs font-bold uppercase tracking-wider mb-1">
+                          Proposta elaborada para
                         </p>
-                        <p>
-                          <b>Voltagem:</b> {selectedMachine.voltage}
+                        <p className="text-2xl font-bold">
+                          {customerName || "Nome do Cliente"}
                         </p>
-                        <p>
-                          <b>Cor:</b> {selectedMachine.color}
+                        <p className="text-red-200/80 text-xs mt-1">
+                          Modalidade: {negotiationType}
                         </p>
-                        <p>
-                          <b>Hídrica:</b> {selectedMachine.water_system}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-red-200 text-xs uppercase font-bold mb-1">
+                          Investimento Total
                         </p>
-                        <p>
-                          <b>Reservatórios:</b> {selectedMachine.reservoirs}
+                        <p className="text-5xl font-bold tracking-tight">
+                          {formatMoney(totalValue)}
                         </p>
-                        <p>
-                          <b>Dimensões:</b> {selectedMachine.dimensions}
-                        </p>
+                        {installments > 1 && (
+                          <p className="text-red-100 font-medium text-sm mt-1">
+                            {installments}x de {formatMoney(installmentValue)}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center text-gray-300">
-                    <Search size={48} className="mb-4" />
-                    <p>Selecione um modelo na esquerda.</p>
+                    <Coffee size={64} className="mb-4 opacity-20" />
+                    <p className="font-bold text-lg">
+                      Selecione um modelo para visualizar
+                    </p>
                   </div>
                 )}
-
-                {/* FOOTER VERMELHO */}
-                <div className="absolute bottom-0 left-0 right-0 h-28 bg-amiste-primary text-white px-8 flex justify-between items-center">
-                  <div>
-                    <p className="text-red-200 text-xs font-bold uppercase mb-1">
-                      Proposta preparada para
-                    </p>
-                    <p className="text-xl font-bold">
-                      {customerName || "Cliente"}
-                    </p>
-                    <p className="text-red-300 text-xs mt-1">
-                      Modalidade: {negotiationType}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-red-200 text-xs uppercase mb-1">
-                      Investimento Total
-                    </p>
-                    <p className="text-4xl font-bold text-white">
-                      {formatMoney(totalValue)}
-                    </p>
-                    {installments > 1 && (
-                      <p className="text-sm text-red-100 mt-1">
-                        {installments}x de {formatMoney(installmentValue)}
-                      </p>
-                    )}
-                  </div>
-                </div>
               </div>
             </div>
           </div>

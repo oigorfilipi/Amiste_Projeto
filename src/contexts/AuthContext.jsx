@@ -6,7 +6,7 @@ export const AuthContext = createContext({});
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [realProfile, setRealProfile] = useState(null);
-  const [impersonatedProfile, setImpersonatedProfile] = useState(null); // Perfil "Teste"
+  const [impersonatedProfile, setImpersonatedProfile] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export function AuthProvider({ children }) {
     if (error) throw error;
   }
 
-  // --- LOGICA DE TESTE (IMPERSONATION) ---
+  // --- LOGICA DE TESTE ---
   const activeProfile = impersonatedProfile || realProfile;
   const isImpersonating = !!impersonatedProfile;
 
@@ -71,49 +71,60 @@ export function AuthProvider({ children }) {
     setImpersonatedProfile(null);
   }
 
-  // --- PERMISSÕES (Regras do Jogo) ---
+  // --- PERMISSÕES ---
   const role = activeProfile?.role || "Visitante";
 
-  /* CARGOS: 'Dono', 'Financeiro', 'Administrativo', 'Comercial', 'Técnico', 'ADM'
-   */
+  /* CARGOS ATIVOS: 'Dono', 'ADM', 'Financeiro', 'Administrativo', 'Técnico'
+     CORREÇÃO DE VENDAS: Aceita tanto 'Comercial' quanto 'Vendedor'
+  */
 
   const permissions = {
     // 1. FINANCEIRO: Ver totais e gráficos
     canViewFinancials: ["Dono", "Financeiro", "ADM"].includes(role),
 
-    // 2. CHECKLIST (Criar): Dono, Adm, Comercial, Técnico, Administrativo (Todos menos Financeiro)
+    // 2. CHECKLIST (Criar): Vendas agora incluso
     canCreateChecklist: [
       "Dono",
       "ADM",
       "Comercial",
+      "Vendedor",
       "Técnico",
       "Administrativo",
     ].includes(role),
 
-    // 3. CHECKLIST (Editar/Excluir): Regras mais restritas
-    canEditChecklist: ["Dono", "ADM", "Técnico", "Comercial"].includes(role),
+    // 3. CHECKLIST (Editar): Vendas e Técnico
+    canEditChecklist: [
+      "Dono",
+      "ADM",
+      "Técnico",
+      "Comercial",
+      "Vendedor",
+    ].includes(role),
+
+    // 4. CHECKLIST (Excluir): Só chefia
     canDeleteChecklist: ["Dono", "ADM"].includes(role),
 
-    // 4. MÁQUINAS (Cadastro): Todos menos Financeiro
+    // 5. MÁQUINAS: Vendas pode ver/cadastrar? (Geralmente sim, para orçamentos)
     canManageMachines: [
       "Dono",
       "ADM",
       "Administrativo",
       "Comercial",
+      "Vendedor",
       "Técnico",
     ].includes(role),
 
-    // 5. PORTFÓLIO: Comercial, Dono, ADM
-    canManagePortfolio: ["Dono", "ADM", "Comercial"].includes(role),
+    // 6. PORTFÓLIO: Vendas OBRIGATÓRIO aqui
+    canManagePortfolio: ["Dono", "ADM", "Comercial", "Vendedor"].includes(role),
 
-    // 6. HISTÓRICO: SOMENTE O DONO (E você ADM se quiser debugar, mas deixei só Dono conforme pedido)
-    // Se você (ADM) quiser ver também, adicione 'ADM' na lista abaixo.
+    // 7. HISTÓRICO: SOMENTE DONO
     canViewHistory: ["Dono"].includes(role),
 
-    // 7. WIKI: Técnico, Dono, ADM
+    // 8. WIKI: Todo mundo vê, mas quem edita? (Abaixo regra de visualização/edição geral)
+    // Deixei genérico, se precisar restringir edição criamos canEditWiki
     canManageWiki: ["Dono", "ADM", "Técnico"].includes(role),
 
-    // 8. USUÁRIOS (Ver lista de teste): Só Dono e ADM
+    // 9. USUÁRIOS: Só Dono e ADM veem a lista
     canManageUsers: ["Dono", "ADM"].includes(role),
   };
 
@@ -128,7 +139,7 @@ export function AuthProvider({ children }) {
         startImpersonation,
         stopImpersonation,
         role,
-        permissions, // Exportando as regras
+        permissions,
         signIn,
         logOut,
         loadingAuth,

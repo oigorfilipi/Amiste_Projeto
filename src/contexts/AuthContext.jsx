@@ -74,58 +74,69 @@ export function AuthProvider({ children }) {
   // --- PERMISSÕES ---
   const role = activeProfile?.role || "Visitante";
 
-  /* CARGOS ATIVOS: 'Dono', 'ADM', 'Financeiro', 'Administrativo', 'Técnico'
-     CORREÇÃO DE VENDAS: Aceita tanto 'Comercial' quanto 'Vendedor'
+  /* NOVA HIERARQUIA:
+     - DEV  = Desenvolvedor (Deus)
+     - Dono = Dono (Deus)
+     - ADM  = Administrativo (Operacional)
+     - Comercial / Vendedor
+     - Técnico
+     - Financeiro
   */
 
   const permissions = {
     // 1. FINANCEIRO: Ver totais e gráficos
-    canViewFinancials: ["Dono", "Financeiro", "ADM"].includes(role),
+    canViewFinancials: ["Dono", "Financeiro", "DEV"].includes(role),
 
-    // 2. CHECKLIST (Criar): Vendas agora incluso
+    // 2. CHECKLIST (Criar): Todo mundo operacional
     canCreateChecklist: [
       "Dono",
-      "ADM",
+      "DEV",
+      "ADM", // Antigo Administrativo
       "Comercial",
       "Vendedor",
       "Técnico",
-      "Administrativo",
     ].includes(role),
 
-    // 3. CHECKLIST (Editar): Vendas e Técnico
+    // 3. CHECKLIST (Editar): Quem põe a mão na massa
     canEditChecklist: [
       "Dono",
+      "DEV",
       "ADM",
       "Técnico",
       "Comercial",
       "Vendedor",
     ].includes(role),
 
-    // 4. CHECKLIST (Excluir): Só chefia
-    canDeleteChecklist: ["Dono", "ADM"].includes(role),
+    // 4. CHECKLIST (Excluir): Só os Chefes Supremos
+    canDeleteChecklist: ["Dono", "DEV"].includes(role),
 
-    // 5. MÁQUINAS: Vendas pode ver/cadastrar? (Geralmente sim, para orçamentos)
+    // 5. MÁQUINAS: Todo mundo menos financeiro
     canManageMachines: [
       "Dono",
+      "DEV",
       "ADM",
-      "Administrativo",
       "Comercial",
       "Vendedor",
       "Técnico",
     ].includes(role),
 
-    // 6. PORTFÓLIO: Vendas OBRIGATÓRIO aqui
-    canManagePortfolio: ["Dono", "ADM", "Comercial", "Vendedor"].includes(role),
+    // 6. PORTFÓLIO: Vendas e Chefia (ADM Operacional tb pode se quiser)
+    canManagePortfolio: [
+      "Dono",
+      "DEV",
+      "Comercial",
+      "Vendedor",
+      "ADM",
+    ].includes(role),
 
-    // 7. HISTÓRICO: SOMENTE DONO
-    canViewHistory: ["Dono"].includes(role),
+    // 7. HISTÓRICO: Só Chefia Suprema
+    canViewHistory: ["Dono", "DEV"].includes(role),
 
-    // 8. WIKI: Todo mundo vê, mas quem edita? (Abaixo regra de visualização/edição geral)
-    // Deixei genérico, se precisar restringir edição criamos canEditWiki
-    canManageWiki: ["Dono", "ADM", "Técnico"].includes(role),
+    // 8. WIKI: Todo mundo vê, edição restrita a técnicos e chefia
+    canManageWiki: ["Dono", "DEV", "Técnico"].includes(role),
 
-    // 9. USUÁRIOS: Só Dono e ADM veem a lista
-    canManageUsers: ["Dono", "ADM"].includes(role),
+    // 9. USUÁRIOS: Só Chefia Suprema vê a lista para testar/excluir
+    canManageUsers: ["Dono", "DEV"].includes(role),
   };
 
   return (

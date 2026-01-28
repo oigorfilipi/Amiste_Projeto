@@ -24,7 +24,7 @@ export function Register() {
   const [gender, setGender] = useState("");
   const [birthDate, setBirthDate] = useState("");
 
-  // Mudei o padrão para Comercial
+  // Padrão agora é Comercial
   const [role, setRole] = useState("Comercial");
 
   // Verificação Robô
@@ -239,8 +239,13 @@ export function Register() {
                   <option value="Comercial">Comercial / Vendas</option>
                   <option value="Financeiro">Financeiro</option>
                   <option value="Técnico">Técnico</option>
-                  <option value="Administrativo">Administrativo</option>
-                  <option value="ADM">ADM (Acesso Total)</option>
+
+                  {/* ADM agora é o cargo operacional Administrativo */}
+                  <option value="ADM">Administrativo</option>
+
+                  {/* DEV é o novo Deus (Você) */}
+                  <option value="DEV">Desenvolvedor (System Admin)</option>
+
                   <option value="Dono">Dono</option>
                 </select>
               </div>

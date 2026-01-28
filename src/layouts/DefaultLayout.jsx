@@ -34,17 +34,15 @@ export function DefaultLayout() {
 
   const [teamMembers, setTeamMembers] = useState([]);
 
-  // --- CORREÇÃO 1: O useEffect precisa rodar para ADM *E* Dono ---
   useEffect(() => {
-    // Antes estava: if (realProfile?.role === 'ADM') ...
-    // Agora verifica se está na lista de permitidos:
+    // Busca equipe apenas se for ADM ou Dono REAIS
     if (realProfile && ["ADM", "Dono"].includes(realProfile.role)) {
       fetchTeam();
     }
   }, [realProfile, isImpersonating]);
 
   async function fetchTeam() {
-    // Busca todos que NÃO são o próprio usuário logado
+    // Busca todos exceto o próprio usuário logado
     const { data } = await supabase
       .from("profiles")
       .select("*")
@@ -53,11 +51,24 @@ export function DefaultLayout() {
     if (data) setTeamMembers(data);
   }
 
-  // --- FUNÇÃO DE DELETAR ---
-  async function handleDeleteMember(id, name) {
+  // Função Auxiliar para as Tags (CORREÇÃO PEDIDA)
+  function getRoleTag(role) {
+    if (role === "ADM") return "DEV"; // Você vira DEV
+    if (role === "Administrativo") return "ADM"; // Administrativo vira ADM
+    return role ? role.substring(0, 3).toUpperCase() : "UNK"; // O resto pega as 3 primeiras letras
+  }
+
+  async function handleDeleteMember(id, name, role) {
+    // Bloqueio extra no front-end para evitar clique acidental
+    if (["ADM", "Dono"].includes(role)) {
+      return alert(
+        "Ação Bloqueada: Não é possível excluir contas de nível Superior (Dono/ADM).",
+      );
+    }
+
     if (
       !confirm(
-        `Tem certeza que deseja EXCLUIR a conta de "${name}"?\n\nEssa ação é irreversível e o funcionário perderá o acesso imediatamente.`,
+        `Tem certeza que deseja EXCLUIR a conta de "${name}"?\n\nEssa ação é irreversível.`,
       )
     )
       return;
@@ -69,7 +80,7 @@ export function DefaultLayout() {
       fetchTeam();
     } catch (error) {
       console.error(error);
-      alert("Erro ao excluir: " + error.message);
+      alert("Erro ao excluir. Verifique se você tem permissão.");
     }
   }
 
@@ -176,7 +187,7 @@ export function DefaultLayout() {
             </Link>
           )}
 
-          {/* --- CORREÇÃO 2: A LISTA VISUAL TAMBÉM PRECISA INCLUIR 'Dono' --- */}
+          {/* LISTA DE EQUIPE */}
           {realProfile &&
             ["ADM", "Dono"].includes(realProfile.role) &&
             !isImpersonating && (
@@ -191,49 +202,69 @@ export function DefaultLayout() {
                     </p>
                   )}
 
-                  {teamMembers.map((member) => (
-                    <div
-                      key={member.id}
-                      className="group flex items-center justify-between px-2 py-1 hover:bg-gray-100 rounded-lg"
-                    >
-                      {/* Botão Testar */}
-                      <button
-                        onClick={() => {
-                          if (
-                            confirm(
-                              `Entrar no modo visualização como ${member.role}?`,
-                            )
-                          ) {
-                            startImpersonation(member);
-                          }
-                        }}
-                        className="flex-1 text-left flex items-center gap-2 py-1"
-                        title="Clique para testar este perfil"
-                      >
-                        <div className="flex flex-col">
-                          <span className="text-xs font-bold text-gray-700 truncate w-24">
-                            {member.nickname || member.full_name?.split(" ")[0]}
-                          </span>
-                          <span className="text-[9px] text-gray-400 bg-gray-200 px-1 rounded w-fit">
-                            {member.role
-                              ? member.role.substring(0, 3).toUpperCase()
-                              : "UNK"}
-                          </span>
-                        </div>
-                      </button>
+                  {teamMembers.map((member) => {
+                    // Define se esse membro é "Intocável" (VIP)
+                    const isVip = ["ADM", "Dono"].includes(member.role);
 
-                      {/* Botão Excluir */}
-                      <button
-                        onClick={() =>
-                          handleDeleteMember(member.id, member.full_name)
-                        }
-                        className="p-1.5 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded transition-all opacity-0 group-hover:opacity-100"
-                        title="Excluir Colaborador"
+                    return (
+                      <div
+                        key={member.id}
+                        className="group flex items-center justify-between px-2 py-1 hover:bg-gray-100 rounded-lg"
                       >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  ))}
+                        {/* Botão Testar (Sempre visível) */}
+                        <button
+                          onClick={() => {
+                            if (
+                              confirm(
+                                `Entrar no modo visualização como ${member.role}?`,
+                              )
+                            ) {
+                              startImpersonation(member);
+                            }
+                          }}
+                          className="flex-1 text-left flex items-center gap-2 py-1"
+                          title="Clique para testar este perfil"
+                        >
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-gray-700 truncate w-24">
+                              {member.nickname ||
+                                member.full_name?.split(" ")[0]}
+                            </span>
+                            {/* AQUI ESTÁ A TAG CORRIGIDA */}
+                            <span
+                              className={`text-[9px] px-1 rounded w-fit ${member.role === "ADM" ? "bg-purple-100 text-purple-700 font-bold" : "bg-gray-200 text-gray-600"}`}
+                            >
+                              {getRoleTag(member.role)}
+                            </span>
+                          </div>
+                        </button>
+
+                        {/* Botão Excluir (Só aparece se NÃO for VIP) */}
+                        {!isVip && (
+                          <button
+                            onClick={() =>
+                              handleDeleteMember(
+                                member.id,
+                                member.full_name,
+                                member.role,
+                              )
+                            }
+                            className="p-1.5 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded transition-all opacity-0 group-hover:opacity-100"
+                            title="Excluir Colaborador"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+
+                        {/* Ícone de Cadeado para VIPs (Opcional, só visual) */}
+                        {isVip && (
+                          <div className="p-1.5 text-gray-300 opacity-20">
+                            <LockIcon size={12} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -263,3 +294,21 @@ export function DefaultLayout() {
     </div>
   );
 }
+
+// Icone cadeado simples inline para não precisar importar se não quiser
+const LockIcon = ({ size }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+  </svg>
+);

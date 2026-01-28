@@ -23,7 +23,9 @@ export function Register() {
   const [cpf, setCpf] = useState("");
   const [gender, setGender] = useState("");
   const [birthDate, setBirthDate] = useState("");
-  const [role, setRole] = useState("Vendedor");
+
+  // Mudei o padrão para Comercial
+  const [role, setRole] = useState("Comercial");
 
   // Verificação Robô
   const [isHuman, setIsHuman] = useState(false);
@@ -234,12 +236,12 @@ export function Register() {
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
                 >
-                  <option value="Vendedor">Vendedor</option>
+                  <option value="Comercial">Comercial / Vendas</option>
                   <option value="Financeiro">Financeiro</option>
-                  <option value="Marketing">Marketing</option>
                   <option value="Técnico">Técnico</option>
                   <option value="Administrativo">Administrativo</option>
                   <option value="ADM">ADM (Acesso Total)</option>
+                  <option value="Dono">Dono</option>
                 </select>
               </div>
             </div>

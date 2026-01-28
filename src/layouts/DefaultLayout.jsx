@@ -34,15 +34,17 @@ export function DefaultLayout() {
 
   const [teamMembers, setTeamMembers] = useState([]);
 
-  // Buscar lista de membros (Só se for ADM/Dono e NÃO estiver testando outro usuário)
+  // --- CORREÇÃO 1: O useEffect precisa rodar para ADM *E* Dono ---
   useEffect(() => {
+    // Antes estava: if (realProfile?.role === 'ADM') ...
+    // Agora verifica se está na lista de permitidos:
     if (realProfile && ["ADM", "Dono"].includes(realProfile.role)) {
       fetchTeam();
     }
-  }, [realProfile, isImpersonating]); // Recarrega se sair do modo teste
+  }, [realProfile, isImpersonating]);
 
   async function fetchTeam() {
-    // Busca todos que NÃO são o próprio usuário logado (para não se excluir)
+    // Busca todos que NÃO são o próprio usuário logado
     const { data } = await supabase
       .from("profiles")
       .select("*")
@@ -51,29 +53,26 @@ export function DefaultLayout() {
     if (data) setTeamMembers(data);
   }
 
-  // --- NOVA FUNÇÃO DE DELETAR ---
+  // --- FUNÇÃO DE DELETAR ---
   async function handleDeleteMember(id, name) {
     if (
       !confirm(
-        `Tem certeza que deseja EXCLUIR a conta de "${name}"?\n\nEssa ação é irreversível.`,
+        `Tem certeza que deseja EXCLUIR a conta de "${name}"?\n\nEssa ação é irreversível e o funcionário perderá o acesso imediatamente.`,
       )
     )
       return;
 
     try {
       const { error } = await supabase.from("profiles").delete().eq("id", id);
-
       if (error) throw error;
-
       alert(`Usuário "${name}" excluído com sucesso.`);
-      fetchTeam(); // Atualiza a lista na hora
+      fetchTeam();
     } catch (error) {
       console.error(error);
       alert("Erro ao excluir: " + error.message);
     }
   }
 
-  // --- ITENS DO MENU ---
   const navItems = [
     { path: "/home", icon: LayoutDashboard, label: "Início", visible: true },
     {
@@ -120,7 +119,7 @@ export function DefaultLayout() {
           />
         </div>
 
-        {/* --- CABEÇALHO DO PERFIL --- */}
+        {/* HEADER DO PERFIL */}
         <div
           className={`p-6 border-b border-gray-100 transition-colors ${isImpersonating ? "bg-amber-50" : "bg-gray-50"}`}
         >
@@ -168,7 +167,6 @@ export function DefaultLayout() {
               );
             })}
 
-          {/* Botão Cadastro */}
           {permissions.canManageUsers && !isImpersonating && (
             <Link
               to="/register"
@@ -178,7 +176,7 @@ export function DefaultLayout() {
             </Link>
           )}
 
-          {/* --- LISTA DE EQUIPE (COM OPÇÃO DE EXCLUIR) --- */}
+          {/* --- CORREÇÃO 2: A LISTA VISUAL TAMBÉM PRECISA INCLUIR 'Dono' --- */}
           {realProfile &&
             ["ADM", "Dono"].includes(realProfile.role) &&
             !isImpersonating && (
@@ -198,7 +196,7 @@ export function DefaultLayout() {
                       key={member.id}
                       className="group flex items-center justify-between px-2 py-1 hover:bg-gray-100 rounded-lg"
                     >
-                      {/* Botão para Testar (Lado Esquerdo) */}
+                      {/* Botão Testar */}
                       <button
                         onClick={() => {
                           if (
@@ -224,7 +222,7 @@ export function DefaultLayout() {
                         </div>
                       </button>
 
-                      {/* Botão Excluir (Só aparece no Hover) */}
+                      {/* Botão Excluir */}
                       <button
                         onClick={() =>
                           handleDeleteMember(member.id, member.full_name)

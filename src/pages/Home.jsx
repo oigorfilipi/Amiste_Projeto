@@ -1,19 +1,20 @@
 import { useEffect, useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
-import { AuthContext } from "../contexts/AuthContext"; // <--- Importar Contexto
+import { AuthContext } from "../contexts/AuthContext";
 import {
   ClipboardList,
   Wrench,
   FileText,
   Coffee,
   Calendar,
-  DollarSign, // Icone novo
-  Lock, // Icone para bloqueado
+  DollarSign,
+  Lock,
+  Tag, // <--- ADICIONEI O ÍCONE AQUI
 } from "lucide-react";
 
 export function Home() {
-  const { permissions, userProfile } = useContext(AuthContext); // <--- Pegar permissões
+  const { permissions, userProfile } = useContext(AuthContext);
   const [recentChecklists, setRecentChecklists] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -23,7 +24,6 @@ export function Home() {
 
   async function fetchDashboardData() {
     try {
-      // Busca dados apenas se tiver permissão de ver checklists
       if (permissions.canCreateChecklist || permissions.canViewFinancials) {
         const { data: checklists } = await supabase
           .from("checklists")
@@ -39,9 +39,7 @@ export function Home() {
     }
   }
 
-  // Componente Auxiliar para os Cards
   function MenuCard({ to, icon: Icon, title, desc, color, permission }) {
-    // Se não tiver permissão, não renderiza nada (some com o card)
     if (!permission) return null;
 
     return (
@@ -73,9 +71,9 @@ export function Home() {
         <p className="text-gray-500">Bem-vindo ao painel de controle Amiste.</p>
       </div>
 
-      {/* --- GRID DE ATALHOS (SEGURO) --- */}
+      {/* --- GRID DE ATALHOS --- */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        {/* CHECKLIST: Todos menos Financeiro */}
+        {/* CHECKLIST */}
         <MenuCard
           to="/checklists"
           icon={ClipboardList}
@@ -85,7 +83,7 @@ export function Home() {
           permission={permissions.canCreateChecklist}
         />
 
-        {/* FINANCEIRO: Só Dono e Financeiro */}
+        {/* FINANCEIRO */}
         <MenuCard
           to="/financial"
           icon={DollarSign}
@@ -95,7 +93,7 @@ export function Home() {
           permission={permissions.canViewFinancials}
         />
 
-        {/* MÁQUINAS: Todos menos Financeiro */}
+        {/* MÁQUINAS */}
         <MenuCard
           to="/machines"
           icon={Coffee}
@@ -105,7 +103,7 @@ export function Home() {
           permission={permissions.canManageMachines}
         />
 
-        {/* PORTFÓLIO: Comercial e Dono */}
+        {/* PORTFÓLIO */}
         <MenuCard
           to="/portfolio"
           icon={FileText}
@@ -115,7 +113,17 @@ export function Home() {
           permission={permissions.canManagePortfolio}
         />
 
-        {/* WIKI: Todo mundo vê (Permissão = true) */}
+        {/* --- NOVO: TABELA DE PREÇOS --- */}
+        <MenuCard
+          to="/prices"
+          icon={Tag}
+          title="Tabela de Preços"
+          desc="Consulta rápida de valores de venda."
+          color="pink"
+          permission={true}
+        />
+
+        {/* WIKI */}
         <MenuCard
           to="/wiki"
           icon={Wrench}
@@ -126,7 +134,7 @@ export function Home() {
         />
       </div>
 
-      {/* --- TABELA RECENTES (Só aparece para quem pode ver checklist) --- */}
+      {/* --- TABELA RECENTES --- */}
       {(permissions.canCreateChecklist || permissions.canViewFinancials) && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="p-6 border-b border-gray-100 flex justify-between items-center">

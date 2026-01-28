@@ -18,6 +18,7 @@ import {
   DollarSign,
   Trash2,
   Edit2,
+  Tag, // <--- Importei o Tag para o menu de preços
 } from "lucide-react";
 import clsx from "clsx";
 import logoImg from "../assets/img/logo.png";
@@ -104,6 +105,10 @@ export function DefaultLayout() {
 
   const navItems = [
     { path: "/home", icon: LayoutDashboard, label: "Início", visible: true },
+
+    // --- NOVO ITEM: TABELA DE PREÇOS (Liberado para todos) ---
+    { path: "/prices", icon: Tag, label: "Tabela Preços", visible: true },
+
     {
       path: "/financial",
       icon: DollarSign,
@@ -147,8 +152,9 @@ export function DefaultLayout() {
         currentUserRole={realProfile?.role}
         onSave={() => {
           fetchTeam();
-          if (!isImpersonating && profileToEdit.id === realProfile.id)
+          if (!isImpersonating && profileToEdit?.id === realProfile?.id) {
             window.location.reload();
+          }
         }}
       />
 

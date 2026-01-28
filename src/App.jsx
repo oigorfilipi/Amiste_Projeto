@@ -13,6 +13,7 @@ import { Portfolio } from "./pages/Portfolio";
 import { Machines } from "./pages/Machines";
 import { History } from "./pages/History";
 import { Financial } from "./pages/Financial";
+import { PriceList } from "./pages/PriceList";
 
 // Contexto
 import { AuthProvider, AuthContext } from "./contexts/AuthContext";
@@ -61,6 +62,8 @@ export default function App() {
           >
             {/* Home é liberada pra todos logados */}
             <Route path="/home" element={<Home />} />
+            {/* Rota liberada para todos os logados */}
+            <Route path="/prices" element={<PriceList />} />
 
             {/* Rotas BLINDADAS por Cargo */}
             <Route

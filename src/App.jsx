@@ -1,12 +1,13 @@
 import { useContext } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { ChecklistDetails } from "./pages/ChecklistDetails";
 
 // Importando o Layout e Páginas
 import { DefaultLayout } from "./layouts/DefaultLayout";
 import { Login } from "./pages/Login";
+import { Register } from "./pages/Register"; // <--- IMPORTANTE: Importar o Register
 import { Home } from "./pages/Home";
 import { Checklist } from "./pages/Checklist";
+import { ChecklistDetails } from "./pages/ChecklistDetails";
 import { Wiki } from "./pages/Wiki";
 import { Portfolio } from "./pages/Portfolio";
 import { Machines } from "./pages/Machines";
@@ -40,10 +41,11 @@ export default function App() {
       <AuthProvider>
         <Routes>
           {/* Rota de Login (Pública) */}
-          {/* Se o utilizador já estiver logado e tentar ir para login, manda para home */}
           <Route path="/" element={<LoginLogic />} />
-
-          {/* Rotas Protegidas (Só entra se Private deixar) */}
+          {/* Rota de Cadastro (Pública para criar a primeira conta) */}
+          <Route path="/register" element={<Register />} />{" "}
+          {/* <--- ADICIONE ESSA LINHA */}
+          {/* Rotas Protegidas (Só entra se estiver Logado) */}
           <Route
             element={
               <Private>
@@ -59,7 +61,7 @@ export default function App() {
             <Route path="/machines" element={<Machines />} />
             <Route path="/history" element={<History />} />
           </Route>
-
+          {/* Qualquer rota desconhecida joga para o login */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

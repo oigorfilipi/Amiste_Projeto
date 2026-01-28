@@ -1,25 +1,30 @@
 import { useState, useEffect, createContext } from "react";
-import { supabase } from "../services/supabaseClient"; // Importando o novo cliente
-import { Navigate } from "react-router-dom";
+import { supabase } from "../services/supabaseClient";
 
 export const AuthContext = createContext({});
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null); // Guarda Cargo, Nome, etc.
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   useEffect(() => {
-    // Verifica sessão atual ao carregar a página
+    // Verificar sessão ao abrir
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      setLoadingAuth(false);
+      if (session?.user) fetchProfile(session.user.id);
+      else setLoadingAuth(false);
     });
 
-    // Fica ouvindo mudanças (Login/Logout)
+    // Escutar mudanças (Login/Logout)
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user ?? null);
-        setLoadingAuth(false);
+        if (session?.user) fetchProfile(session.user.id);
+        else {
+          setUserProfile(null);
+          setLoadingAuth(false);
+        }
       },
     );
 
@@ -28,32 +33,62 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  // Função de Login
+  async function fetchProfile(userId) {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+
+      if (data) setUserProfile(data);
+    } catch (error) {
+      console.error("Erro ao buscar perfil:", error);
+    } finally {
+      setLoadingAuth(false);
+    }
+  }
+
   async function signIn(email, password) {
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
+      email,
+      password,
     });
-
-    if (error) {
-      throw error;
-    }
-
+    if (error) throw error;
     return data;
   }
 
-  // Função de Logout
   async function logOut() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     setUser(null);
+    setUserProfile(null);
   }
+
+  // --- SISTEMA DE PERMISSÕES ---
+  const role = userProfile?.role || "Visitante";
+
+  const permissions = {
+    // Checklist
+    canCreateChecklist: ["Vendedor", "ADM", "Dono", "Técnico"].includes(role),
+    canEditChecklist: ["Vendedor", "Técnico", "ADM", "Dono"].includes(role),
+    canDeleteChecklist: ["Dono", "ADM"].includes(role),
+
+    // Máquinas e Wiki
+    canManageMachines: ["ADM", "Dono"].includes(role), // Criar/Editar/Excluir
+
+    // Usuários
+    canRegisterUsers: ["ADM", "Dono"].includes(role), // Só chefe cria contas
+  };
 
   return (
     <AuthContext.Provider
       value={{
         signed: !!user,
         user,
+        userProfile, // Disponível para mostrar nome na sidebar
+        role,
+        permissions,
         signIn,
         logOut,
         loadingAuth,

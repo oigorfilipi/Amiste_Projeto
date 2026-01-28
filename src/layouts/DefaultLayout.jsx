@@ -1,6 +1,7 @@
-import { useContext } from "react"; // <--- Importe o useContext
+import { useContext, useState, useEffect } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { AuthContext } from "../contexts/AuthContext"; // <--- Importe o AuthContext
+import { AuthContext } from "../contexts/AuthContext";
+import { supabase } from "../services/supabaseClient";
 import {
   LayoutDashboard,
   ClipboardList,
@@ -9,75 +10,175 @@ import {
   Coffee,
   LogOut,
   History,
-  UserPlus, // Icone para cadastro
+  UserPlus,
+  Users,
+  Eye,
+  XCircle,
+  DollarSign,
 } from "lucide-react";
 import clsx from "clsx";
 import logoImg from "../assets/img/logo.png";
 
 export function DefaultLayout() {
   const location = useLocation();
-  const { userProfile, logOut, permissions } = useContext(AuthContext); // <--- Use os dados reais
+  // Pegamos as novas funções do contexto
+  const {
+    userProfile,
+    realProfile,
+    permissions,
+    logOut,
+    isImpersonating,
+    startImpersonation,
+    stopImpersonation,
+  } = useContext(AuthContext);
 
+  const [teamMembers, setTeamMembers] = useState([]);
+
+  // Buscar lista de membros (Só se for ADM/Dono e NÃO estiver testando outro usuário)
+  useEffect(() => {
+    // Só busca se for o perfil REAL e ele tiver permissão
+    if (realProfile && ["ADM", "Dono"].includes(realProfile.role)) {
+      fetchTeam();
+    }
+  }, [realProfile]);
+
+  async function fetchTeam() {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .neq("role", "ADM"); // Tira o ADM da lista pra não bugar
+    if (data) setTeamMembers(data);
+  }
+
+  // --- ITENS DO MENU (Dinâmico baseado nas permissões) ---
   const navItems = [
-    { path: "/home", icon: LayoutDashboard, label: "Início" },
-    { path: "/checklists", icon: ClipboardList, label: "Checklist" },
-    { path: "/wiki", icon: Wrench, label: "Manutenção" },
-    { path: "/portfolio", icon: FileText, label: "Portfólio" },
-    { path: "/machines", icon: Coffee, label: "Máquinas" },
-    { path: "/history", icon: History, label: "Histórico" },
+    { path: "/home", icon: LayoutDashboard, label: "Início", visible: true },
+
+    // Financeiro (Novo)
+    {
+      path: "/financial",
+      icon: DollarSign,
+      label: "Financeiro",
+      visible: permissions.canViewFinancials,
+    },
+
+    {
+      path: "/checklists",
+      icon: ClipboardList,
+      label: "Checklist",
+      visible: permissions.canManageChecklists || permissions.canViewFinancials,
+    },
+    { path: "/wiki", icon: Wrench, label: "Manutenção", visible: true }, // Todos veem wiki, só tecnico edita
+    {
+      path: "/portfolio",
+      icon: FileText,
+      label: "Portfólio",
+      visible: permissions.canManagePortfolio,
+    },
+    { path: "/machines", icon: Coffee, label: "Máquinas", visible: true },
+    { path: "/history", icon: History, label: "Histórico", visible: true },
   ];
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        <div className="h-21 flex items-center justify-center border-b border-gray-100 bg-amiste-primary p-4">
+      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
+        <div className="h-21 flex items-center justify-center border-b border-gray-100 bg-amiste-primary p-4 sticky top-0 z-10">
           <img
             src={logoImg}
-            alt="Logo Amiste"
+            alt="Logo"
             className="h-full w-auto object-contain"
           />
         </div>
 
-        {/* PERFIL DINÂMICO */}
-        <div className="p-6 border-b border-gray-100 bg-gray-50">
-          <p className="text-sm font-bold text-gray-900">
+        {/* --- CABEÇALHO DO PERFIL --- */}
+        <div
+          className={`p-6 border-b border-gray-100 transition-colors ${isImpersonating ? "bg-amber-50" : "bg-gray-50"}`}
+        >
+          {isImpersonating && (
+            <div className="mb-2 text-xs font-bold text-amber-600 flex items-center gap-1 uppercase tracking-wider">
+              <Eye size={12} /> Modo Visualização
+            </div>
+          )}
+          <p className="text-sm font-bold text-gray-900 truncate">
             {userProfile?.nickname || userProfile?.full_name || "Usuário"}
           </p>
           <p className="text-xs text-gray-500">
-            Cargo: {userProfile?.role || "Carregando..."}
+            Cargo: <span className="font-bold">{userProfile?.role}</span>
           </p>
+
+          {isImpersonating && (
+            <button
+              onClick={stopImpersonation}
+              className="mt-3 w-full flex items-center justify-center gap-2 bg-amber-200 hover:bg-amber-300 text-amber-900 text-xs font-bold py-1.5 rounded transition-colors"
+            >
+              <XCircle size={14} /> Sair do Teste
+            </button>
+          )}
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname.startsWith(item.path);
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={clsx(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-red-50 text-amiste-primary"
-                    : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
-                )}
-              >
-                <Icon size={20} />
-                {item.label}
-              </Link>
-            );
-          })}
+          {navItems
+            .filter((i) => i.visible)
+            .map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname.startsWith(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={clsx(
+                    "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-red-50 text-amiste-primary"
+                      : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+                  )}
+                >
+                  <Icon size={20} /> {item.label}
+                </Link>
+              );
+            })}
 
-          {/* Botão Extra para ADM: Cadastrar Usuário */}
-          {permissions?.canRegisterUsers && (
+          {/* Botão Cadastro (Só aparece se tiver permissão E não estiver testando) */}
+          {permissions.canManageUsers && !isImpersonating && (
             <Link
               to="/register"
               className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-blue-600 hover:bg-blue-50 mt-4 border border-dashed border-blue-200"
             >
-              <UserPlus size={20} />
-              Cadastrar Equipe
+              <UserPlus size={20} /> Cadastrar Equipe
             </Link>
+          )}
+
+          {/* --- LISTA DE TESTE DE CONTAS (SÓ ADM VÊ) --- */}
+          {realProfile?.role === "ADM" && !isImpersonating && (
+            <div className="mt-8 pt-4 border-t border-gray-100">
+              <p className="px-3 text-xs font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
+                <Users size={12} /> Testar Acesso
+              </p>
+              <div className="space-y-1">
+                {teamMembers.map((member) => (
+                  <button
+                    key={member.id}
+                    onClick={() => {
+                      if (
+                        confirm(
+                          `Entrar no modo visualização como ${member.role}?`,
+                        )
+                      ) {
+                        startImpersonation(member);
+                      }
+                    }}
+                    className="w-full text-left flex items-center justify-between px-3 py-2 text-xs text-gray-600 hover:bg-gray-100 rounded-lg group"
+                  >
+                    <span>
+                      {member.nickname || member.full_name?.split(" ")[0]}
+                    </span>
+                    <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-[4px] text-[10px] group-hover:bg-gray-300">
+                      {member.role.substring(0, 3)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </nav>
 
@@ -86,13 +187,19 @@ export function DefaultLayout() {
             onClick={logOut}
             className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-amiste-primary transition-colors"
           >
-            <LogOut size={20} />
-            Sair
+            <LogOut size={20} /> Sair
           </button>
         </div>
       </aside>
 
       <main className="flex-1 overflow-auto">
+        {/* Banner de Aviso quando em modo teste */}
+        {isImpersonating && (
+          <div className="bg-amber-100 text-amber-800 text-xs font-bold text-center py-1 border-b border-amber-200">
+            ⚠️ VOCÊ ESTÁ VENDO O SISTEMA COMO: {userProfile.role.toUpperCase()}{" "}
+            ({userProfile.full_name})
+          </div>
+        )}
         <div className="p-8">
           <Outlet />
         </div>

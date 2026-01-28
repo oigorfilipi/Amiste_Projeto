@@ -12,7 +12,7 @@ import {
   Trash2,
   History,
   Clock,
-  Youtube, // Icone para o link
+  Youtube,
   ExternalLink,
 } from "lucide-react";
 
@@ -231,7 +231,7 @@ export function Portfolio() {
               {portfolio.machine_data?.brand}
             </div>
             <div className="w-full h-[1px] bg-gray-100 mb-1"></div>
-            <div className="text-[7px] text-gray-400 line-clamp-3 leading-tight">
+            <div className="text-[7px] text-gray-400 line-clamp-3 leading-tight break-words">
               {portfolio.description}
             </div>
           </div>
@@ -548,7 +548,9 @@ export function Portfolio() {
                         <p className="text-gray-500 uppercase tracking-wide text-sm mb-4 font-bold">
                           {selectedMachine.brand} | {selectedMachine.model}
                         </p>
-                        <p className="text-sm text-gray-600 leading-relaxed text-left whitespace-pre-wrap">
+
+                        {/* AQUI ESTÁ A CORREÇÃO DO TEXTO: break-words */}
+                        <p className="text-sm text-gray-600 leading-relaxed text-left whitespace-pre-wrap break-words w-full">
                           {description}
                         </p>
 

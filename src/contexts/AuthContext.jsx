@@ -4,27 +4,25 @@ import { supabase } from "../services/supabaseClient";
 export const AuthContext = createContext({});
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null); // Usuário real do Supabase
-  const [realProfile, setRealProfile] = useState(null); // Perfil real do banco
+  const [user, setUser] = useState(null);
+  const [realProfile, setRealProfile] = useState(null);
   const [impersonatedProfile, setImpersonatedProfile] = useState(null); // Perfil "Teste"
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   useEffect(() => {
-    // 1. Verifica sessão
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) fetchProfile(session.user.id);
       else setLoadingAuth(false);
     });
 
-    // 2. Escuta mudanças
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user ?? null);
         if (session?.user) fetchProfile(session.user.id);
         else {
           setRealProfile(null);
-          setImpersonatedProfile(null); // Reseta teste ao sair
+          setImpersonatedProfile(null);
           setLoadingAuth(false);
         }
       },
@@ -35,12 +33,11 @@ export function AuthProvider({ children }) {
 
   async function fetchProfile(userId) {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", userId)
         .single();
-
       if (data) setRealProfile(data);
     } catch (error) {
       console.error("Erro perfil:", error);
@@ -49,7 +46,6 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // --- FUNÇÕES DE LOGIN/LOGOUT ---
   async function signIn(email, password) {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -64,62 +60,60 @@ export function AuthProvider({ children }) {
     if (error) throw error;
   }
 
-  // --- SISTEMA DE "GOD MODE" (TESTE DE USUÁRIO) ---
-
-  // Perfil Ativo: Se tiver um "impersonated", usa ele. Senão, usa o real.
+  // --- LOGICA DE TESTE (IMPERSONATION) ---
   const activeProfile = impersonatedProfile || realProfile;
   const isImpersonating = !!impersonatedProfile;
 
-  // Função para ativar o modo teste
-  function startImpersonation(profileToTest) {
-    setImpersonatedProfile(profileToTest);
+  function startImpersonation(profile) {
+    setImpersonatedProfile(profile);
   }
-
-  // Função para sair do modo teste
   function stopImpersonation() {
     setImpersonatedProfile(null);
   }
 
-  // --- PERMISSÕES (Baseadas no activeProfile) ---
+  // --- PERMISSÕES (Regras do Jogo) ---
   const role = activeProfile?.role || "Visitante";
 
-  /* CARGOS: 'Dono', 'Financeiro', 'Administrativo', 'Comercial', 'Técnico', 'ADM' (Você)
+  /* CARGOS: 'Dono', 'Financeiro', 'Administrativo', 'Comercial', 'Técnico', 'ADM'
    */
 
   const permissions = {
-    // Quem vê o Painel Financeiro
+    // 1. FINANCEIRO: Ver totais e gráficos
     canViewFinancials: ["Dono", "Financeiro", "ADM"].includes(role),
 
-    // Quem cria/edita Checklists
-    canManageChecklists: [
+    // 2. CHECKLIST (Criar): Dono, Adm, Comercial, Técnico, Administrativo (Todos menos Financeiro)
+    canCreateChecklist: [
       "Dono",
-      "Administrativo",
+      "ADM",
       "Comercial",
       "Técnico",
-      "ADM",
+      "Administrativo",
     ].includes(role),
 
-    // Quem cadastra Máquinas
+    // 3. CHECKLIST (Editar/Excluir): Regras mais restritas
+    canEditChecklist: ["Dono", "ADM", "Técnico", "Comercial"].includes(role),
+    canDeleteChecklist: ["Dono", "ADM"].includes(role),
+
+    // 4. MÁQUINAS (Cadastro): Todos menos Financeiro
     canManageMachines: [
       "Dono",
+      "ADM",
       "Administrativo",
       "Comercial",
       "Técnico",
-      "ADM",
     ].includes(role),
 
-    // Quem mexe no Portfólio
-    canManagePortfolio: ["Dono", "Comercial", "Financeiro", "ADM"].includes(
-      role,
-    ),
+    // 5. PORTFÓLIO: Comercial, Dono, ADM
+    canManagePortfolio: ["Dono", "ADM", "Comercial"].includes(role),
 
-    // Quem mexe na Wiki (Soluções)
-    canManageWiki: ["Dono", "Técnico", "ADM"].includes(role),
+    // 6. HISTÓRICO: SOMENTE O DONO (E você ADM se quiser debugar, mas deixei só Dono conforme pedido)
+    // Se você (ADM) quiser ver também, adicione 'ADM' na lista abaixo.
+    canViewHistory: ["Dono"].includes(role),
 
-    // Quem exclui coisas críticas (Segurança extra)
-    canDeleteCritical: ["Dono", "ADM"].includes(role),
+    // 7. WIKI: Técnico, Dono, ADM
+    canManageWiki: ["Dono", "ADM", "Técnico"].includes(role),
 
-    // Quem pode ver a lista de usuários para testar (Só VOCÊ e o Dono)
+    // 8. USUÁRIOS (Ver lista de teste): Só Dono e ADM
     canManageUsers: ["Dono", "ADM"].includes(role),
   };
 
@@ -128,13 +122,13 @@ export function AuthProvider({ children }) {
       value={{
         signed: !!user,
         user,
-        userProfile: activeProfile, // O resto do app vai "achar" que esse é o usuário
-        realProfile, // Acesso ao perfil original se precisar
-        isImpersonating, // Para mostrar o botão de sair
+        userProfile: activeProfile,
+        realProfile,
+        isImpersonating,
         startImpersonation,
         stopImpersonation,
         role,
-        permissions,
+        permissions, // Exportando as regras
         signIn,
         logOut,
         loadingAuth,

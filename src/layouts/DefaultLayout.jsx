@@ -21,7 +21,6 @@ import logoImg from "../assets/img/logo.png";
 
 export function DefaultLayout() {
   const location = useLocation();
-  // Pegamos as novas funções do contexto
   const {
     userProfile,
     realProfile,
@@ -34,9 +33,8 @@ export function DefaultLayout() {
 
   const [teamMembers, setTeamMembers] = useState([]);
 
-  // Buscar lista de membros (Só se for ADM/Dono e NÃO estiver testando outro usuário)
   useEffect(() => {
-    // Só busca se for o perfil REAL e ele tiver permissão
+    // Busca equipe apenas se for ADM ou Dono REAIS
     if (realProfile && ["ADM", "Dono"].includes(realProfile.role)) {
       fetchTeam();
     }
@@ -46,15 +44,15 @@ export function DefaultLayout() {
     const { data } = await supabase
       .from("profiles")
       .select("*")
-      .neq("role", "ADM"); // Tira o ADM da lista pra não bugar
+      .neq("role", "ADM");
     if (data) setTeamMembers(data);
   }
 
-  // --- ITENS DO MENU (Dinâmico baseado nas permissões) ---
+  // --- MENU LATERAL (Configurado conforme seu pedido) ---
   const navItems = [
     { path: "/home", icon: LayoutDashboard, label: "Início", visible: true },
 
-    // Financeiro (Novo)
+    // Financeiro (Só Dono e Financeiro)
     {
       path: "/financial",
       icon: DollarSign,
@@ -62,21 +60,40 @@ export function DefaultLayout() {
       visible: permissions.canViewFinancials,
     },
 
+    // Checklist (Todos menos Financeiro, basicamente)
     {
       path: "/checklists",
       icon: ClipboardList,
       label: "Checklist",
-      visible: permissions.canManageChecklists || permissions.canViewFinancials,
+      visible: permissions.canCreateChecklist,
     },
-    { path: "/wiki", icon: Wrench, label: "Manutenção", visible: true }, // Todos veem wiki, só tecnico edita
+
+    // Wiki (Todos veem)
+    { path: "/wiki", icon: Wrench, label: "Manutenção", visible: true },
+
+    // Portfólio (Comercial e Dono)
     {
       path: "/portfolio",
       icon: FileText,
       label: "Portfólio",
       visible: permissions.canManagePortfolio,
     },
-    { path: "/machines", icon: Coffee, label: "Máquinas", visible: true },
-    { path: "/history", icon: History, label: "Histórico", visible: true },
+
+    // Máquinas (Todos menos Financeiro)
+    {
+      path: "/machines",
+      icon: Coffee,
+      label: "Máquinas",
+      visible: permissions.canManageMachines,
+    },
+
+    // Histórico (SOMENTE DONO)
+    {
+      path: "/history",
+      icon: History,
+      label: "Histórico",
+      visible: permissions.canViewHistory,
+    },
   ];
 
   return (
@@ -96,11 +113,11 @@ export function DefaultLayout() {
         >
           {isImpersonating && (
             <div className="mb-2 text-xs font-bold text-amber-600 flex items-center gap-1 uppercase tracking-wider">
-              <Eye size={12} /> Modo Visualização
+              <Eye size={12} /> Visualizando como:
             </div>
           )}
           <p className="text-sm font-bold text-gray-900 truncate">
-            {userProfile?.nickname || userProfile?.full_name || "Usuário"}
+            {userProfile?.nickname || userProfile?.full_name || "Carregando..."}
           </p>
           <p className="text-xs text-gray-500">
             Cargo: <span className="font-bold">{userProfile?.role}</span>
@@ -138,7 +155,7 @@ export function DefaultLayout() {
               );
             })}
 
-          {/* Botão Cadastro (Só aparece se tiver permissão E não estiver testando) */}
+          {/* Botão Cadastro (Só ADM/Dono vê e se não estiver testando) */}
           {permissions.canManageUsers && !isImpersonating && (
             <Link
               to="/register"
@@ -148,38 +165,42 @@ export function DefaultLayout() {
             </Link>
           )}
 
-          {/* --- LISTA DE TESTE DE CONTAS (SÓ ADM VÊ) --- */}
-          {realProfile?.role === "ADM" && !isImpersonating && (
-            <div className="mt-8 pt-4 border-t border-gray-100">
-              <p className="px-3 text-xs font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
-                <Users size={12} /> Testar Acesso
-              </p>
-              <div className="space-y-1">
-                {teamMembers.map((member) => (
-                  <button
-                    key={member.id}
-                    onClick={() => {
-                      if (
-                        confirm(
-                          `Entrar no modo visualização como ${member.role}?`,
-                        )
-                      ) {
-                        startImpersonation(member);
-                      }
-                    }}
-                    className="w-full text-left flex items-center justify-between px-3 py-2 text-xs text-gray-600 hover:bg-gray-100 rounded-lg group"
-                  >
-                    <span>
-                      {member.nickname || member.full_name?.split(" ")[0]}
-                    </span>
-                    <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-[4px] text-[10px] group-hover:bg-gray-300">
-                      {member.role.substring(0, 3)}
-                    </span>
-                  </button>
-                ))}
+          {/* --- LISTA DE TESTE DE CONTAS (SÓ ADM e DONO REAIS VEEM) --- */}
+          {realProfile &&
+            ["ADM", "Dono"].includes(realProfile.role) &&
+            !isImpersonating && (
+              <div className="mt-8 pt-4 border-t border-gray-100">
+                <p className="px-3 text-xs font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
+                  <Users size={12} /> Testar Acesso
+                </p>
+                <div className="space-y-1">
+                  {teamMembers.map((member) => (
+                    <button
+                      key={member.id}
+                      onClick={() => {
+                        if (
+                          confirm(
+                            `Entrar no modo visualização como ${member.role}?`,
+                          )
+                        ) {
+                          startImpersonation(member);
+                        }
+                      }}
+                      className="w-full text-left flex items-center justify-between px-3 py-2 text-xs text-gray-600 hover:bg-gray-100 rounded-lg group"
+                    >
+                      <span className="truncate w-24">
+                        {member.nickname || member.full_name?.split(" ")[0]}
+                      </span>
+                      <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-[4px] text-[10px] group-hover:bg-gray-300">
+                        {member.role
+                          ? member.role.substring(0, 3).toUpperCase()
+                          : "UNK"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </nav>
 
         <div className="p-4 border-t border-gray-100">
@@ -193,11 +214,9 @@ export function DefaultLayout() {
       </aside>
 
       <main className="flex-1 overflow-auto">
-        {/* Banner de Aviso quando em modo teste */}
         {isImpersonating && (
           <div className="bg-amber-100 text-amber-800 text-xs font-bold text-center py-1 border-b border-amber-200">
-            ⚠️ VOCÊ ESTÁ VENDO O SISTEMA COMO: {userProfile.role.toUpperCase()}{" "}
-            ({userProfile.full_name})
+            ⚠️ MODO TESTE: Vendo como {userProfile.role.toUpperCase()}
           </div>
         )}
         <div className="p-8">

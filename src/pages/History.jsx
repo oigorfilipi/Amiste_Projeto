@@ -9,13 +9,14 @@ import {
   Trash2,
   Edit,
   PlusCircle,
-  Search,
   Clock,
+  ShieldAlert,
 } from "lucide-react";
 
 export function History() {
   const { user } = useContext(AuthContext);
   const [logs, setLogs] = useState([]);
+  const [userMap, setUserMap] = useState({}); // <--- NOVO: Mapa de Usuários
   const [loading, setLoading] = useState(true);
 
   // Filtros
@@ -23,9 +24,9 @@ export function History() {
   const [filterAction, setFilterAction] = useState("Todos");
 
   useEffect(() => {
-    fetchHistory();
+    fetchData();
 
-    // Opcional: Atualizar em tempo real
+    // Atualizar em tempo real (Histórico)
     const subscription = supabase
       .channel("realtime_history")
       .on(
@@ -42,18 +43,35 @@ export function History() {
     };
   }, []);
 
-  async function fetchHistory() {
+  async function fetchData() {
     try {
-      const { data, error } = await supabase
+      // 1. Buscar Histórico
+      const { data: historyData, error: historyError } = await supabase
         .from("app_history")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(100); // Pega os últimos 100 eventos para não pesar
+        .limit(100);
 
-      if (error) throw error;
-      if (data) setLogs(data);
+      if (historyError) throw historyError;
+
+      // 2. Buscar Perfis (Para saber os nomes)
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, nickname, full_name, role");
+
+      if (profilesError) throw profilesError;
+
+      // 3. Criar um "Dicionário" de usuários para acesso rápido
+      // Ex: { "id-123": { name: "Carlos", role: "Vendedor" } }
+      const map = {};
+      profilesData.forEach((p) => {
+        map[p.id] = p;
+      });
+      setUserMap(map);
+
+      if (historyData) setLogs(historyData);
     } catch (error) {
-      console.error("Erro ao carregar histórico:", error);
+      console.error("Erro ao carregar dados:", error);
     } finally {
       setLoading(false);
     }
@@ -70,6 +88,8 @@ export function History() {
         return "Portfólio";
       case "wiki_solutions":
         return "Manutenção";
+      case "financial":
+        return "Financeiro";
       default:
         return mod;
     }
@@ -98,7 +118,7 @@ export function History() {
   });
 
   return (
-    <div className="min-h-screen pb-20 bg-gray-50">
+    <div className="min-h-screen pb-20 bg-gray-50 animate-fade-in">
       {/* CABEÇALHO */}
       <div className="p-8 pb-4">
         <h1 className="text-3xl font-display font-bold text-gray-800 mb-2">
@@ -166,10 +186,18 @@ export function History() {
               const style = getActionStyle(log.action_type);
               const Icon = style.icon;
 
+              // Recupera os dados do autor baseado no ID
+              const authorProfile = userMap[log.user_id];
+              const authorName =
+                authorProfile?.nickname ||
+                authorProfile?.full_name?.split(" ")[0] ||
+                "Desconhecido";
+              const authorRole = authorProfile?.role || "Sistema";
+
               return (
                 <div
                   key={log.id}
-                  className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-start gap-4 hover:border-amiste-primary/30 transition-all animate-fade-in"
+                  className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-start gap-4 hover:border-amiste-primary/30 transition-all animate-fade-in group"
                 >
                   {/* Ícone da Ação */}
                   <div
@@ -206,13 +234,27 @@ export function History() {
                     </div>
                   </div>
 
-                  {/* Usuário */}
-                  <div className="border-l pl-4 ml-2 flex flex-col items-center justify-center min-w-[80px]">
-                    <div className="bg-gray-100 p-1.5 rounded-full mb-1">
-                      <User size={16} className="text-gray-500" />
+                  {/* USUÁRIO QUE FEZ A AÇÃO (ATUALIZADO) */}
+                  <div className="border-l pl-4 ml-2 flex flex-col items-center justify-center min-w-[100px] text-center">
+                    <div
+                      className={`p-1.5 rounded-full mb-1 ${authorProfile ? "bg-gray-100" : "bg-red-50"}`}
+                    >
+                      {authorProfile ? (
+                        <User size={16} className="text-gray-500" />
+                      ) : (
+                        <ShieldAlert size={16} className="text-red-400" />
+                      )}
                     </div>
-                    <span className="text-[10px] font-bold text-gray-600">
-                      {log.user_id === user?.id ? "Você" : "Outro"}
+
+                    <span
+                      className="text-xs font-bold text-gray-700 truncate max-w-[100px]"
+                      title={authorProfile?.full_name}
+                    >
+                      {log.user_id === user?.id ? "Você" : authorName}
+                    </span>
+
+                    <span className="text-[9px] text-gray-400 uppercase tracking-wide">
+                      {authorRole}
                     </span>
                   </div>
                 </div>

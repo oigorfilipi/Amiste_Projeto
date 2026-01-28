@@ -126,8 +126,10 @@ export function DefaultLayout() {
       {/* --- SIDEBAR LIMPA --- */}
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 z-30">
         {/* Logo */}
-        <div className="h-16 flex items-center justify-center border-b border-gray-100 bg-white p-4">
-          <img src={logoImg} alt="Logo" className="h-8 w-auto object-contain" />
+        <div className="h-16 flex items-center justify-center border-b border-gray-100 bg-amiste-primary p-4">
+          <span className="text-white font-black tracking-[0.2em] text-[30px]">
+            AMISTE
+          </span>
         </div>
 
         {/* Navegação Principal */}

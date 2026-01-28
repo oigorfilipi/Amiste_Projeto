@@ -1,8 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
-import { Plus, Search, Upload, Save, X, Trash2, Edit } from "lucide-react";
+import { AuthContext } from "../contexts/AuthContext";
+import {
+  Plus,
+  Search,
+  Upload,
+  Save,
+  X,
+  Trash2,
+  Edit2,
+  Zap,
+  Droplet,
+  Ruler,
+  Image as ImageIcon,
+} from "lucide-react";
 
-// Arrays de opções padrão para facilitar a verificação na hora de editar
+// --- CONSTANTES ---
 const MODEL_OPTIONS = [
   "Iper Automática",
   "Kalerm 1602",
@@ -19,64 +32,70 @@ const TYPE_OPTIONS = [
 ];
 
 export function Machines() {
-  const [showForm, setShowForm] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const { permissions } = useContext(AuthContext); // Verifica permissão para editar
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [machines, setMachines] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Estado para controlar Edição
   const [editingId, setEditingId] = useState(null);
-  const [currentPhotoUrl, setCurrentPhotoUrl] = useState(""); // Guarda a URL antiga caso não troque a foto
+  const [currentPhotoUrl, setCurrentPhotoUrl] = useState("");
 
-  // Estados do Formulário (Dados Básicos)
+  // --- FORMULÁRIO ---
   const [name, setName] = useState("");
   const [model, setModel] = useState("");
-  const [brand, setBrand] = useState("");
-  const [type, setType] = useState("");
-  const [status, setStatus] = useState("Disponível");
-  const [photo, setPhoto] = useState(null); // Arquivo novo (File)
-
-  // Estados para campos "Outro"
   const [customModel, setCustomModel] = useState("");
+  const [brand, setBrand] = useState("");
   const [customBrand, setCustomBrand] = useState("");
+  const [type, setType] = useState("");
   const [customType, setCustomType] = useState("");
+  const [status, setStatus] = useState("Disponível");
+  const [photo, setPhoto] = useState(null);
 
-  // Estados do Formulário (Dados Técnicos)
+  // Técnicos
   const [voltage, setVoltage] = useState("220v");
   const [waterSystem, setWaterSystem] = useState("Reservatório");
   const [amperage, setAmperage] = useState("10A");
   const [color, setColor] = useState("Preto");
   const [reservoirs, setReservoirs] = useState("");
   const [hasSteamer, setHasSteamer] = useState("Não");
-
-  // Opcionais
   const [dimensions, setDimensions] = useState({ w: "", h: "", d: "" });
   const [patrimony, setPatrimony] = useState("");
 
-  // 1. CARREGAR MÁQUINAS
   useEffect(() => {
     fetchMachines();
   }, []);
 
   async function fetchMachines() {
-    const { data, error } = await supabase
-      .from("machines")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (data) setMachines(data);
-    if (error) console.log("Erro ao buscar máquinas:", error);
+    try {
+      const { data, error } = await supabase
+        .from("machines")
+        .select("*")
+        .order("name");
+      if (error) throw error;
+      setMachines(data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  // 2. FUNÇÃO DE PREPARAR EDIÇÃO (NOVA)
+  // --- AÇÕES ---
+
   function handleEdit(machine) {
+    if (!permissions.canManageMachines)
+      return alert("Sem permissão para editar.");
+
     setEditingId(machine.id);
-    setCurrentPhotoUrl(machine.photo_url); // Salva a foto atual
-    setPhoto(null); // Reseta o input de arquivo novo
+    setCurrentPhotoUrl(machine.photo_url);
+    setPhoto(null);
 
     setName(machine.name);
     setStatus(machine.status || "Disponível");
 
-    // Lógica para Dropdown vs Customizado
+    // Lógica Dropdown vs Custom
     if (MODEL_OPTIONS.includes(machine.model)) {
       setModel(machine.model);
       setCustomModel("");
@@ -101,7 +120,6 @@ export function Machines() {
       setCustomType(machine.type);
     }
 
-    // Técnicos
     setVoltage(machine.voltage || "220v");
     setWaterSystem(machine.water_system || "Reservatório");
     setAmperage(machine.amperage || "10A");
@@ -110,45 +128,37 @@ export function Machines() {
     setHasSteamer(machine.has_steamer || "Não");
     setPatrimony(machine.patrimony || "");
 
-    // Dimensões (parse da string "WxHxD")
     if (machine.dimensions) {
       const dims = machine.dimensions.split("x");
-      setDimensions({
-        w: dims[0] || "",
-        h: dims[1] || "",
-        d: dims[2] || "",
-      });
+      setDimensions({ w: dims[0] || "", h: dims[1] || "", d: dims[2] || "" });
     } else {
       setDimensions({ w: "", h: "", d: "" });
     }
 
-    setShowForm(true);
+    setShowModal(true);
   }
 
-  // 3. FUNÇÃO DE SALVAR (INSERT OU UPDATE)
+  function handleNew() {
+    if (!permissions.canManageMachines)
+      return alert("Sem permissão para criar.");
+    resetForm();
+    setShowModal(true);
+  }
+
   async function handleSave(e) {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Validação: Se for novo, precisa de foto. Se for edição, pode usar a antiga.
-      if (!name || (!photo && !currentPhotoUrl) || !model || !brand || !type) {
-        alert("Preencha os campos obrigatórios.");
-        setLoading(false);
-        return;
-      }
-
       let finalPhotoUrl = currentPhotoUrl;
 
-      // B. Upload da Foto (Apenas se o usuário selecionou uma nova)
+      // Upload Foto
       if (photo) {
         const fileExt = photo.name.split(".").pop();
         const fileName = `${Date.now()}.${fileExt}`;
-
         const { error: uploadError } = await supabase.storage
           .from("machines")
           .upload(fileName, photo);
-
         if (uploadError) throw uploadError;
 
         const { data } = supabase.storage
@@ -157,7 +167,6 @@ export function Machines() {
         finalPhotoUrl = data.publicUrl;
       }
 
-      // D. Preparar os dados
       const finalModel = model === "Outro" ? customModel : model;
       const finalBrand = brand === "Outro" ? customBrand : brand;
       const finalType = type === "Outro" ? customType : type;
@@ -180,9 +189,7 @@ export function Machines() {
         patrimony,
       };
 
-      // E. Salvar no Banco (Insert ou Update)
       if (editingId) {
-        // UPDATE
         const { error } = await supabase
           .from("machines")
           .update(payload)
@@ -190,26 +197,24 @@ export function Machines() {
         if (error) throw error;
         alert("Máquina atualizada!");
       } else {
-        // INSERT
         const { error } = await supabase.from("machines").insert(payload);
         if (error) throw error;
         alert("Máquina cadastrada!");
       }
 
-      setShowForm(false);
+      setShowModal(false);
       resetForm();
       fetchMachines();
     } catch (err) {
-      console.error(err);
-      alert("Erro ao salvar: " + err.message);
+      alert("Erro: " + err.message);
     } finally {
       setLoading(false);
     }
   }
 
-  // 4. EXCLUIR
   async function handleDelete(id, e) {
-    e.stopPropagation(); // Impede que o clique abra o modo de edição
+    e.stopPropagation();
+    if (!permissions.canManageMachines) return alert("Sem permissão.");
     if (!confirm("Tem certeza que deseja excluir esta máquina?")) return;
 
     try {
@@ -217,8 +222,7 @@ export function Machines() {
       if (error) throw error;
       fetchMachines();
     } catch (err) {
-      console.error(err);
-      alert("Erro ao excluir");
+      alert("Erro ao excluir: " + err.message);
     }
   }
 
@@ -243,464 +247,374 @@ export function Machines() {
     setPatrimony("");
   }
 
+  const filteredMachines = machines.filter(
+    (m) =>
+      m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.brand?.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-20 animate-fade-in">
       {/* CABEÇALHO */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-display font-bold text-gray-800">
             Catálogo de Máquinas
           </h1>
-          <p className="text-gray-500">
-            Gerencie os modelos disponíveis para instalação e contratos.
+          <p className="text-gray-500 mt-1">
+            Gerencie os modelos disponíveis para instalação.
           </p>
         </div>
 
-        {!showForm && (
-          <button
-            onClick={() => {
-              resetForm();
-              setShowForm(true);
-            }}
-            className="flex items-center gap-2 bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-3 rounded-lg font-medium transition-all shadow-md hover:shadow-lg"
-          >
-            <Plus size={20} />
-            Cadastrar Nova Máquina
-          </button>
-        )}
-      </div>
-
-      {/* FORMULÁRIO */}
-      {showForm ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-fade-in">
-          <div className="bg-gray-50 border-b border-gray-100 p-6 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-amiste-primary flex items-center gap-2">
-              {editingId ? <Edit size={20} /> : <Plus size={20} />}
-              {editingId ? "Editar Máquina" : "Novo Modelo"}
-            </h2>
-            <button
-              onClick={() => {
-                setShowForm(false);
-                resetForm();
-              }}
-              className="text-gray-400 hover:text-red-500"
-            >
-              <X size={24} />
-            </button>
+        <div className="flex gap-3 w-full md:w-auto">
+          {/* Barra de Pesquisa */}
+          <div className="relative flex-1 md:w-64">
+            <Search className="absolute left-3 top-3 text-gray-400" size={20} />
+            <input
+              className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
+              placeholder="Buscar máquina..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
 
-          <form onSubmit={handleSave} className="p-6 md:p-8 space-y-8">
-            {/* 1. DADOS BÁSICOS */}
-            <div className="space-y-6">
-              <h3 className="text-sm uppercase tracking-wider text-gray-400 font-bold border-b border-gray-100 pb-2">
-                1. Dados Básicos
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="col-span-2 md:col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nome Comercial *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-1 focus:ring-amiste-primary outline-none"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
-
-                <div className="col-span-2 md:col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Foto da Máquina (PNG) {editingId ? "(Opcional)" : "*"}
-                  </label>
-                  <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 cursor-pointer">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      onChange={(e) => setPhoto(e.target.files[0])}
-                    />
-                    <Upload className="text-gray-400 mb-2" size={32} />
-                    <p className="text-sm text-gray-500 text-center">
-                      {photo ? (
-                        <span className="text-amiste-primary font-bold">
-                          {photo.name}
-                        </span>
-                      ) : currentPhotoUrl ? (
-                        <span className="text-green-600 font-bold">
-                          Imagem Atual Mantida (Clique para trocar)
-                        </span>
-                      ) : (
-                        "Clique para selecionar"
-                      )}
-                    </p>
-                  </div>
-                  {/* Preview da Imagem Atual */}
-                  {!photo && currentPhotoUrl && (
-                    <div className="mt-2 text-center">
-                      <img
-                        src={currentPhotoUrl}
-                        alt="Atual"
-                        className="h-20 mx-auto object-contain bg-white border p-1 rounded"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Modelo */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Modelo Técnico *
-                  </label>
-                  <select
-                    className="w-full p-3 bg-white border border-gray-200 rounded-lg"
-                    value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                  >
-                    <option value="">Selecione...</option>
-                    {MODEL_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                    <option value="Outro">Outro (Digitar)</option>
-                  </select>
-                  {model === "Outro" && (
-                    <input
-                      type="text"
-                      placeholder="Digite o modelo..."
-                      className="mt-2 w-full p-2 bg-gray-50 border rounded-lg"
-                      value={customModel}
-                      onChange={(e) => setCustomModel(e.target.value)}
-                    />
-                  )}
-                </div>
-
-                {/* Marca */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Marca *
-                  </label>
-                  <select
-                    className="w-full p-3 bg-white border border-gray-200 rounded-lg"
-                    value={brand}
-                    onChange={(e) => setBrand(e.target.value)}
-                  >
-                    <option value="">Selecione...</option>
-                    {BRAND_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                    <option value="Outro">Outro (Digitar)</option>
-                  </select>
-                  {brand === "Outro" && (
-                    <input
-                      type="text"
-                      placeholder="Digite a marca..."
-                      className="mt-2 w-full p-2 bg-gray-50 border rounded-lg"
-                      value={customBrand}
-                      onChange={(e) => setCustomBrand(e.target.value)}
-                    />
-                  )}
-                </div>
-
-                {/* Tipo */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Categoria *
-                  </label>
-                  <select
-                    className="w-full p-3 bg-white border border-gray-200 rounded-lg"
-                    value={type}
-                    onChange={(e) => setType(e.target.value)}
-                  >
-                    <option value="">Selecione...</option>
-                    {TYPE_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                    <option value="Outro">Outro (Digitar)</option>
-                  </select>
-                  {type === "Outro" && (
-                    <input
-                      type="text"
-                      placeholder="Digite o tipo..."
-                      className="mt-2 w-full p-2 bg-gray-50 border rounded-lg"
-                      value={customType}
-                      onChange={(e) => setCustomType(e.target.value)}
-                    />
-                  )}
-                </div>
-
-                {/* Status */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Status
-                  </label>
-                  <select
-                    className="w-full p-3 bg-white border border-gray-200 rounded-lg"
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                  >
-                    <option value="Disponível">Disponível</option>
-                    <option value="Alocada">Alocada</option>
-                    <option value="Manutenção">Manutenção</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* 2. DADOS TÉCNICOS */}
-            <div className="space-y-6">
-              <h3 className="text-sm uppercase tracking-wider text-gray-400 font-bold border-b border-gray-100 pb-2">
-                2. Especificações Técnicas (Checklist)
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Voltagem
-                  </label>
-                  <select
-                    className="w-full p-3 bg-white border border-gray-200 rounded-lg"
-                    value={voltage}
-                    onChange={(e) => setVoltage(e.target.value)}
-                  >
-                    <option value="110v">110v</option>
-                    <option value="220v">220v</option>
-                    <option value="Bivolt">Bivolt</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tomada (Amperagem)
-                  </label>
-                  <div className="flex gap-4 mt-3">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="amp"
-                        value="10A"
-                        checked={amperage === "10A"}
-                        onChange={(e) => setAmperage(e.target.value)}
-                      />{" "}
-                      10A
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="amp"
-                        value="20A"
-                        checked={amperage === "20A"}
-                        onChange={(e) => setAmperage(e.target.value)}
-                      />{" "}
-                      20A
-                    </label>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Abastecimento
-                  </label>
-                  <select
-                    className="w-full p-3 bg-white border border-gray-200 rounded-lg"
-                    value={waterSystem}
-                    onChange={(e) => setWaterSystem(e.target.value)}
-                  >
-                    <option value="Reservatório">Reservatório Interno</option>
-                    <option value="Rede Hídrica">Rede Hídrica</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Cor
-                  </label>
-                  <select
-                    className="w-full p-3 bg-white border border-gray-200 rounded-lg"
-                    value={color}
-                    onChange={(e) => setColor(e.target.value)}
-                  >
-                    <option value="Preto">Preto</option>
-                    <option value="Prata">Prata</option>
-                    <option value="Branco">Branco</option>
-                    <option value="Outro">Outro</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Reservatórios (Qtd)
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full p-3 bg-white border border-gray-200 rounded-lg"
-                    value={reservoirs}
-                    onChange={(e) => setReservoirs(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Bico Vapor?
-                  </label>
-                  <div className="flex gap-4 mt-3">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="vap"
-                        value="Sim"
-                        checked={hasSteamer === "Sim"}
-                        onChange={(e) => setHasSteamer(e.target.value)}
-                      />{" "}
-                      Sim
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="vap"
-                        value="Não"
-                        checked={hasSteamer === "Não"}
-                        onChange={(e) => setHasSteamer(e.target.value)}
-                      />{" "}
-                      Não
-                    </label>
-                  </div>
-                </div>
-
-                <div className="md:col-span-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Dimensões (LxAxP)
-                  </label>
-                  <div className="flex gap-4">
-                    <input
-                      type="text"
-                      placeholder="Larg"
-                      className="w-1/3 p-3 bg-white border border-gray-200 rounded-lg"
-                      value={dimensions.w}
-                      onChange={(e) =>
-                        setDimensions({ ...dimensions, w: e.target.value })
-                      }
-                    />
-                    <input
-                      type="text"
-                      placeholder="Alt"
-                      className="w-1/3 p-3 bg-white border border-gray-200 rounded-lg"
-                      value={dimensions.h}
-                      onChange={(e) =>
-                        setDimensions({ ...dimensions, h: e.target.value })
-                      }
-                    />
-                    <input
-                      type="text"
-                      placeholder="Prof"
-                      className="w-1/3 p-3 bg-white border border-gray-200 rounded-lg"
-                      value={dimensions.d}
-                      onChange={(e) =>
-                        setDimensions({ ...dimensions, d: e.target.value })
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="md:col-span-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Patrimônio / Série (Opcional)
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full p-3 bg-white border border-gray-200 rounded-lg"
-                    value={patrimony}
-                    onChange={(e) => setPatrimony(e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* BOTÕES */}
-            <div className="flex items-center justify-end gap-4 pt-6 border-t border-gray-100">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForm(false);
-                  resetForm();
-                }}
-                className="px-6 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors font-medium"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-6 py-2 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-lg transition-colors font-bold flex items-center gap-2 shadow-lg disabled:opacity-50"
-              >
-                <Save size={20} />
-                {loading
-                  ? "Salvando..."
-                  : editingId
-                    ? "Atualizar"
-                    : "Salvar Máquina"}
-              </button>
-            </div>
-          </form>
-        </div>
-      ) : (
-        /* LISTA DE MÁQUINAS */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in">
-          {machines.length === 0 && (
-            <div className="col-span-full py-12 text-center text-gray-400">
-              <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search size={24} />
-              </div>
-              <p>Nenhuma máquina cadastrada ainda.</p>
-            </div>
-          )}
-
-          {machines.map((machine) => (
-            <div
-              key={machine.id}
-              onClick={() => handleEdit(machine)} // CLIQUE AQUI PARA EDITAR
-              className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden group hover:shadow-xl transition-all duration-300 relative cursor-pointer"
+          {permissions.canManageMachines && (
+            <button
+              onClick={handleNew}
+              className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-2"
             >
-              {/* Botão de Excluir */}
-              <button
-                onClick={(e) => handleDelete(machine.id, e)}
-                className="absolute top-2 right-2 bg-white p-2 rounded-full shadow-md text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-red-50"
-                title="Excluir Máquina"
-              >
-                <Trash2 size={16} />
-              </button>
+              <Plus size={20} />{" "}
+              <span className="hidden md:inline">Nova Máquina</span>
+            </button>
+          )}
+        </div>
+      </div>
 
-              <div className="h-48 bg-white p-4 flex items-center justify-center relative overflow-hidden border-b border-gray-50">
+      {/* GRID DE CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {filteredMachines.map((machine) => (
+          <div
+            key={machine.id}
+            onClick={() => handleEdit(machine)}
+            className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col cursor-pointer group hover:-translate-y-1"
+          >
+            {/* Foto */}
+            <div className="h-56 bg-gray-50 relative flex items-center justify-center p-6">
+              <div className="absolute inset-0 bg-amiste-primary/0 group-hover:bg-amiste-primary/5 transition-colors duration-300"></div>
+              {machine.photo_url ? (
                 <img
                   src={machine.photo_url}
-                  alt={machine.name}
-                  className="h-full w-auto object-contain hover:scale-110 transition-transform duration-500"
+                  className="h-full w-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500"
                 />
-              </div>
-              <div className="p-5">
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-xs font-bold uppercase text-amiste-primary bg-red-50 px-2 py-1 rounded">
-                    {machine.type}
-                  </span>
-                  <span className="text-xs text-gray-500 border border-gray-200 px-2 py-1 rounded">
-                    {machine.voltage}
-                  </span>
+              ) : (
+                <div className="text-gray-300">
+                  <ImageIcon size={48} />
                 </div>
-                <h3 className="font-bold text-lg text-gray-800 mb-1 leading-tight">
-                  {machine.name}
-                </h3>
-                <p className="text-sm text-gray-500 mb-1">
-                  {machine.brand} / {machine.model}
-                </p>
+              )}
+
+              {/* Badges Flutuantes */}
+              <div className="absolute top-3 left-3 flex gap-1">
+                <span
+                  className={`text-[10px] font-bold px-2 py-1 rounded border ${machine.voltage === "220v" ? "bg-red-50 text-red-700 border-red-100" : "bg-blue-50 text-blue-700 border-blue-100"}`}
+                >
+                  {machine.voltage}
+                </span>
+              </div>
+
+              {/* Botão Excluir (Hover) */}
+              {permissions.canManageMachines && (
+                <button
+                  onClick={(e) => handleDelete(machine.id, e)}
+                  className="absolute top-3 right-3 p-2 bg-white rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-50"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
+            </div>
+
+            {/* Info */}
+            <div className="p-5 flex-1 flex flex-col">
+              <h3 className="font-bold text-gray-800 text-lg leading-tight mb-1">
+                {machine.name}
+              </h3>
+              <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-4">
+                {machine.brand}
+              </p>
+
+              <div className="mt-auto flex gap-2">
+                <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs flex items-center gap-1">
+                  <Zap size={12} /> {machine.amperage}
+                </span>
+                <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs flex items-center gap-1">
+                  <Droplet size={12} />{" "}
+                  {machine.water_system === "Rede Hídrica" ? "Rede" : "Tanque"}
+                </span>
               </div>
             </div>
-          ))}
+          </div>
+        ))}
+      </div>
+
+      {loading && (
+        <p className="text-center text-gray-400 py-10">
+          Carregando catálogo...
+        </p>
+      )}
+
+      {/* --- MODAL DE FORMULÁRIO --- */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            {/* Header Modal */}
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center z-10">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                {editingId ? (
+                  <Edit2 size={20} className="text-amiste-primary" />
+                ) : (
+                  <Plus size={20} className="text-amiste-primary" />
+                )}
+                {editingId ? "Editar Máquina" : "Nova Máquina"}
+              </h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSave} className="p-6 md:p-8 space-y-8">
+              {/* 1. DADOS BÁSICOS */}
+              <section className="space-y-4">
+                <h3 className="text-xs uppercase font-bold text-gray-400 tracking-wider mb-4 flex items-center gap-2">
+                  <ImageIcon size={14} /> Identificação
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Nome Comercial *
+                    </label>
+                    <input
+                      required
+                      className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Ex: Phedra Evo Espresso"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Foto da Máquina
+                    </label>
+                    <div className="flex items-center gap-4 p-4 border border-dashed border-gray-300 rounded-xl bg-gray-50">
+                      {currentPhotoUrl && !photo && (
+                        <img
+                          src={currentPhotoUrl}
+                          className="w-16 h-16 object-contain bg-white rounded border p-1"
+                        />
+                      )}
+                      <label className="cursor-pointer bg-white border border-gray-200 hover:border-amiste-primary text-gray-600 px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-sm">
+                        Escolher Arquivo
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => setPhoto(e.target.files[0])}
+                        />
+                      </label>
+                      {photo && (
+                        <span className="text-sm text-amiste-primary font-bold">
+                          {photo.name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Marca *
+                    </label>
+                    <select
+                      className="w-full p-3 border border-gray-200 rounded-xl bg-white"
+                      value={brand}
+                      onChange={(e) => setBrand(e.target.value)}
+                    >
+                      <option value="">Selecione...</option>
+                      {BRAND_OPTIONS.map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                      <option value="Outro">Outro</option>
+                    </select>
+                    {brand === "Outro" && (
+                      <input
+                        className="mt-2 w-full p-2 border rounded-lg bg-gray-50 text-sm"
+                        placeholder="Digite a marca..."
+                        value={customBrand}
+                        onChange={(e) => setCustomBrand(e.target.value)}
+                      />
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Categoria *
+                    </label>
+                    <select
+                      className="w-full p-3 border border-gray-200 rounded-xl bg-white"
+                      value={type}
+                      onChange={(e) => setType(e.target.value)}
+                    >
+                      <option value="">Selecione...</option>
+                      {TYPE_OPTIONS.map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                      <option value="Outro">Outro</option>
+                    </select>
+                    {type === "Outro" && (
+                      <input
+                        className="mt-2 w-full p-2 border rounded-lg bg-gray-50 text-sm"
+                        placeholder="Digite o tipo..."
+                        value={customType}
+                        onChange={(e) => setCustomType(e.target.value)}
+                      />
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              <div className="h-px bg-gray-100"></div>
+
+              {/* 2. DADOS TÉCNICOS */}
+              <section className="space-y-4">
+                <h3 className="text-xs uppercase font-bold text-gray-400 tracking-wider mb-4 flex items-center gap-2">
+                  <Zap size={14} /> Especificações Técnicas
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Voltagem
+                    </label>
+                    <select
+                      className="w-full p-3 border border-gray-200 rounded-xl bg-white"
+                      value={voltage}
+                      onChange={(e) => setVoltage(e.target.value)}
+                    >
+                      <option>220v</option>
+                      <option>110v</option>
+                      <option>Bivolt</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Amperagem
+                    </label>
+                    <div className="flex gap-2 mt-2">
+                      {["10A", "20A"].map((opt) => (
+                        <label
+                          key={opt}
+                          className={`flex-1 text-center cursor-pointer py-2 rounded-lg text-sm font-bold border transition-all ${amperage === opt ? "bg-amiste-primary text-white border-amiste-primary" : "bg-white border-gray-200 text-gray-600"}`}
+                        >
+                          <input
+                            type="radio"
+                            name="amp"
+                            value={opt}
+                            checked={amperage === opt}
+                            onChange={() => setAmperage(opt)}
+                            className="hidden"
+                          />
+                          {opt}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Água
+                    </label>
+                    <select
+                      className="w-full p-3 border border-gray-200 rounded-xl bg-white"
+                      value={waterSystem}
+                      onChange={(e) => setWaterSystem(e.target.value)}
+                    >
+                      <option value="Reservatório">Reservatório</option>
+                      <option value="Rede Hídrica">Rede Hídrica</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      <Ruler size={12} className="inline mr-1" /> Dimensões
+                      (LxAxP)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        placeholder="L"
+                        className="w-1/3 p-3 border border-gray-200 rounded-xl text-center"
+                        value={dimensions.w}
+                        onChange={(e) =>
+                          setDimensions({ ...dimensions, w: e.target.value })
+                        }
+                      />
+                      <input
+                        placeholder="A"
+                        className="w-1/3 p-3 border border-gray-200 rounded-xl text-center"
+                        value={dimensions.h}
+                        onChange={(e) =>
+                          setDimensions({ ...dimensions, h: e.target.value })
+                        }
+                      />
+                      <input
+                        placeholder="P"
+                        className="w-1/3 p-3 border border-gray-200 rounded-xl text-center"
+                        value={dimensions.d}
+                        onChange={(e) =>
+                          setDimensions({ ...dimensions, d: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Patrimônio / Série
+                    </label>
+                    <input
+                      className="w-full p-3 border border-gray-200 rounded-xl"
+                      value={patrimony}
+                      onChange={(e) => setPatrimony(e.target.value)}
+                      placeholder="Opcional"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-6 py-3 text-gray-500 hover:bg-gray-100 rounded-xl font-bold transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-8 py-3 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-xl font-bold shadow-lg flex items-center gap-2 disabled:opacity-50"
+                >
+                  <Save size={20} />{" "}
+                  {loading ? "Salvando..." : "Salvar Máquina"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

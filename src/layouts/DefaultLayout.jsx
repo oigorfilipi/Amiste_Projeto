@@ -15,6 +15,7 @@ import {
   Eye,
   XCircle,
   DollarSign,
+  Trash2,
 } from "lucide-react";
 import clsx from "clsx";
 import logoImg from "../assets/img/logo.png";
@@ -33,61 +34,73 @@ export function DefaultLayout() {
 
   const [teamMembers, setTeamMembers] = useState([]);
 
+  // Buscar lista de membros (Só se for ADM/Dono e NÃO estiver testando outro usuário)
   useEffect(() => {
-    // Busca equipe apenas se for ADM ou Dono REAIS
     if (realProfile && ["ADM", "Dono"].includes(realProfile.role)) {
       fetchTeam();
     }
-  }, [realProfile]);
+  }, [realProfile, isImpersonating]); // Recarrega se sair do modo teste
 
   async function fetchTeam() {
+    // Busca todos que NÃO são o próprio usuário logado (para não se excluir)
     const { data } = await supabase
       .from("profiles")
       .select("*")
-      .neq("role", "ADM");
+      .neq("id", realProfile?.id);
+
     if (data) setTeamMembers(data);
   }
 
-  // --- MENU LATERAL (Configurado conforme seu pedido) ---
+  // --- NOVA FUNÇÃO DE DELETAR ---
+  async function handleDeleteMember(id, name) {
+    if (
+      !confirm(
+        `Tem certeza que deseja EXCLUIR a conta de "${name}"?\n\nEssa ação é irreversível.`,
+      )
+    )
+      return;
+
+    try {
+      const { error } = await supabase.from("profiles").delete().eq("id", id);
+
+      if (error) throw error;
+
+      alert(`Usuário "${name}" excluído com sucesso.`);
+      fetchTeam(); // Atualiza a lista na hora
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao excluir: " + error.message);
+    }
+  }
+
+  // --- ITENS DO MENU ---
   const navItems = [
     { path: "/home", icon: LayoutDashboard, label: "Início", visible: true },
-
-    // Financeiro (Só Dono e Financeiro)
     {
       path: "/financial",
       icon: DollarSign,
       label: "Financeiro",
       visible: permissions.canViewFinancials,
     },
-
-    // Checklist (Todos menos Financeiro, basicamente)
     {
       path: "/checklists",
       icon: ClipboardList,
       label: "Checklist",
       visible: permissions.canCreateChecklist,
     },
-
-    // Wiki (Todos veem)
     { path: "/wiki", icon: Wrench, label: "Manutenção", visible: true },
-
-    // Portfólio (Comercial e Dono)
     {
       path: "/portfolio",
       icon: FileText,
       label: "Portfólio",
       visible: permissions.canManagePortfolio,
     },
-
-    // Máquinas (Todos menos Financeiro)
     {
       path: "/machines",
       icon: Coffee,
       label: "Máquinas",
       visible: permissions.canManageMachines,
     },
-
-    // Histórico (SOMENTE DONO)
     {
       path: "/history",
       icon: History,
@@ -155,7 +168,7 @@ export function DefaultLayout() {
               );
             })}
 
-          {/* Botão Cadastro (Só ADM/Dono vê e se não estiver testando) */}
+          {/* Botão Cadastro */}
           {permissions.canManageUsers && !isImpersonating && (
             <Link
               to="/register"
@@ -165,38 +178,63 @@ export function DefaultLayout() {
             </Link>
           )}
 
-          {/* --- LISTA DE TESTE DE CONTAS (SÓ ADM e DONO REAIS VEEM) --- */}
+          {/* --- LISTA DE EQUIPE (COM OPÇÃO DE EXCLUIR) --- */}
           {realProfile &&
             ["ADM", "Dono"].includes(realProfile.role) &&
             !isImpersonating && (
               <div className="mt-8 pt-4 border-t border-gray-100">
                 <p className="px-3 text-xs font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
-                  <Users size={12} /> Testar Acesso
+                  <Users size={12} /> Gerenciar Acesso
                 </p>
                 <div className="space-y-1">
+                  {teamMembers.length === 0 && (
+                    <p className="text-xs text-gray-400 px-3">
+                      Nenhum membro encontrado.
+                    </p>
+                  )}
+
                   {teamMembers.map((member) => (
-                    <button
+                    <div
                       key={member.id}
-                      onClick={() => {
-                        if (
-                          confirm(
-                            `Entrar no modo visualização como ${member.role}?`,
-                          )
-                        ) {
-                          startImpersonation(member);
-                        }
-                      }}
-                      className="w-full text-left flex items-center justify-between px-3 py-2 text-xs text-gray-600 hover:bg-gray-100 rounded-lg group"
+                      className="group flex items-center justify-between px-2 py-1 hover:bg-gray-100 rounded-lg"
                     >
-                      <span className="truncate w-24">
-                        {member.nickname || member.full_name?.split(" ")[0]}
-                      </span>
-                      <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-[4px] text-[10px] group-hover:bg-gray-300">
-                        {member.role
-                          ? member.role.substring(0, 3).toUpperCase()
-                          : "UNK"}
-                      </span>
-                    </button>
+                      {/* Botão para Testar (Lado Esquerdo) */}
+                      <button
+                        onClick={() => {
+                          if (
+                            confirm(
+                              `Entrar no modo visualização como ${member.role}?`,
+                            )
+                          ) {
+                            startImpersonation(member);
+                          }
+                        }}
+                        className="flex-1 text-left flex items-center gap-2 py-1"
+                        title="Clique para testar este perfil"
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-gray-700 truncate w-24">
+                            {member.nickname || member.full_name?.split(" ")[0]}
+                          </span>
+                          <span className="text-[9px] text-gray-400 bg-gray-200 px-1 rounded w-fit">
+                            {member.role
+                              ? member.role.substring(0, 3).toUpperCase()
+                              : "UNK"}
+                          </span>
+                        </div>
+                      </button>
+
+                      {/* Botão Excluir (Só aparece no Hover) */}
+                      <button
+                        onClick={() =>
+                          handleDeleteMember(member.id, member.full_name)
+                        }
+                        className="p-1.5 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded transition-all opacity-0 group-hover:opacity-100"
+                        title="Excluir Colaborador"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -215,8 +253,9 @@ export function DefaultLayout() {
 
       <main className="flex-1 overflow-auto">
         {isImpersonating && (
-          <div className="bg-amber-100 text-amber-800 text-xs font-bold text-center py-1 border-b border-amber-200">
-            ⚠️ MODO TESTE: Vendo como {userProfile.role.toUpperCase()}
+          <div className="bg-amber-100 text-amber-800 text-xs font-bold text-center py-1 border-b border-amber-200 animate-pulse">
+            ⚠️ MODO TESTE ATIVO: Você está visualizando o sistema como{" "}
+            {userProfile.role.toUpperCase()}
           </div>
         )}
         <div className="p-8">

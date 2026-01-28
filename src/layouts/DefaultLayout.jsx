@@ -3,46 +3,35 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import { AuthContext } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
 import { ProfileModal } from "../components/ProfileModal";
+import { Header } from "../components/Header"; // <--- IMPORTADO O HEADER
 import {
   LayoutDashboard,
   ClipboardList,
   Wrench,
   FileText,
   Coffee,
-  LogOut,
-  History,
   UserPlus,
   Users,
-  Eye,
-  XCircle,
   DollarSign,
   Trash2,
   Edit2,
-  Tag, // <--- Importei o Tag para o menu de preços
 } from "lucide-react";
 import clsx from "clsx";
 import logoImg from "../assets/img/logo.png";
 
 export function DefaultLayout() {
   const location = useLocation();
-  const {
-    userProfile,
-    realProfile,
-    permissions,
-    logOut,
-    isImpersonating,
-    startImpersonation,
-    stopImpersonation,
-  } = useContext(AuthContext);
+  const { realProfile, permissions, isImpersonating, startImpersonation } =
+    useContext(AuthContext);
 
   const [teamMembers, setTeamMembers] = useState([]);
 
-  // --- ESTADOS DO MODAL ---
+  // --- ESTADOS DO MODAL (Para editar OUTROS membros da equipe) ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [profileToEdit, setProfileToEdit] = useState(null);
 
   useEffect(() => {
-    // SÓ DEV E DONO VEEM A LISTA
+    // SÓ DEV E DONO VEEM A LISTA DE EQUIPE NA LATERAL
     if (realProfile && ["DEV", "Dono"].includes(realProfile.role)) {
       fetchTeam();
     }
@@ -52,21 +41,12 @@ export function DefaultLayout() {
     const { data } = await supabase
       .from("profiles")
       .select("*")
-      .neq("id", realProfile?.id);
+      .neq("id", realProfile?.id); // Não traz a si mesmo (pq edita no Header)
 
     if (data) setTeamMembers(data);
   }
 
-  // --- FUNÇÕES DE AÇÃO ---
-  function handleOpenMyProfile() {
-    setProfileToEdit(userProfile);
-    if (isImpersonating) {
-      alert("Saia do Modo Teste para editar seu perfil.");
-      return;
-    }
-    setProfileToEdit(realProfile);
-    setIsModalOpen(true);
-  }
+  // --- FUNÇÕES DE AÇÃO DA LISTA ---
 
   function handleEditMember(member, e) {
     e.stopPropagation();
@@ -76,7 +56,6 @@ export function DefaultLayout() {
 
   async function handleDeleteMember(id, name, role, e) {
     e.stopPropagation();
-    // BLOQUEIO HIERÁRQUICO
     if (["DEV", "Dono"].includes(role)) {
       return alert(
         "Ação Bloqueada: Não é possível excluir contas de nível Superior (Dono/DEV).",
@@ -95,20 +74,16 @@ export function DefaultLayout() {
     }
   }
 
-  // --- TAGS PADRONIZADAS ---
   function getRoleTag(role) {
-    if (role === "DEV") return "DEV"; // Superusuário
-    if (role === "ADM") return "ADM"; // Administrativo Operacional
-    if (role === "Dono") return "BOSS"; // Dono
+    if (role === "DEV") return "DEV";
+    if (role === "ADM") return "ADM";
+    if (role === "Dono") return "BOSS";
     return role ? role.substring(0, 3).toUpperCase() : "UNK";
   }
 
+  // --- MENU LATERAL (SÓ OPERACIONAL) ---
   const navItems = [
     { path: "/home", icon: LayoutDashboard, label: "Início", visible: true },
-
-    // --- NOVO ITEM: TABELA DE PREÇOS (Liberado para todos) ---
-    { path: "/prices", icon: Tag, label: "Tabela Preços", visible: true },
-
     {
       path: "/financial",
       icon: DollarSign,
@@ -134,74 +109,32 @@ export function DefaultLayout() {
       label: "Máquinas",
       visible: permissions.canManageMachines,
     },
-    {
-      path: "/history",
-      icon: History,
-      label: "Histórico",
-      visible: permissions.canViewHistory,
-    },
+    // Histórico e Preços foram removidos daqui (foram pro Header)
   ];
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* MODAL DE EDIÇÃO */}
+      {/* Modal para editar EQUIPE (O modal de editar a si mesmo fica no Header) */}
       <ProfileModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         profileToEdit={profileToEdit}
         currentUserRole={realProfile?.role}
-        onSave={() => {
-          fetchTeam();
-          if (!isImpersonating && profileToEdit?.id === realProfile?.id) {
-            window.location.reload();
-          }
-        }}
+        onSave={() => fetchTeam()}
       />
 
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
-        <div className="h-21 flex items-center justify-center border-b border-gray-100 bg-amiste-primary p-4 sticky top-0 z-10">
-          <img
-            src={logoImg}
-            alt="Logo"
-            className="h-full w-auto object-contain"
-          />
+      {/* --- SIDEBAR LIMPA --- */}
+      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 z-30">
+        {/* Logo */}
+        <div className="h-16 flex items-center justify-center border-b border-gray-100 bg-white p-4">
+          <img src={logoImg} alt="Logo" className="h-8 w-auto object-contain" />
         </div>
 
-        {/* CABEÇALHO DO PERFIL */}
-        <div
-          onClick={handleOpenMyProfile}
-          className={`p-6 border-b border-gray-100 transition-colors cursor-pointer group hover:bg-gray-100 relative ${isImpersonating ? "bg-amber-50" : "bg-gray-50"}`}
-          title="Clique para editar seu perfil"
-        >
-          {isImpersonating && (
-            <div className="mb-2 text-xs font-bold text-amber-600 flex items-center gap-1 uppercase tracking-wider">
-              <Eye size={12} /> Visualizando como:
-            </div>
-          )}
-          <p className="text-sm font-bold text-gray-900 truncate flex items-center gap-2">
-            {userProfile?.nickname || userProfile?.full_name || "Carregando..."}
-            {!isImpersonating && (
-              <Edit2 size={12} className="opacity-0 group-hover:opacity-50" />
-            )}
+        {/* Navegação Principal */}
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          <p className="px-3 text-[10px] font-bold text-gray-400 uppercase mb-2">
+            Operacional
           </p>
-          <p className="text-xs text-gray-500">
-            Cargo: <span className="font-bold">{userProfile?.role}</span>
-          </p>
-
-          {isImpersonating && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                stopImpersonation();
-              }}
-              className="mt-3 w-full flex items-center justify-center gap-2 bg-amber-200 hover:bg-amber-300 text-amber-900 text-xs font-bold py-1.5 rounded transition-colors"
-            >
-              <XCircle size={14} /> Sair do Teste
-            </button>
-          )}
-        </div>
-
-        <nav className="flex-1 p-4 space-y-1">
           {navItems
             .filter((i) => i.visible)
             .map((item) => {
@@ -214,30 +147,33 @@ export function DefaultLayout() {
                   className={clsx(
                     "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                     isActive
-                      ? "bg-red-50 text-amiste-primary"
-                      : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+                      ? "bg-amiste-primary text-white shadow-md shadow-red-200"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
                   )}
                 >
-                  <Icon size={20} /> {item.label}
+                  <Icon size={18} /> {item.label}
                 </Link>
               );
             })}
 
+          {/* Botão Cadastrar Equipe */}
           {permissions.canManageUsers && !isImpersonating && (
-            <Link
-              to="/register"
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-blue-600 hover:bg-blue-50 mt-4 border border-dashed border-blue-200"
-            >
-              <UserPlus size={20} /> Cadastrar Equipe
-            </Link>
+            <div className="mt-6">
+              <Link
+                to="/register"
+                className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-blue-600 hover:bg-blue-50 border border-dashed border-blue-200 transition-colors"
+              >
+                <UserPlus size={18} /> Nova Conta
+              </Link>
+            </div>
           )}
 
-          {/* LISTA DE EQUIPE (SÓ DEV E DONO) */}
+          {/* LISTA DE EQUIPE (Apenas DEV e Dono veem aqui) */}
           {realProfile &&
             ["DEV", "Dono"].includes(realProfile.role) &&
             !isImpersonating && (
               <div className="mt-8 pt-4 border-t border-gray-100">
-                <p className="px-3 text-xs font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
+                <p className="px-3 text-[10px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
                   <Users size={12} /> Gerenciar Acesso
                 </p>
                 <div className="space-y-1">
@@ -246,7 +182,7 @@ export function DefaultLayout() {
                     return (
                       <div
                         key={member.id}
-                        className="group flex items-center justify-between px-2 py-1 hover:bg-gray-100 rounded-lg"
+                        className="group flex items-center justify-between px-2 py-1.5 hover:bg-gray-50 rounded-lg transition-colors"
                       >
                         {/* Botão Testar */}
                         <button
@@ -258,7 +194,7 @@ export function DefaultLayout() {
                             )
                               startImpersonation(member);
                           }}
-                          className="flex-1 text-left flex items-center gap-2 py-1"
+                          className="flex-1 text-left flex items-center gap-2"
                         >
                           <div className="flex flex-col">
                             <span className="text-xs font-bold text-gray-700 truncate w-24">
@@ -266,21 +202,21 @@ export function DefaultLayout() {
                                 member.full_name?.split(" ")[0]}
                             </span>
                             <span
-                              className={`text-[9px] px-1 rounded w-fit ${member.role === "DEV" ? "bg-purple-100 text-purple-700 font-bold" : "bg-gray-200 text-gray-600"}`}
+                              className={`text-[9px] px-1.5 py-0.5 rounded w-fit ${member.role === "DEV" ? "bg-purple-100 text-purple-700 font-bold" : "bg-gray-100 text-gray-500"}`}
                             >
                               {getRoleTag(member.role)}
                             </span>
                           </div>
                         </button>
 
-                        {/* Ações */}
+                        {/* Ações (Só aparecem no hover) */}
                         <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={(e) => handleEditMember(member, e)}
                             className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded"
                             title="Editar Cargo/Perfil"
                           >
-                            <Edit2 size={14} />
+                            <Edit2 size={12} />
                           </button>
 
                           {!isVip && (
@@ -296,7 +232,7 @@ export function DefaultLayout() {
                               className="p-1.5 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded"
                               title="Excluir"
                             >
-                              <Trash2 size={14} />
+                              <Trash2 size={12} />
                             </button>
                           )}
                         </div>
@@ -307,28 +243,18 @@ export function DefaultLayout() {
               </div>
             )}
         </nav>
-
-        <div className="p-4 border-t border-gray-100">
-          <button
-            onClick={logOut}
-            className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-amiste-primary transition-colors"
-          >
-            <LogOut size={20} /> Sair
-          </button>
-        </div>
       </aside>
 
-      <main className="flex-1 overflow-auto">
-        {isImpersonating && (
-          <div className="bg-amber-100 text-amber-800 text-xs font-bold text-center py-1 border-b border-amber-200 animate-pulse">
-            ⚠️ MODO TESTE ATIVO: Visualizando como{" "}
-            {userProfile.role.toUpperCase()}
-          </div>
-        )}
-        <div className="p-8">
+      {/* --- ÁREA PRINCIPAL (HEADER + CONTEÚDO) --- */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        {/* O NOVO HEADER AQUI NO TOPO */}
+        <Header />
+
+        {/* Onde as páginas carregam */}
+        <main className="flex-1 overflow-auto bg-gray-50 p-8">
           <Outlet />
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

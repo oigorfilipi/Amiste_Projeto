@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
+import { Link } from "react-router-dom"; // Importe Link
 import {
   Plus,
   Search,
@@ -11,7 +12,7 @@ import {
   Package,
   Tag,
   Scale,
-  Image as ImageIcon,
+  ChefHat,
 } from "lucide-react";
 
 const BRAND_OPTIONS = [
@@ -61,7 +62,7 @@ export function Supplies() {
   }
 
   function handleEdit(item) {
-    if (!permissions.canManageMachines) return alert("Sem permissão."); // Usando mesma permissão de máquinas por enquanto
+    if (!permissions.canManageMachines) return alert("Sem permissão.");
     setEditingId(item.id);
     setFormData({
       name: item.name,
@@ -138,6 +139,7 @@ export function Supplies() {
               Gerencie xaropes, pós, grãos e descartáveis.
             </p>
           </div>
+
           <div className="flex gap-3 w-full md:w-auto">
             <div className="relative flex-1 md:w-64">
               <Search
@@ -151,6 +153,16 @@ export function Supplies() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+
+            {/* BOTÃO DE RECEITAS */}
+            <Link
+              to="/recipes"
+              className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-5 py-3 rounded-xl font-bold shadow-sm flex items-center gap-2 transition-all"
+            >
+              <ChefHat size={20} />{" "}
+              <span className="hidden md:inline">Receitas</span>
+            </Link>
+
             {permissions.canManageMachines && (
               <button
                 onClick={handleNew}
@@ -209,7 +221,7 @@ export function Supplies() {
           ))}
         </div>
 
-        {/* MODAL */}
+        {/* MODAL (Mantido igual, mas aqui está para garantir) */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">

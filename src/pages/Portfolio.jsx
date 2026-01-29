@@ -41,8 +41,9 @@ export function Portfolio() {
   const [installmentValue, setInstallmentValue] = useState(0);
   const [videoUrl, setVideoUrl] = useState("");
 
-  // NOVO: Status da Proposta
-  const [status, setStatus] = useState("Aguardando"); // Aguardando, Concluido, Cancelado
+  // NOVOS CAMPOS
+  const [status, setStatus] = useState("Aguardando");
+  const [obs, setObs] = useState(""); // <--- NOVO CAMPO OBSERVAÇÃO
 
   useEffect(() => {
     fetchMachines();
@@ -81,7 +82,8 @@ export function Portfolio() {
     setTotalValue(0);
     setInstallments(1);
     setVideoUrl("");
-    setStatus("Aguardando"); // Padrão
+    setObs(""); // Reset OBS
+    setStatus("Aguardando");
     setDescription(
       "Equipamento de alta performance, ideal para seu estabelecimento. Design moderno e extração perfeita.",
     );
@@ -98,37 +100,24 @@ export function Portfolio() {
     setInstallments(p.installments);
     setDescription(p.description);
     setVideoUrl(p.video_url || "");
-    setStatus(p.status || "Aguardando"); // Carrega status ou define padrão
+    setObs(p.obs || ""); // Carrega OBS
+    setStatus(p.status || "Aguardando");
     setView("editor");
-  }
-
-  function handleRestoreVersion(e) {
-    const index = e.target.value;
-    if (index === "") return;
-    const v = versions[index];
-    if (
-      !confirm(
-        `Restaurar para a versão de ${new Date(v.saved_at).toLocaleString()}?`,
-      )
-    ) {
-      e.target.value = "";
-      return;
-    }
-    setCustomerName(v.customer_name);
-    setNegotiationType(v.negotiation_type);
-    setTotalValue(v.total_value);
-    setInstallments(v.installments);
-    setDescription(v.description);
-    setVideoUrl(v.video_url || "");
-    // Não restauramos status pois é gestão atual
-    alert("Dados restaurados! Clique em Salvar para confirmar.");
-    e.target.value = "";
   }
 
   function handleSelectMachine(e) {
     const id = e.target.value;
     const m = machines.find((x) => x.id.toString() === id);
-    setSelectedMachine(m || null);
+    if (m) {
+      setSelectedMachine(m);
+      // PUXA A DESCRIÇÃO DA MÁQUINA SE EXISTIR, SENÃO USA PADRÃO
+      setDescription(
+        m.description ||
+          "Equipamento de alta performance, ideal para seu estabelecimento. Design moderno e extração perfeita.",
+      );
+    } else {
+      setSelectedMachine(null);
+    }
   }
 
   async function handleSave() {
@@ -145,21 +134,18 @@ export function Portfolio() {
       installment_value: installmentValue,
       description: description,
       video_url: videoUrl,
-      status: status, // Salva o Status
+      status: status,
+      obs: obs, // Salva OBS
     };
 
     try {
       if (editingId) {
         const oldVersion = {
           saved_at: new Date().toISOString(),
-          customer_name: customerName,
-          negotiation_type: negotiationType,
-          total_value: totalValue,
-          installments: installments,
-          description: description,
-          video_url: videoUrl,
+          ...currentData,
         };
-        const newVersionsList = [oldVersion, ...versions].slice(0, 10);
+        const newVersionsList = [{ ...oldVersion }, ...versions].slice(0, 10);
+
         const { error } = await supabase
           .from("portfolios")
           .update({ ...currentData, versions: newVersionsList })
@@ -199,6 +185,7 @@ export function Portfolio() {
     installment_value: parseFloat(installmentValue),
     description: description,
     video_url: videoUrl,
+    obs: obs, // Passa OBS para PDF
   };
 
   const filteredPortfolios = savedPortfolios.filter(
@@ -207,7 +194,29 @@ export function Portfolio() {
       p.machine_data?.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  // Helper de Estilo de Status
+  function handleRestoreVersion(e) {
+    const index = e.target.value;
+    if (index === "") return;
+    const v = versions[index];
+    if (
+      !confirm(
+        `Restaurar para a versão de ${new Date(v.saved_at).toLocaleString()}?`,
+      )
+    ) {
+      e.target.value = "";
+      return;
+    }
+    setCustomerName(v.customer_name);
+    setNegotiationType(v.negotiation_type);
+    setTotalValue(v.total_value);
+    setInstallments(v.installments);
+    setDescription(v.description);
+    setVideoUrl(v.video_url || "");
+    // Não restauramos status pois é gestão atual
+    alert("Dados restaurados! Clique em Salvar para confirmar.");
+    e.target.value = "";
+  }
+
   const getStatusStyle = (st) => {
     switch (st) {
       case "Concluido":
@@ -236,7 +245,6 @@ export function Portfolio() {
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20">
-      {/* --- MODO LISTA --- */}
       {view === "list" && (
         <div className="max-w-7xl mx-auto p-6 md:p-8 animate-fade-in">
           <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
@@ -248,7 +256,6 @@ export function Portfolio() {
                 Gerencie propostas comerciais e acompanhe o status.
               </p>
             </div>
-
             <div className="flex gap-3 w-full md:w-auto">
               <div className="relative flex-1 md:w-64">
                 <Search
@@ -264,7 +271,7 @@ export function Portfolio() {
               </div>
               <button
                 onClick={handleNewPortfolio}
-                className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-2"
+                className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2"
               >
                 <Plus size={20} />{" "}
                 <span className="hidden md:inline">Nova Proposta</span>
@@ -275,25 +282,19 @@ export function Portfolio() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {filteredPortfolios.map((p) => {
               const statusStyle = getStatusStyle(p.status || "Aguardando");
-
               return (
                 <div
                   key={p.id}
                   onClick={() => handleEditPortfolio(p)}
                   className="group cursor-pointer flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden hover:-translate-y-1"
                 >
-                  {/* Status Badge Absolute */}
                   <div
                     className={`absolute top-2 left-2 z-10 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-sm ${statusStyle.bg} ${statusStyle.text}`}
                   >
                     <statusStyle.icon size={10} /> {statusStyle.label}
                   </div>
-
-                  {/* Mini A4 Preview */}
                   <div className="w-full aspect-[210/297] bg-white relative flex flex-col border-b border-gray-100">
-                    <div className="h-[15%] bg-white px-4 pt-4 flex justify-end">
-                      {/* Espaço vazio header */}
-                    </div>
+                    <div className="h-[15%] bg-white px-4 pt-4 flex justify-end"></div>
                     <div className="flex-1 flex flex-col items-center justify-center p-4">
                       {p.machine_data?.photo_url ? (
                         <img
@@ -315,7 +316,6 @@ export function Portfolio() {
                         {formatMoney(p.total_value)}
                       </div>
                     </div>
-
                     <button
                       onClick={(e) => handleDelete(p.id, e)}
                       className="absolute top-2 right-2 bg-white text-red-500 p-1.5 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50 z-10"
@@ -323,7 +323,6 @@ export function Portfolio() {
                       <Trash2 size={14} />
                     </button>
                   </div>
-
                   <div className="p-4 bg-white">
                     <h3
                       className="font-bold text-gray-800 text-sm truncate"
@@ -395,10 +394,10 @@ export function Portfolio() {
           </div>
 
           <div className="flex flex-1 overflow-hidden">
-            {/* SIDEBAR DE EDIÇÃO (Esquerda) */}
+            {/* SIDEBAR DE EDIÇÃO */}
             <div className="w-96 bg-white border-r border-gray-200 flex flex-col z-10 overflow-y-auto">
               <div className="p-6 space-y-6">
-                {/* STATUS DA NEGOCIAÇÃO (NOVO) */}
+                {/* Status (Mantido igual) */}
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                   <label className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-1">
                     <AlertCircle size={14} /> Status da Negociação
@@ -430,11 +429,7 @@ export function Portfolio() {
                       <button
                         key={st.id}
                         onClick={() => setStatus(st.id)}
-                        className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${
-                          status === st.id
-                            ? `${st.bg} ${st.border} ${st.color} ring-2 ring-offset-1 ring-${st.color.split("-")[1]}-200`
-                            : "bg-white border-gray-100 text-gray-400 hover:bg-gray-50"
-                        }`}
+                        className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${status === st.id ? `${st.bg} ${st.border} ${st.color} ring-2 ring-offset-1 ring-${st.color.split("-")[1]}-200` : "bg-white border-gray-100 text-gray-400 hover:bg-gray-50"}`}
                       >
                         <st.icon size={20} className="mb-1" />
                         <span className="text-[10px] font-bold uppercase">
@@ -445,7 +440,6 @@ export function Portfolio() {
                   </div>
                 </div>
 
-                {/* Histórico */}
                 {versions.length > 0 && (
                   <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
                     <label className="text-xs font-bold text-blue-800 mb-2 flex items-center gap-1">
@@ -479,7 +473,6 @@ export function Portfolio() {
                   <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide border-b border-gray-100 pb-2">
                     Configuração Básica
                   </h3>
-
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Máquina
@@ -497,7 +490,6 @@ export function Portfolio() {
                       ))}
                     </select>
                   </div>
-
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Cliente
@@ -509,7 +501,6 @@ export function Portfolio() {
                       placeholder="Nome da Empresa/Pessoa"
                     />
                   </div>
-
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Link de Vídeo (Opcional)
@@ -533,7 +524,6 @@ export function Portfolio() {
                   <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide border-b border-gray-100 pb-2 pt-4">
                     Valores e Condições
                   </h3>
-
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
@@ -567,7 +557,6 @@ export function Portfolio() {
                       </select>
                     </div>
                   </div>
-
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Valor Total
@@ -585,7 +574,6 @@ export function Portfolio() {
                       />
                     </div>
                   </div>
-
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Texto da Proposta
@@ -596,9 +584,21 @@ export function Portfolio() {
                       onChange={(e) => setDescription(e.target.value)}
                     ></textarea>
                   </div>
+
+                  {/* NOVO CAMPO: OBSERVAÇÕES */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Observações Gerais
+                    </label>
+                    <textarea
+                      className="w-full p-3 border border-gray-200 rounded-xl h-20 focus:ring-2 focus:ring-amiste-primary outline-none text-sm resize-none"
+                      value={obs}
+                      onChange={(e) => setObs(e.target.value)}
+                      placeholder="Ex: Incluso kit de insumos inicial..."
+                    ></textarea>
+                  </div>
                 </div>
 
-                {/* Resumo Sidebar */}
                 <div className="bg-gray-900 text-white p-5 rounded-2xl shadow-lg mt-4">
                   <p className="text-xs text-gray-400 uppercase font-bold mb-1">
                     Parcela Mensal Estimada
@@ -610,11 +610,9 @@ export function Portfolio() {
               </div>
             </div>
 
-            {/* PREVIEW DA FOLHA (Direita) */}
+            {/* PREVIEW DA FOLHA */}
             <div className="flex-1 bg-gray-100 overflow-y-auto p-8 flex justify-center items-start">
               <div className="bg-white w-[210mm] min-h-[297mm] shadow-2xl rounded-sm flex flex-col relative overflow-hidden transition-all scale-[0.8] md:scale-100 origin-top">
-                {/* ... (O Preview PDF não muda visualmente, apenas reflete os dados) ... */}
-                {/* Header Folha */}
                 <div className="h-24 border-b-4 border-amiste-primary mx-8 mt-8 flex flex-col justify-center">
                   <h1 className="text-4xl font-black text-gray-900 uppercase tracking-tighter">
                     AMISTE CAFÉ
@@ -626,7 +624,6 @@ export function Portfolio() {
 
                 {selectedMachine ? (
                   <div className="flex flex-col flex-1 px-8 py-8 relative">
-                    {/* Hero */}
                     <div className="flex gap-8 mb-12">
                       <div className="w-1/2 h-[300px] bg-gray-50 rounded-xl flex items-center justify-center p-4">
                         <img
@@ -648,7 +645,6 @@ export function Portfolio() {
                         <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
                           {description}
                         </p>
-
                         {videoUrl && (
                           <div className="mt-6 flex items-center gap-2 text-xs text-blue-600 bg-blue-50 p-2 rounded-lg border border-blue-100 w-fit">
                             <ExternalLink size={14} /> Link interativo no PDF
@@ -657,8 +653,7 @@ export function Portfolio() {
                       </div>
                     </div>
 
-                    {/* Specs Grid */}
-                    <div className="grid grid-cols-2 gap-x-12 gap-y-4 mb-12">
+                    <div className="grid grid-cols-2 gap-x-12 gap-y-4 mb-8">
                       {[
                         { l: "Tipo", v: selectedMachine.type },
                         { l: "Voltagem", v: selectedMachine.voltage },
@@ -681,7 +676,18 @@ export function Portfolio() {
                       ))}
                     </div>
 
-                    {/* Footer Vermelho (Absolute Bottom) */}
+                    {/* OBSERVAÇÕES NA FOLHA (NOVO) */}
+                    {obs && (
+                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-12">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-1">
+                          <AlertCircle size={10} /> Observações Importantes
+                        </p>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                          {obs}
+                        </p>
+                      </div>
+                    )}
+
                     <div className="absolute bottom-0 left-0 w-full h-32 bg-amiste-primary text-white px-8 flex justify-between items-center">
                       <div>
                         <p className="text-red-200 text-xs font-bold uppercase tracking-wider mb-1">

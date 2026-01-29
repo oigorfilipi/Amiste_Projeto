@@ -18,6 +18,7 @@ import {
   Barcode,
   Settings,
   Database,
+  FileText,
 } from "lucide-react";
 
 const MODEL_OPTIONS = [
@@ -48,6 +49,7 @@ export function Machines() {
 
   // --- FORMULÁRIO ---
   const [name, setName] = useState("");
+  const [description, setDescription] = useState(""); // <--- NOVO CAMPO
   const [model, setModel] = useState("");
   const [customModel, setCustomModel] = useState("");
   const [brand, setBrand] = useState("");
@@ -65,9 +67,9 @@ export function Machines() {
   const [color, setColor] = useState("Preto");
 
   // NOVOS CAMPOS TÉCNICOS
-  const [hasSewage, setHasSewage] = useState(false); // Esgoto
-  const [hasExtraReservoir, setHasExtraReservoir] = useState(true); // Controle visual
-  const [reservoirCount, setReservoirCount] = useState(0); // Quantidade numérica
+  const [hasSewage, setHasSewage] = useState(false);
+  const [hasExtraReservoir, setHasExtraReservoir] = useState(true);
+  const [reservoirCount, setReservoirCount] = useState(0);
 
   const [hasSteamer, setHasSteamer] = useState("Não");
   const [dimensions, setDimensions] = useState({ w: "", h: "", d: "" });
@@ -121,6 +123,7 @@ export function Machines() {
     if (!permissions.canManageMachines) return alert("Sem permissão.");
     setEditingId(machine.id);
     setName(machine.name);
+    setDescription(machine.description || ""); // <--- Carrega descrição
     setPhotoUrl(machine.photo_url || "");
     setStatus(machine.status || "Disponível");
     setImageMode(machine.photo_url?.includes("supabase") ? "file" : "url");
@@ -186,13 +189,13 @@ export function Machines() {
       const finalType = type === "Outro" ? customType : type;
       const dimString = `${dimensions.w}x${dimensions.h}x${dimensions.d}`;
 
-      // Lógica Reservatório: Se marcou "Não tem", salva 0
       const finalReservoirCount = hasExtraReservoir
         ? parseInt(reservoirCount)
         : 0;
 
       const payload = {
         name,
+        description, // <--- Salva descrição
         photo_url: photoUrl,
         model: finalModel,
         brand: finalBrand,
@@ -202,8 +205,8 @@ export function Machines() {
         water_system: waterSystem,
         amperage,
         color,
-        has_sewage: hasSewage, // Novo
-        reservoir_count: finalReservoirCount, // Novo
+        has_sewage: hasSewage,
+        reservoir_count: finalReservoirCount,
         has_steamer: hasSteamer,
         dimensions: dimString,
         patrimony,
@@ -240,7 +243,6 @@ export function Machines() {
     fetchMachines();
   }
 
-  // Navegar para Configurações (Passando a máquina inteira via state)
   function handleOpenConfigs(machine, e) {
     e.stopPropagation();
     navigate("/machine-configs", { state: { machine } });
@@ -249,6 +251,7 @@ export function Machines() {
   function resetForm() {
     setEditingId(null);
     setName("");
+    setDescription("");
     setPhotoUrl("");
     setModel("");
     setCustomModel("");
@@ -357,7 +360,6 @@ export function Machines() {
               </p>
 
               <div className="mt-auto pt-3 border-t border-gray-100">
-                {/* SÓ MOSTRA SE TIVER PERMISSÃO DE CONFIGURAR */}
                 {permissions.canConfigureMachines && (
                   <button
                     onClick={(e) => handleOpenConfigs(machine, e)}
@@ -366,8 +368,6 @@ export function Machines() {
                     <Settings size={16} /> Configurações
                   </button>
                 )}
-
-                {/* Se não tiver permissão, pode mostrar outra coisa ou nada */}
                 {!permissions.canConfigureMachines && (
                   <div className="text-center py-2 text-xs text-gray-400 font-medium bg-gray-50 rounded-lg">
                     Apenas visualização
@@ -407,7 +407,7 @@ export function Machines() {
             </div>
 
             <form onSubmit={handleSave} className="p-6 md:p-8 space-y-8">
-              {/* Identificação e Imagem (Mantido igual) */}
+              {/* Identificação */}
               <section className="space-y-4">
                 <h3 className="text-xs uppercase font-bold text-gray-400 tracking-wider mb-4 flex items-center gap-2">
                   <ImageIcon size={14} /> Identificação
@@ -425,6 +425,20 @@ export function Machines() {
                       placeholder="Ex: Phedra Evo"
                     />
                   </div>
+
+                  {/* NOVO CAMPO: DESCRIÇÃO */}
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Descrição Comercial (Para Propostas)
+                    </label>
+                    <textarea
+                      className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none h-24 resize-none"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Texto que aparecerá automaticamente no portfólio..."
+                    />
+                  </div>
+
                   <div className="md:col-span-2 bg-gray-50 p-4 rounded-xl border border-gray-100">
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-3">
                       Foto
@@ -536,13 +550,12 @@ export function Machines() {
 
               <div className="h-px bg-gray-100"></div>
 
-              {/* 2. DADOS TÉCNICOS ATUALIZADOS */}
+              {/* Especificações Técnicas (Mantido igual) */}
               <section className="space-y-4">
                 <h3 className="text-xs uppercase font-bold text-gray-400 tracking-wider mb-4 flex items-center gap-2">
                   <Zap size={14} /> Especificações Técnicas
                 </h3>
 
-                {/* Hidráulica e Esgoto */}
                 <div className="grid grid-cols-2 gap-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
@@ -596,7 +609,6 @@ export function Machines() {
                   </div>
                 </div>
 
-                {/* Reservatórios (Solúveis/Grãos) */}
                 <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
                   <div className="flex justify-between items-center mb-2">
                     <label className="text-xs font-bold text-orange-800 uppercase flex items-center gap-1">
@@ -635,7 +647,6 @@ export function Machines() {
                   )}
                 </div>
 
-                {/* Outros */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">

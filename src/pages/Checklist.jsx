@@ -18,6 +18,7 @@ import {
   Droplet,
   Zap,
   ArrowLeft,
+  XCircle,
 } from "lucide-react";
 
 // --- COMPONENTES VISUAIS REUTILIZÁVEIS ---
@@ -256,9 +257,36 @@ export function Checklist() {
   async function handleDelete(id) {
     if (!permissions.canDeleteChecklist)
       return alert("Sem permissão para excluir.");
-    if (!confirm("Excluir checklist?")) return;
+    // Aqui virou "Cancelar" ao invés de deletar, ou mantemos delete físico?
+    // Se for para APENAS cancelar, mudamos o status. Se for erro de digitação, deletamos.
+    // Vamos manter delete físico aqui e adicionar botão "Cancelar" na edição.
+    if (!confirm("Excluir checklist permanentemente?")) return;
     await supabase.from("checklists").delete().eq("id", id);
     fetchChecklists();
+  }
+
+  // NOVA FUNÇÃO: CANCELAR CHECKLIST
+  async function handleCancelChecklist() {
+    if (!editingId) return;
+    if (
+      !confirm(
+        "Tem certeza que deseja CANCELAR este serviço? Isso irá removê-lo do financeiro.",
+      )
+    )
+      return;
+
+    try {
+      const { error } = await supabase
+        .from("checklists")
+        .update({ status: "Cancelado" })
+        .eq("id", editingId);
+      if (error) throw error;
+      alert("Checklist cancelado.");
+      fetchChecklists();
+      setView("list");
+    } catch (err) {
+      alert("Erro: " + err.message);
+    }
   }
 
   function handleEdit(checklist) {
@@ -542,6 +570,13 @@ export function Checklist() {
     }
   }
 
+  // HELPER PARA CORES DE STATUS
+  const getStatusColor = (st) => {
+    if (st === "Finalizado") return "bg-green-100 text-green-700";
+    if (st === "Cancelado") return "bg-red-100 text-red-700";
+    return "bg-amber-100 text-amber-700";
+  };
+
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20">
       {/* MODO LISTA (VISUAL NOVO) */}
@@ -566,13 +601,13 @@ export function Checklist() {
             )}
           </div>
 
-          {/* Filtros em Abas */}
-          <div className="flex gap-2 mb-6 border-b border-gray-200 pb-1">
-            {["Todos", "Finalizado", "Rascunho"].map((st) => (
+          {/* Filtros em Abas (COM CANCELADO) */}
+          <div className="flex gap-2 mb-6 border-b border-gray-200 pb-1 overflow-x-auto">
+            {["Todos", "Finalizado", "Rascunho", "Cancelado"].map((st) => (
               <button
                 key={st}
                 onClick={() => setFilterStatus(st)}
-                className={`px-4 py-2 text-sm font-bold transition-all relative ${
+                className={`px-4 py-2 text-sm font-bold transition-all whitespace-nowrap relative ${
                   filterStatus === st
                     ? "text-amiste-primary"
                     : "text-gray-400 hover:text-gray-600"
@@ -599,10 +634,12 @@ export function Checklist() {
                 >
                   <div className="flex items-start gap-4">
                     <div
-                      className={`p-3 rounded-full ${c.status === "Finalizado" ? "bg-green-50 text-green-600" : "bg-amber-50 text-amber-600"}`}
+                      className={`p-3 rounded-full ${c.status === "Finalizado" ? "bg-green-50 text-green-600" : c.status === "Cancelado" ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-600"}`}
                     >
                       {c.status === "Finalizado" ? (
                         <Check size={20} />
+                      ) : c.status === "Cancelado" ? (
+                        <XCircle size={20} />
                       ) : (
                         <Edit2 size={20} />
                       )}
@@ -622,11 +659,7 @@ export function Checklist() {
 
                   <div className="flex items-center gap-2 border-t md:border-t-0 pt-4 md:pt-0 mt-2 md:mt-0 justify-end">
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mr-2 ${
-                        c.status === "Finalizado"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-amber-100 text-amber-700"
-                      }`}
+                      className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mr-2 ${getStatusColor(c.status)}`}
                     >
                       {c.status}
                     </span>
@@ -685,6 +718,16 @@ export function Checklist() {
               </div>
             </div>
             <div className="flex gap-2 w-full md:w-auto">
+              {/* Botão Cancelar Serviço (Só se estiver editando) */}
+              {editingId && (
+                <button
+                  onClick={handleCancelChecklist}
+                  className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors"
+                >
+                  <XCircle size={16} /> Cancelar Serviço
+                </button>
+              )}
+
               <button
                 onClick={() => handleSave("Rascunho")}
                 className="flex-1 md:flex-none px-4 py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-colors"

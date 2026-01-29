@@ -10,12 +10,16 @@ import {
   Coffee,
   Wrench,
   DollarSign,
+  FileText,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
 } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { ChecklistPDF } from "../components/ChecklistPDF";
 
 export function ChecklistDetails() {
-  const { id } = useParams(); // Pega o ID da URL
+  const { id } = useParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -50,275 +54,319 @@ export function ChecklistDetails() {
       </div>
     );
 
-  // Funções auxiliares para formatar dinheiro e data
   const formatMoney = (val) => (val ? `R$ ${val.toFixed(2)}` : "R$ 0,00");
   const formatDate = (dateStr) =>
     dateStr ? new Date(dateStr).toLocaleDateString("pt-BR") : "-";
 
+  // Helpers de Status
+  const getStatusColor = (st) => {
+    if (st === "Finalizado") return "bg-green-100 text-green-700";
+    if (st === "Cancelado") return "bg-red-100 text-red-700";
+    return "bg-amber-100 text-amber-700";
+  };
+
   return (
-    <div className="min-h-screen pb-20">
-      {/* CABEÇALHO */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <Link
-            to="/home"
-            className="text-gray-500 hover:text-amiste-primary flex items-center gap-2 mb-2 text-sm"
+    <div className="min-h-screen bg-gray-50/50 pb-20 animate-fade-in">
+      {/* HEADER */}
+      <div className="max-w-7xl mx-auto p-6 md:p-8">
+        {/* Breadcrumb e Ações */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <div className="flex items-center gap-4">
+            <Link
+              to="/checklists"
+              className="p-2 bg-white border border-gray-200 rounded-full hover:bg-gray-50 text-gray-500 transition-colors"
+            >
+              <ArrowLeft size={20} />
+            </Link>
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <h1 className="text-2xl font-bold text-gray-800">
+                  Checklist #{data.id}
+                </h1>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${getStatusColor(data.status)}`}
+                >
+                  {data.status}
+                </span>
+              </div>
+              <p className="text-sm text-gray-500 flex items-center gap-2">
+                <Calendar size={14} /> Criado em {formatDate(data.created_at)}
+              </p>
+            </div>
+          </div>
+
+          <PDFDownloadLink
+            document={<ChecklistPDF data={data} />}
+            fileName={`checklist_${data.id}_${data.client_name || "evento"}.pdf`}
+            className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all hover:-translate-y-1"
           >
-            <ArrowLeft size={16} /> Voltar para o Painel
-          </Link>
-          <h1 className="text-3xl font-display font-bold text-gray-800">
-            Checklist #{data.id}
-          </h1>
-          <p className="text-gray-500">
-            Status:{" "}
-            <span className="font-bold text-green-600">{data.status}</span> •
-            Criado em {formatDate(data.created_at)}
-          </p>
+            {({ loading }) =>
+              loading ? (
+                "Gerando PDF..."
+              ) : (
+                <>
+                  <Printer size={18} /> Baixar PDF
+                </>
+              )
+            }
+          </PDFDownloadLink>
         </div>
 
-        <PDFDownloadLink
-          document={<ChecklistPDF data={data} />}
-          fileName={`checklist_${data.id}_${data.client_name || "evento"}.pdf`}
-          className="flex items-center gap-2 bg-gray-800 hover:bg-gray-900 text-white px-5 py-3 rounded-lg font-bold shadow-lg transition-all decoration-0"
-        >
-          {({ loading }) =>
-            loading ? (
-              "Gerando PDF..."
-            ) : (
-              <>
-                <Printer size={20} /> Baixar PDF
-              </>
-            )
-          }
-        </PDFDownloadLink>
-      </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* COLUNA PRINCIPAL */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* 1. CLIENTE */}
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+              <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2 border-b border-gray-50 pb-4">
+                <User size={20} className="text-amiste-primary" /> Dados da
+                Instalação
+              </h2>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* COLUNA ESQUERDA: Informações Principais */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* 1. DADOS DO CLIENTE/EVENTO */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <User size={20} className="text-amiste-primary" /> Cliente e
-              Instalação
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-gray-400 uppercase font-bold">
-                  Tipo
-                </p>
-                <p className="font-medium">{data.install_type}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 uppercase font-bold">
-                  Nome
-                </p>
-                <p className="font-bold text-lg">
-                  {data.client_name || data.event_name}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 uppercase font-bold">
-                  Data Instalação
-                </p>
-                <p className="font-medium flex items-center gap-2">
-                  <Calendar size={14} /> {formatDate(data.install_date)}
-                </p>
-              </div>
-              {data.install_type === "Evento" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
                 <div>
-                  <p className="text-xs text-gray-400 uppercase font-bold">
-                    Retirada ({data.event_days} dias)
+                  <label className="text-xs font-bold text-gray-400 uppercase mb-1 block">
+                    Cliente / Evento
+                  </label>
+                  <p className="text-lg font-bold text-gray-800">
+                    {data.client_name || data.event_name}
                   </p>
-                  <p className="font-medium">{formatDate(data.pickup_date)}</p>
+                  <span className="inline-block mt-1 px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded font-medium">
+                    {data.install_type}
+                  </span>
                 </div>
-              )}
-            </div>
-            {/* Validação Local (Passo 8) */}
-            <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg">
-              <div>
-                <p className="text-xs text-gray-500">Tomada Local</p>
-                <p className="font-bold">
-                  {data.local_validation?.localSocket || "-"}
-                </p>
+                <div>
+                  <label className="text-xs font-bold text-gray-400 uppercase mb-1 block">
+                    Data Instalação
+                  </label>
+                  <p className="text-lg font-medium text-gray-700">
+                    {formatDate(data.install_date)}
+                  </p>
+                </div>
+
+                {data.install_type === "Evento" && (
+                  <>
+                    <div>
+                      <label className="text-xs font-bold text-gray-400 uppercase mb-1 block">
+                        Data Retirada
+                      </label>
+                      <p className="text-lg font-medium text-gray-700">
+                        {formatDate(data.pickup_date)}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-400 uppercase mb-1 block">
+                        Duração
+                      </label>
+                      <p className="text-lg font-medium text-gray-700">
+                        {data.event_days} dias
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
-              <div>
-                <p className="text-xs text-gray-500">Ponto de Água</p>
-                <p className="font-bold">
-                  {data.local_validation?.localWater || "-"}
-                </p>
+
+              {/* Validação Local */}
+              <div className="mt-8 bg-gray-50 rounded-xl p-4 border border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <span className="block text-[10px] uppercase font-bold text-gray-400 mb-1">
+                    Tomada
+                  </span>
+                  <span className="font-bold text-gray-700">
+                    {data.local_validation?.localSocket || "-"}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[10px] uppercase font-bold text-gray-400 mb-1">
+                    Água
+                  </span>
+                  <span className="font-bold text-gray-700">
+                    {data.local_validation?.localWater || "-"}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[10px] uppercase font-bold text-gray-400 mb-1">
+                    Esgoto
+                  </span>
+                  <span className="font-bold text-gray-700">
+                    {data.local_validation?.localSewage || "-"}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[10px] uppercase font-bold text-gray-400 mb-1">
+                    Treinamento
+                  </span>
+                  <span className="font-bold text-gray-700">
+                    {data.local_validation?.trainedPeople || "0"} pessoas
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. EQUIPAMENTO */}
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+              <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2 border-b border-gray-50 pb-4">
+                <Coffee size={20} className="text-amiste-primary" /> Equipamento
+              </h2>
+
+              <div className="flex items-start gap-6 mb-8">
+                <div className="w-24 h-24 bg-gray-50 rounded-xl flex items-center justify-center p-2 border border-gray-100">
+                  <img
+                    src={data.machine_data?.photo_url}
+                    className="w-full h-full object-contain mix-blend-multiply"
+                  />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800">
+                    {data.machine_name}
+                  </h3>
+                  <p className="text-gray-500 text-sm mb-2">
+                    {data.machine_data?.brand} | {data.machine_data?.model}
+                  </p>
+                  <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold">
+                    Total: {data.quantity} un
+                  </span>
+                </div>
+              </div>
+
+              {/* Tabela de Unidades */}
+              <div className="overflow-hidden rounded-xl border border-gray-100">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-gray-50 text-gray-500 font-bold uppercase text-xs">
+                    <tr>
+                      <th className="p-3">#</th>
+                      <th className="p-3">Voltagem</th>
+                      <th className="p-3">Série</th>
+                      <th className="p-3">Patrimônio</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {data.machine_units?.map((u, i) => (
+                      <tr key={i}>
+                        <td className="p-3 font-bold text-gray-400">{i + 1}</td>
+                        <td className="p-3 font-medium">{u.voltage}</td>
+                        <td className="p-3 text-gray-600">{u.serial || "-"}</td>
+                        <td className="p-3 text-gray-600">
+                          {u.patrimony || "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* 3. ITENS */}
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+              <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2 border-b border-gray-50 pb-4">
+                <Wrench size={20} className="text-amiste-primary" /> Itens e
+                Insumos
+              </h2>
+
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase mb-3">
+                    Aparatos Selecionados
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(data.tools_list || {})
+                      .filter(
+                        ([, v]) =>
+                          v === true || (typeof v === "string" && v !== ""),
+                      )
+                      .map(([k, v]) => (
+                        <span
+                          key={k}
+                          className="px-3 py-1.5 bg-gray-50 text-gray-600 rounded-lg text-xs font-medium border border-gray-100"
+                        >
+                          {k.replace(/([A-Z])/g, " $1")}{" "}
+                          {typeof v === "string" ? `(${v})` : ""}
+                        </span>
+                      ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase mb-3">
+                    Bebidas Habilitadas
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(data.drinks_list?.standard || {}).map(
+                      ([k, v]) => (
+                        <span
+                          key={k}
+                          className="px-3 py-1.5 bg-red-50 text-amiste-primary rounded-lg text-xs font-bold border border-red-100"
+                        >
+                          {k} {v ? `(${v}ml)` : ""}
+                        </span>
+                      ),
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* 2. DADOS DA MÁQUINA */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Coffee size={20} className="text-amiste-primary" /> Máquina e
-              Unidades
-            </h2>
-
-            <div className="flex items-start gap-4 mb-6">
-              <img
-                src={data.machine_data?.photo_url}
-                alt="Foto"
-                className="w-24 h-24 object-contain bg-gray-50 rounded-lg border border-gray-200"
-              />
-              <div>
-                <h3 className="text-xl font-bold">{data.machine_name}</h3>
-                <p className="text-gray-500 text-sm">
-                  {data.machine_data?.brand} / {data.machine_data?.model}
-                </p>
-                <span className="inline-block mt-2 bg-amiste-primary text-white text-xs px-2 py-1 rounded font-bold">
-                  Total: {data.quantity} un
+          {/* COLUNA LATERAL */}
+          <div className="space-y-6">
+            {/* Financeiro */}
+            <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white p-6 rounded-2xl shadow-xl">
+              <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
+                <DollarSign size={20} className="text-green-400" /> Resumo
+                Financeiro
+              </h2>
+              <div className="space-y-3 mb-6 border-b border-gray-700/50 pb-6 text-sm text-gray-300">
+                <div className="flex justify-between">
+                  <span>Máquina</span>{" "}
+                  <span>{formatMoney(data.financials?.machine)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Insumos</span>{" "}
+                  <span>{formatMoney(data.financials?.supplies)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Serviços</span>{" "}
+                  <span>{formatMoney(data.financials?.services)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Extras</span>{" "}
+                  <span>{formatMoney(data.financials?.extras)}</span>
+                </div>
+              </div>
+              <div className="flex justify-between items-end">
+                <span className="text-xs font-bold text-gray-400 uppercase">
+                  Total Geral
+                </span>
+                <span className="text-3xl font-bold text-green-400 tracking-tight">
+                  {formatMoney(data.financials?.total)}
                 </span>
               </div>
             </div>
 
-            {/* Configurações Técnicas */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4 text-sm">
-              <div className="p-2 bg-gray-50 rounded">
-                Hídrica: <b>{data.tech_water}</b>
-              </div>
-              <div className="p-2 bg-gray-50 rounded">
-                Esgoto: <b>{data.tech_sewage}</b>
-              </div>
-              <div className="p-2 bg-gray-50 rounded">
-                Vapor: <b>{data.tech_steam}</b>
-              </div>
-              <div className="p-2 bg-gray-50 rounded">
-                Pgto: <b>{data.tech_payment}</b>
-              </div>
-            </div>
-
-            {/* Tabela de Unidades */}
-            <table className="w-full text-sm text-left border rounded overflow-hidden">
-              <thead className="bg-gray-100 text-gray-500 uppercase text-xs">
-                <tr>
-                  <th className="p-2">#</th>
-                  <th className="p-2">Voltagem</th>
-                  <th className="p-2">Série</th>
-                  <th className="p-2">Patrimônio</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.machine_units?.map((item, idx) => (
-                  <tr key={idx} className="border-t">
-                    <td className="p-2 font-bold">{idx + 1}</td>
-                    <td className="p-2">{item.voltage}</td>
-                    <td className="p-2 text-gray-600">{item.serial || "-"}</td>
-                    <td className="p-2 text-gray-600">
-                      {item.patrimony || "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* 3. LISTAS (Aparatos, Bebidas, etc) */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Wrench size={20} className="text-amiste-primary" /> Itens
-              Selecionados
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <p className="text-xs font-bold uppercase text-gray-400 mb-1">
-                  Aparatos
-                </p>
-                <p className="text-sm">
-                  {Object.entries(data.tools_list || {})
-                    .filter(
-                      ([, val]) =>
-                        val === true || (typeof val === "string" && val !== ""),
-                    )
-                    .map(([key]) => key.replace(/([A-Z])/g, " $1"))
-                    .join(", ")}
-                </p>
-              </div>
-              <div className="border-t pt-2">
-                <p className="text-xs font-bold uppercase text-gray-400 mb-1">
-                  Bebidas Configuradas
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {/* Lista padrão */}
-                  {Object.entries(data.drinks_list?.standard || {}).map(
-                    ([name, ml]) => (
-                      <span
-                        key={name}
-                        className="bg-red-50 text-amiste-primary text-xs px-2 py-1 rounded border border-red-100"
-                      >
-                        {name} ({ml})
-                      </span>
-                    ),
-                  )}
-                  {/* Customizadas */}
-                  {data.drinks_list?.custom?.map((d, i) => (
-                    <span
-                      key={i}
-                      className="bg-red-50 text-amiste-primary text-xs px-2 py-1 rounded border border-red-100"
-                    >
-                      {d.name} ({d.ml})
-                    </span>
-                  ))}
+            {/* Contrato e Obs */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+              <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <FileText size={18} className="text-gray-400" /> Contrato
+              </h3>
+              <div className="space-y-4">
+                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">
+                    Nº Contrato
+                  </p>
+                  <p className="font-bold text-gray-800">
+                    {data.contract_num || "Não informado"}
+                  </p>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* COLUNA DIREITA: Financeiro e Docs */}
-        <div className="space-y-6">
-          <div className="bg-gray-800 text-white p-6 rounded-xl shadow-lg">
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <DollarSign size={20} className="text-green-400" /> Financeiro
-            </h2>
-            <div className="space-y-3 mb-6 border-b border-gray-700 pb-4">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Máquina</span>
-                <span>{formatMoney(data.financials?.machine)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Insumos</span>
-                <span>{formatMoney(data.financials?.supplies)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Serviços</span>
-                <span>{formatMoney(data.financials?.services)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Extras</span>
-                <span>{formatMoney(data.financials?.extras)}</span>
-              </div>
-            </div>
-            <div className="flex justify-between items-end">
-              <span className="text-gray-400 text-sm">Valor Total</span>
-              <span className="text-2xl font-bold text-green-400">
-                {formatMoney(data.financials?.total)}
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <h3 className="font-bold text-gray-800 mb-3">Contrato</h3>
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs text-gray-400">Nº Contrato</p>
-                <p className="font-medium">{data.contract_num}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400">Ficha Instalação</p>
-                <p className="font-medium">{data.install_file_num || "-"}</p>
-              </div>
-              <div className="bg-yellow-50 p-3 rounded border border-yellow-100">
-                <p className="text-xs text-yellow-700 font-bold mb-1">
-                  Observações:
-                </p>
-                <p className="text-xs text-gray-600 italic">
-                  {data.sales_obs || "Nenhuma observação."}
-                </p>
+                {data.sales_obs && (
+                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-100">
+                    <p className="text-[10px] font-bold text-amber-600 uppercase mb-1 flex items-center gap-1">
+                      <AlertCircle size={10} /> Observações
+                    </p>
+                    <p className="text-sm text-amber-900 leading-relaxed">
+                      {data.sales_obs}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

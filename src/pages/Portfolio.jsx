@@ -15,8 +15,10 @@ import {
   Youtube,
   ExternalLink,
   Calendar,
-  User,
   Coffee,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
 } from "lucide-react";
 
 export function Portfolio() {
@@ -38,6 +40,9 @@ export function Portfolio() {
   const [description, setDescription] = useState("");
   const [installmentValue, setInstallmentValue] = useState(0);
   const [videoUrl, setVideoUrl] = useState("");
+
+  // NOVO: Status da Proposta
+  const [status, setStatus] = useState("Aguardando"); // Aguardando, Concluido, Cancelado
 
   useEffect(() => {
     fetchMachines();
@@ -76,6 +81,7 @@ export function Portfolio() {
     setTotalValue(0);
     setInstallments(1);
     setVideoUrl("");
+    setStatus("Aguardando"); // Padrão
     setDescription(
       "Equipamento de alta performance, ideal para seu estabelecimento. Design moderno e extração perfeita.",
     );
@@ -92,6 +98,7 @@ export function Portfolio() {
     setInstallments(p.installments);
     setDescription(p.description);
     setVideoUrl(p.video_url || "");
+    setStatus(p.status || "Aguardando"); // Carrega status ou define padrão
     setView("editor");
   }
 
@@ -113,6 +120,7 @@ export function Portfolio() {
     setInstallments(v.installments);
     setDescription(v.description);
     setVideoUrl(v.video_url || "");
+    // Não restauramos status pois é gestão atual
     alert("Dados restaurados! Clique em Salvar para confirmar.");
     e.target.value = "";
   }
@@ -137,7 +145,7 @@ export function Portfolio() {
       installment_value: installmentValue,
       description: description,
       video_url: videoUrl,
-      status: "Gerado",
+      status: status, // Salva o Status
     };
 
     try {
@@ -199,6 +207,33 @@ export function Portfolio() {
       p.machine_data?.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
+  // Helper de Estilo de Status
+  const getStatusStyle = (st) => {
+    switch (st) {
+      case "Concluido":
+        return {
+          bg: "bg-green-100",
+          text: "text-green-700",
+          icon: CheckCircle,
+          label: "Concluído",
+        };
+      case "Cancelado":
+        return {
+          bg: "bg-red-100",
+          text: "text-red-700",
+          icon: XCircle,
+          label: "Cancelado",
+        };
+      default:
+        return {
+          bg: "bg-amber-100",
+          text: "text-amber-700",
+          icon: Clock,
+          label: "Aguardando",
+        };
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20">
       {/* --- MODO LISTA --- */}
@@ -210,7 +245,7 @@ export function Portfolio() {
                 Portfólio & Propostas
               </h1>
               <p className="text-gray-500 mt-1">
-                Gerador de orçamentos comerciais.
+                Gerencie propostas comerciais e acompanhe o status.
               </p>
             </div>
 
@@ -238,68 +273,76 @@ export function Portfolio() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {filteredPortfolios.map((p) => (
-              <div
-                key={p.id}
-                onClick={() => handleEditPortfolio(p)}
-                className="group cursor-pointer flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden hover:-translate-y-1"
-              >
-                {/* Mini A4 Preview */}
-                <div className="w-full aspect-[210/297] bg-white relative flex flex-col border-b border-gray-100">
-                  {/* Header Mini */}
-                  <div className="h-[15%] bg-white px-4 pt-4">
-                    <div className="w-8 h-1 bg-amiste-primary mb-1"></div>
-                    <div className="text-[8px] font-black text-gray-800 uppercase tracking-widest">
-                      AMISTE
-                    </div>
+            {filteredPortfolios.map((p) => {
+              const statusStyle = getStatusStyle(p.status || "Aguardando");
+
+              return (
+                <div
+                  key={p.id}
+                  onClick={() => handleEditPortfolio(p)}
+                  className="group cursor-pointer flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden hover:-translate-y-1"
+                >
+                  {/* Status Badge Absolute */}
+                  <div
+                    className={`absolute top-2 left-2 z-10 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-sm ${statusStyle.bg} ${statusStyle.text}`}
+                  >
+                    <statusStyle.icon size={10} /> {statusStyle.label}
                   </div>
-                  {/* Body Mini */}
-                  <div className="flex-1 flex flex-col items-center justify-center p-4">
-                    {p.machine_data?.photo_url ? (
-                      <img
-                        src={p.machine_data.photo_url}
-                        className="w-20 h-20 object-contain mix-blend-multiply mb-2"
-                      />
-                    ) : (
-                      <Coffee size={24} className="text-gray-300" />
-                    )}
-                    <div className="text-[9px] font-bold text-gray-800 text-center leading-tight line-clamp-2">
-                      {p.machine_data?.name}
+
+                  {/* Mini A4 Preview */}
+                  <div className="w-full aspect-[210/297] bg-white relative flex flex-col border-b border-gray-100">
+                    <div className="h-[15%] bg-white px-4 pt-4 flex justify-end">
+                      {/* Espaço vazio header */}
                     </div>
+                    <div className="flex-1 flex flex-col items-center justify-center p-4">
+                      {p.machine_data?.photo_url ? (
+                        <img
+                          src={p.machine_data.photo_url}
+                          className="w-20 h-20 object-contain mix-blend-multiply mb-2"
+                        />
+                      ) : (
+                        <Coffee size={24} className="text-gray-300" />
+                      )}
+                      <div className="text-[9px] font-bold text-gray-800 text-center leading-tight line-clamp-2">
+                        {p.machine_data?.name}
+                      </div>
+                    </div>
+                    <div className="h-[15%] bg-amiste-primary flex items-center justify-between px-3 text-white">
+                      <div className="text-[8px] font-bold truncate max-w-[60px]">
+                        {p.customer_name}
+                      </div>
+                      <div className="text-[8px] font-bold">
+                        {formatMoney(p.total_value)}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={(e) => handleDelete(p.id, e)}
+                      className="absolute top-2 right-2 bg-white text-red-500 p-1.5 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50 z-10"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
-                  {/* Footer Mini */}
-                  <div className="h-[15%] bg-amiste-primary flex items-center justify-between px-3 text-white">
-                    <div className="text-[8px] font-bold truncate max-w-[60px]">
+
+                  <div className="p-4 bg-white">
+                    <h3
+                      className="font-bold text-gray-800 text-sm truncate"
+                      title={p.customer_name}
+                    >
                       {p.customer_name}
-                    </div>
-                    <div className="text-[8px] font-bold">
-                      {formatMoney(p.total_value)}
+                    </h3>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded uppercase font-bold">
+                        {p.negotiation_type}
+                      </span>
+                      <span className="text-[10px] text-gray-400">
+                        {new Date(p.created_at).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
-
-                  {/* Delete Button (Hover) */}
-                  <button
-                    onClick={(e) => handleDelete(p.id, e)}
-                    className="absolute top-2 right-2 bg-white text-red-500 p-1.5 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50 z-10"
-                  >
-                    <Trash2 size={14} />
-                  </button>
                 </div>
-
-                <div className="p-4 bg-white">
-                  <h3
-                    className="font-bold text-gray-800 text-sm truncate"
-                    title={p.customer_name}
-                  >
-                    {p.customer_name}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
-                    <Calendar size={12} />{" "}
-                    {new Date(p.created_at).toLocaleDateString()}
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
             {loading && (
               <p className="col-span-full text-center py-10 text-gray-400">
                 Carregando propostas...
@@ -326,9 +369,7 @@ export function Portfolio() {
                   Editor de Proposta
                 </h1>
                 <p className="text-xs text-gray-500">
-                  {selectedMachine
-                    ? selectedMachine.name
-                    : "Selecione uma máquina"}
+                  {selectedMachine ? selectedMachine.name : "Nova Proposta"}
                 </p>
               </div>
             </div>
@@ -357,6 +398,53 @@ export function Portfolio() {
             {/* SIDEBAR DE EDIÇÃO (Esquerda) */}
             <div className="w-96 bg-white border-r border-gray-200 flex flex-col z-10 overflow-y-auto">
               <div className="p-6 space-y-6">
+                {/* STATUS DA NEGOCIAÇÃO (NOVO) */}
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                  <label className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-1">
+                    <AlertCircle size={14} /> Status da Negociação
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      {
+                        id: "Aguardando",
+                        icon: Clock,
+                        color: "text-amber-600",
+                        bg: "bg-amber-50",
+                        border: "border-amber-200",
+                      },
+                      {
+                        id: "Concluido",
+                        icon: CheckCircle,
+                        color: "text-green-600",
+                        bg: "bg-green-50",
+                        border: "border-green-200",
+                      },
+                      {
+                        id: "Cancelado",
+                        icon: XCircle,
+                        color: "text-red-600",
+                        bg: "bg-red-50",
+                        border: "border-red-200",
+                      },
+                    ].map((st) => (
+                      <button
+                        key={st.id}
+                        onClick={() => setStatus(st.id)}
+                        className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${
+                          status === st.id
+                            ? `${st.bg} ${st.border} ${st.color} ring-2 ring-offset-1 ring-${st.color.split("-")[1]}-200`
+                            : "bg-white border-gray-100 text-gray-400 hover:bg-gray-50"
+                        }`}
+                      >
+                        <st.icon size={20} className="mb-1" />
+                        <span className="text-[10px] font-bold uppercase">
+                          {st.id}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Histórico */}
                 {versions.length > 0 && (
                   <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
@@ -525,6 +613,7 @@ export function Portfolio() {
             {/* PREVIEW DA FOLHA (Direita) */}
             <div className="flex-1 bg-gray-100 overflow-y-auto p-8 flex justify-center items-start">
               <div className="bg-white w-[210mm] min-h-[297mm] shadow-2xl rounded-sm flex flex-col relative overflow-hidden transition-all scale-[0.8] md:scale-100 origin-top">
+                {/* ... (O Preview PDF não muda visualmente, apenas reflete os dados) ... */}
                 {/* Header Folha */}
                 <div className="h-24 border-b-4 border-amiste-primary mx-8 mt-8 flex flex-col justify-center">
                   <h1 className="text-4xl font-black text-gray-900 uppercase tracking-tighter">

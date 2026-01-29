@@ -8,64 +8,65 @@ import {
   Calendar,
   Filter,
   ArrowRight,
-  Search,
+  Clock,
+  CheckCircle,
+  AlertCircle,
 } from "lucide-react";
 
 export function Financial() {
   const [loading, setLoading] = useState(true);
-  const [transactions, setTransactions] = useState([]); // Todos os dados brutos
-  const [filteredData, setFilteredData] = useState([]); // Dados exibidos na lista
+  const [transactions, setTransactions] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
 
   // Filtros
   const [timeRange, setTimeRange] = useState("month"); // 'today', 'month', 'total'
   const [typeFilter, setTypeFilter] = useState("all"); // 'all', 'proposal', 'service'
 
-  // Métricas do período selecionado
+  // Métricas
   const [metrics, setMetrics] = useState({
-    proposal: 0,
-    service: 0,
-    total: 0,
-    countP: 0,
-    countS: 0,
+    realizedSales: 0, // Vendas Concluídas
+    realizedServices: 0, // Serviços Finalizados
+    totalRealized: 0, // Dinheiro no Bolso
+    projected: 0, // O que está em 'Aguardando' (Previsão)
+    countRealized: 0,
   });
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  // Recalcula métricas e lista quando os filtros mudam
   useEffect(() => {
     filterTransactions();
   }, [transactions, timeRange, typeFilter]);
 
   async function fetchData() {
     try {
-      // 1. Buscar Portfólios (Propostas)
+      // 1. Portfólios (Propostas)
       const { data: portfolios } = await supabase
         .from("portfolios")
-        .select("id, customer_name, total_value, created_at, description")
-        .order("created_at", { ascending: false });
-
-      // 2. Buscar Checklists (Serviços)
-      const { data: checklists } = await supabase
-        .from("checklists")
         .select(
-          "id, client_name, event_name, financials, created_at, service_type",
+          "id, customer_name, total_value, created_at, status, description",
         )
         .order("created_at", { ascending: false });
 
-      // 3. Normalizar dados em um único array de "Transações"
-      const normalizedPortfolios = (portfolios || []).map((p) => ({
+      // 2. Checklists (Serviços)
+      const { data: checklists } = await supabase
+        .from("checklists")
+        .select("id, client_name, event_name, financials, created_at, status")
+        .order("created_at", { ascending: false });
+
+      // 3. Normalizar
+      const normPortfolios = (portfolios || []).map((p) => ({
         id: `p-${p.id}`,
-        originalId: p.id,
         type: "proposal",
         client: p.customer_name,
         value: p.total_value || 0,
         date: new Date(p.created_at),
-        details: "Proposta Comercial",
+        status: p.status || "Aguardando", // 'Concluido', 'Aguardando', 'Cancelado'
+        details: "Venda de Equipamento",
       }));
 
-      const normalizedChecklists = (checklists || []).map((c) => {
+      const normChecklists = (checklists || []).map((c) => {
         const f = c.financials || {};
         const total =
           (f.machine || 0) +
@@ -74,16 +75,16 @@ export function Financial() {
           (f.extras || 0);
         return {
           id: `c-${c.id}`,
-          originalId: c.id,
           type: "service",
           client: c.client_name || c.event_name,
           value: total,
           date: new Date(c.created_at),
-          details: `Serviço Técnico`,
+          status: c.status || "Rascunho", // 'Finalizado', 'Rascunho', 'Cancelado'
+          details: "Serviço Técnico",
         };
       });
 
-      const all = [...normalizedPortfolios, ...normalizedChecklists].sort(
+      const all = [...normPortfolios, ...normChecklists].sort(
         (a, b) => b.date - a.date,
       );
       setTransactions(all);
@@ -100,41 +101,50 @@ export function Financial() {
     // 1. Filtro de Tempo
     let timeFiltered = transactions.filter((t) => {
       if (timeRange === "total") return true;
-
       const isSameDay =
         t.date.getDate() === now.getDate() &&
         t.date.getMonth() === now.getMonth() &&
         t.date.getFullYear() === now.getFullYear();
-
       const isSameMonth =
         t.date.getMonth() === now.getMonth() &&
         t.date.getFullYear() === now.getFullYear();
-
-      if (timeRange === "today") return isSameDay;
-      if (timeRange === "month") return isSameMonth;
-      return true;
+      return timeRange === "today" ? isSameDay : isSameMonth;
     });
 
-    // 2. Calcular Métricas baseadas no Tempo (antes de filtrar por tipo na lista)
-    const newMetrics = timeFiltered.reduce(
-      (acc, curr) => {
-        if (curr.type === "proposal") {
-          acc.proposal += curr.value;
-          acc.countP += 1;
-        } else {
-          acc.service += curr.value;
-          acc.countS += 1;
-        }
-        acc.total += curr.value;
-        return acc;
-      },
-      { proposal: 0, service: 0, total: 0, countP: 0, countS: 0 },
-    );
+    // 2. Calcular Métricas (Separando Realizado de Projetado)
+    const newMetrics = {
+      realizedSales: 0,
+      realizedServices: 0,
+      totalRealized: 0,
+      projected: 0,
+      countRealized: 0,
+    };
+
+    timeFiltered.forEach((t) => {
+      // Regra de "Dinheiro Real": Só conta se Concluido ou Finalizado
+      const isReal = t.status === "Concluido" || t.status === "Finalizado";
+      const isProjected = t.status === "Aguardando" || t.status === "Rascunho";
+
+      if (isReal) {
+        if (t.type === "proposal") newMetrics.realizedSales += t.value;
+        else newMetrics.realizedServices += t.value;
+        newMetrics.totalRealized += t.value;
+        newMetrics.countRealized += 1;
+      }
+
+      if (isProjected) {
+        newMetrics.projected += t.value;
+      }
+    });
 
     setMetrics(newMetrics);
 
-    // 3. Filtro de Tipo (Para a lista abaixo)
-    if (typeFilter !== "all") {
+    // 3. Filtro de Tipo para a Lista (Mostra tudo, mas com status visual)
+    if (typeFilter === "realized") {
+      timeFiltered = timeFiltered.filter(
+        (t) => t.status === "Concluido" || t.status === "Finalizado",
+      );
+    } else if (typeFilter !== "all") {
       timeFiltered = timeFiltered.filter((t) => t.type === typeFilter);
     }
 
@@ -144,35 +154,30 @@ export function Financial() {
   const formatMoney = (val) =>
     val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-  // Cores dinâmicas para os cards selecionados
-  const getCardStyle = (type) => {
-    const base = "cursor-pointer transition-all duration-300 transform border";
-    if (typeFilter === type) {
-      return `${base} ring-2 ring-offset-2 scale-[1.02] shadow-lg`;
-    }
-    return `${base} hover:shadow-md hover:-translate-y-1 opacity-80 hover:opacity-100`;
-  };
+  const getCardStyle = (active) =>
+    active
+      ? "ring-2 ring-offset-2 scale-[1.02] shadow-lg border-transparent"
+      : "hover:shadow-md hover:-translate-y-1 opacity-90 hover:opacity-100 border-gray-100";
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20 animate-fade-in">
       <div className="max-w-7xl mx-auto p-6 md:p-8">
-        {/* HEADER & CONTROLES DE TEMPO */}
+        {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-8">
           <div>
             <h1 className="text-3xl font-display font-bold text-gray-800">
               Painel Financeiro
             </h1>
             <p className="text-gray-500 mt-1">
-              Gestão de receitas e fluxo de caixa.
+              Fluxo de caixa realizado e previsões.
             </p>
           </div>
 
-          {/* Abas de Tempo (Estilo iOS Segmented Control) */}
           <div className="bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm flex">
             {[
               { id: "today", label: "Hoje" },
               { id: "month", label: "Este Mês" },
-              { id: "total", label: "Total Geral" },
+              { id: "total", label: "Acumulado" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -191,175 +196,194 @@ export function Financial() {
 
         {loading ? (
           <div className="text-center py-20 text-gray-400">
-            Carregando dados...
+            Carregando dados financeiros...
           </div>
         ) : (
           <div className="space-y-8">
-            {/* --- CARDS DE KPI (Clicáveis para filtrar) --- */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Card Vendas (Azul) */}
-              <div
-                onClick={() =>
-                  setTypeFilter(typeFilter === "proposal" ? "all" : "proposal")
-                }
-                className={`bg-white p-6 rounded-2xl border-gray-100 ${getCardStyle("proposal")} ${typeFilter === "proposal" ? "ring-blue-500 border-blue-500" : ""}`}
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-                    <FileText size={24} />
-                  </div>
-                  {typeFilter === "proposal" && (
-                    <div className="bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded-full">
-                      FILTRADO
-                    </div>
-                  )}
+            {/* --- KPI CARDS --- */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {/* Card Receita Total (Realizada) */}
+              <div className="md:col-span-2 bg-gradient-to-br from-gray-900 to-gray-800 p-8 rounded-3xl shadow-xl text-white relative overflow-hidden flex flex-col justify-between">
+                <div className="absolute top-0 right-0 p-6 opacity-10">
+                  <DollarSign size={120} />
                 </div>
-                <p className="text-sm font-bold text-gray-400 uppercase tracking-wider">
-                  Propostas
-                </p>
-                <h3 className="text-3xl font-bold text-gray-800 mt-1">
-                  {formatMoney(metrics.proposal)}
-                </h3>
-                <p className="text-xs text-blue-500 mt-2 font-medium bg-blue-50 inline-block px-2 py-1 rounded">
-                  {metrics.countP} registros{" "}
-                  {timeRange === "today" ? "hoje" : ""}
-                </p>
-              </div>
-
-              {/* Card Serviços (Verde) */}
-              <div
-                onClick={() =>
-                  setTypeFilter(typeFilter === "service" ? "all" : "service")
-                }
-                className={`bg-white p-6 rounded-2xl border-gray-100 ${getCardStyle("service")} ${typeFilter === "service" ? "ring-green-500 border-green-500" : ""}`}
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="p-3 bg-green-50 text-green-600 rounded-xl">
-                    <ClipboardList size={24} />
-                  </div>
-                  {typeFilter === "service" && (
-                    <div className="bg-green-600 text-white text-[10px] font-bold px-2 py-1 rounded-full">
-                      FILTRADO
-                    </div>
-                  )}
-                </div>
-                <p className="text-sm font-bold text-gray-400 uppercase tracking-wider">
-                  Serviços Técnicos
-                </p>
-                <h3 className="text-3xl font-bold text-gray-800 mt-1">
-                  {formatMoney(metrics.service)}
-                </h3>
-                <p className="text-xs text-green-600 mt-2 font-medium bg-green-50 inline-block px-2 py-1 rounded">
-                  {metrics.countS} registros{" "}
-                  {timeRange === "today" ? "hoje" : ""}
-                </p>
-              </div>
-
-              {/* Card Total (Amiste) - Não filtra, apenas mostra soma */}
-              <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-6 rounded-2xl shadow-lg text-white flex flex-col justify-between relative overflow-hidden">
-                <div className="absolute -right-4 -top-4 w-32 h-32 bg-white/5 rounded-full blur-2xl"></div>
                 <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 bg-white/10 text-white rounded-lg backdrop-blur-sm">
-                      <TrendingUp size={20} />
-                    </div>
-                  </div>
-                  <p className="text-xs font-bold text-gray-300 uppercase tracking-wider">
-                    Receita Total (
-                    {timeRange === "today"
-                      ? "Hoje"
-                      : timeRange === "month"
-                        ? "Mês"
-                        : "Geral"}
-                    )
+                  <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">
+                    Receita Confirmada
                   </p>
-                  <h3 className="text-4xl font-bold text-white tracking-tight mt-2">
-                    {formatMoney(metrics.total)}
+                  <h3 className="text-5xl font-bold tracking-tighter text-white">
+                    {formatMoney(metrics.totalRealized)}
                   </h3>
                 </div>
+                <div className="mt-6 flex gap-4">
+                  <div className="bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/5">
+                    <p className="text-[10px] uppercase text-gray-300 font-bold">
+                      Vendas
+                    </p>
+                    <p className="text-lg font-bold text-blue-300">
+                      {formatMoney(metrics.realizedSales)}
+                    </p>
+                  </div>
+                  <div className="bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/5">
+                    <p className="text-[10px] uppercase text-gray-300 font-bold">
+                      Serviços
+                    </p>
+                    <p className="text-lg font-bold text-green-300">
+                      {formatMoney(metrics.realizedServices)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card Previsão (Em Aberto) */}
+              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-between relative group overflow-hidden">
+                <div className="absolute -right-4 -top-4 bg-amber-50 rounded-full w-24 h-24 blur-xl group-hover:bg-amber-100 transition-colors"></div>
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
+                      <Clock size={20} />
+                    </div>
+                    <span className="text-xs font-bold text-amber-600 uppercase">
+                      Em Negociação
+                    </span>
+                  </div>
+                  <h3 className="text-3xl font-bold text-gray-800">
+                    {formatMoney(metrics.projected)}
+                  </h3>
+                </div>
+                <p className="text-xs text-gray-400 mt-4">
+                  Valor potencial em propostas "Aguardando" e rascunhos.
+                </p>
+              </div>
+
+              {/* Card Eficiência */}
+              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-2 bg-green-50 text-green-600 rounded-lg">
+                      <CheckCircle size={20} />
+                    </div>
+                    <span className="text-xs font-bold text-green-600 uppercase">
+                      Conclusões
+                    </span>
+                  </div>
+                  <h3 className="text-3xl font-bold text-gray-800">
+                    {metrics.countRealized}
+                  </h3>
+                </div>
+                <p className="text-xs text-gray-400 mt-4">
+                  Operações finalizadas no período selecionado.
+                </p>
               </div>
             </div>
 
-            {/* --- TABELA DE DETALHES (Extrato) --- */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            {/* --- EXTRATO --- */}
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row justify-between items-center gap-4">
                 <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                  <DollarSign size={20} className="text-amiste-primary" />
-                  Extrato Detalhado
-                  {typeFilter !== "all" && (
-                    <span className="text-xs font-normal text-gray-400">
-                      (Filtrado)
-                    </span>
-                  )}
+                  <TrendingUp size={20} className="text-amiste-primary" />{" "}
+                  Extrato de Movimentações
                 </h3>
-                <div className="text-xs text-gray-400 font-medium">
-                  {filteredData.length} transações encontradas
+
+                {/* Filtros de Lista */}
+                <div className="flex gap-2">
+                  {["all", "proposal", "service"].map((ft) => (
+                    <button
+                      key={ft}
+                      onClick={() => setTypeFilter(ft)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-colors ${
+                        typeFilter === ft
+                          ? "bg-gray-800 text-white"
+                          : "bg-white border border-gray-200 text-gray-500 hover:bg-gray-100"
+                      }`}
+                    >
+                      {ft === "all"
+                        ? "Tudo"
+                        : ft === "proposal"
+                          ? "Vendas"
+                          : "Serviços"}
+                    </button>
+                  ))}
                 </div>
               </div>
 
               <div className="max-h-[600px] overflow-y-auto">
                 {filteredData.length === 0 ? (
-                  <div className="p-10 text-center text-gray-400">
-                    <Filter size={40} className="mx-auto mb-3 opacity-20" />
-                    <p>Nenhuma movimentação neste período.</p>
+                  <div className="p-12 text-center text-gray-400">
+                    <Filter size={48} className="mx-auto mb-4 opacity-20" />
+                    <p>Nenhuma transação encontrada neste período.</p>
                   </div>
                 ) : (
                   <table className="w-full text-left text-sm">
-                    <thead className="bg-white sticky top-0 z-10 shadow-sm text-gray-400 font-bold uppercase text-[10px] tracking-wider">
+                    <thead className="bg-white sticky top-0 z-10 text-gray-400 font-bold uppercase text-[10px] tracking-wider shadow-sm">
                       <tr>
                         <th className="p-5 pl-8">Data</th>
                         <th className="p-5">Cliente / Origem</th>
-                        <th className="p-5">Tipo</th>
+                        <th className="p-5">Status</th>
                         <th className="p-5 text-right pr-8">Valor</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {filteredData.map((item) => (
-                        <tr
-                          key={item.id}
-                          className="hover:bg-gray-50 transition-colors group"
-                        >
-                          <td className="p-5 pl-8 text-gray-500 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <Calendar size={14} className="text-gray-300" />
-                              {item.date.toLocaleDateString()}
-                              <span className="text-xs text-gray-300 px-1">
-                                |
+                      {filteredData.map((item) => {
+                        const isReal =
+                          item.status === "Concluido" ||
+                          item.status === "Finalizado";
+                        const isCancel = item.status === "Cancelado";
+
+                        return (
+                          <tr
+                            key={item.id}
+                            className={`hover:bg-gray-50 transition-colors group ${!isReal ? "opacity-60 bg-gray-50/50" : ""}`}
+                          >
+                            <td className="p-5 pl-8 text-gray-500 whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                {item.type === "proposal" ? (
+                                  <FileText
+                                    size={16}
+                                    className="text-blue-400"
+                                  />
+                                ) : (
+                                  <ClipboardList
+                                    size={16}
+                                    className="text-green-400"
+                                  />
+                                )}
+                                <span className="font-medium text-gray-700">
+                                  {item.date.toLocaleDateString()}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="p-5">
+                              <p className="font-bold text-gray-800">
+                                {item.client}
+                              </p>
+                              <p className="text-xs text-gray-400 mt-0.5">
+                                {item.details}
+                              </p>
+                            </td>
+                            <td className="p-5">
+                              <span
+                                className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border ${
+                                  isReal
+                                    ? "bg-green-50 text-green-700 border-green-100"
+                                    : isCancel
+                                      ? "bg-red-50 text-red-700 border-red-100"
+                                      : "bg-amber-50 text-amber-700 border-amber-100"
+                                }`}
+                              >
+                                {item.status}
                               </span>
-                              {item.date.toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </div>
-                          </td>
-                          <td className="p-5">
-                            <p className="font-bold text-gray-700">
-                              {item.client}
-                            </p>
-                            <p className="text-xs text-gray-400 mt-0.5">
-                              {item.details}
-                            </p>
-                          </td>
-                          <td className="p-5">
-                            <span
-                              className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border ${
-                                item.type === "proposal"
-                                  ? "bg-blue-50 text-blue-600 border-blue-100"
-                                  : "bg-green-50 text-green-600 border-green-100"
-                              }`}
-                            >
-                              {item.type === "proposal" ? "Venda" : "Serviço"}
-                            </span>
-                          </td>
-                          <td className="p-5 pr-8 text-right">
-                            <span
-                              className={`font-bold text-base ${item.type === "proposal" ? "text-blue-600" : "text-green-600"}`}
-                            >
-                              + {formatMoney(item.value)}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="p-5 pr-8 text-right">
+                              <span
+                                className={`font-bold text-base ${isReal ? "text-gray-800" : "text-gray-400 line-through decoration-gray-300"}`}
+                              >
+                                {formatMoney(item.value)}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 )}

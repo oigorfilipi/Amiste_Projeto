@@ -115,6 +115,12 @@ export function DefaultLayout() {
       path: "/supplies",
       icon: Package,
       label: "Insumos",
+      visible: permissions.canManageSupplies,
+    },
+    {
+      path: "/supplies",
+      icon: Package,
+      label: "Insumos",
       visible: permissions.canManageMachines,
     },
   ];

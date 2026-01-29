@@ -124,18 +124,22 @@ export default function App() {
                 </ProtectedRouteRouteWrapper>
               }
             />
+
+            {/* CONFIGURAÇÃO DE MÁQUINAS (Só Técnico/Dono/DEV) */}
             <Route
               path="/machine-configs"
               element={
-                <ProtectedRouteRouteWrapper permissionKey="canManageMachines">
+                <ProtectedRouteRouteWrapper permissionKey="canConfigureMachines">
                   <MachineConfigs />
                 </ProtectedRouteRouteWrapper>
               }
             />
+
+            {/* INSUMOS (Comercial/ADM/Dono/DEV) */}
             <Route
               path="/supplies"
               element={
-                <ProtectedRouteRouteWrapper permissionKey="canManageMachines">
+                <ProtectedRouteRouteWrapper permissionKey="canManageSupplies">
                   <Supplies />
                 </ProtectedRouteRouteWrapper>
               }

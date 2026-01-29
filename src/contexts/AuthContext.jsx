@@ -75,12 +75,12 @@ export function AuthProvider({ children }) {
   const role = activeProfile?.role || "Visitante";
 
   /* NOVA HIERARQUIA:
-     - DEV  = Desenvolvedor (Deus)
-     - Dono = Dono (Deus)
-     - ADM  = Administrativo (Operacional)
-     - Comercial / Vendedor
-     - Técnico
-     - Financeiro
+      - DEV  = Desenvolvedor (Deus)
+      - Dono = Dono (Deus)
+      - ADM  = Administrativo (Operacional)
+      - Comercial / Vendedor
+      - Técnico
+      - Financeiro
   */
 
   const permissions = {
@@ -91,7 +91,7 @@ export function AuthProvider({ children }) {
     canCreateChecklist: [
       "Dono",
       "DEV",
-      "ADM", // Antigo Administrativo
+      "ADM",
       "Comercial",
       "Vendedor",
       "Técnico",
@@ -137,6 +137,16 @@ export function AuthProvider({ children }) {
 
     // 9. USUÁRIOS: Só Chefia Suprema vê a lista para testar/excluir
     canManageUsers: ["Dono", "DEV"].includes(role),
+
+    // --- NOVAS REGRAS ---
+
+    // 10. INSUMOS: ADM, DEV, Dono e Comercial
+    canManageSupplies: ["Dono", "DEV", "ADM", "Comercial", "Vendedor"].includes(
+      role,
+    ),
+
+    // 11. CONFIGURAÇÃO DE MÁQUINAS: DEV, Dono e Técnico
+    canConfigureMachines: ["Dono", "DEV", "Técnico", "Tecnico"].includes(role),
   };
 
   return (

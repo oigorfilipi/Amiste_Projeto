@@ -357,13 +357,22 @@ export function Machines() {
               </p>
 
               <div className="mt-auto pt-3 border-t border-gray-100">
-                {/* Botão Configurações */}
-                <button
-                  onClick={(e) => handleOpenConfigs(machine, e)}
-                  className="w-full py-2 bg-gray-50 hover:bg-amiste-primary hover:text-white text-gray-600 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all"
-                >
-                  <Settings size={16} /> Configurações
-                </button>
+                {/* SÓ MOSTRA SE TIVER PERMISSÃO DE CONFIGURAR */}
+                {permissions.canConfigureMachines && (
+                  <button
+                    onClick={(e) => handleOpenConfigs(machine, e)}
+                    className="w-full py-2 bg-gray-50 hover:bg-amiste-primary hover:text-white text-gray-600 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Settings size={16} /> Configurações
+                  </button>
+                )}
+
+                {/* Se não tiver permissão, pode mostrar outra coisa ou nada */}
+                {!permissions.canConfigureMachines && (
+                  <div className="text-center py-2 text-xs text-gray-400 font-medium bg-gray-50 rounded-lg">
+                    Apenas visualização
+                  </div>
+                )}
               </div>
             </div>
           </div>

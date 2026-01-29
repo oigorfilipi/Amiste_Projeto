@@ -7,16 +7,17 @@ import {
   User,
   Calendar,
   Trash2,
-  Edit,
-  PlusCircle,
+  Edit2,
+  Plus,
   Clock,
   ShieldAlert,
+  Activity,
 } from "lucide-react";
 
 export function History() {
   const { user } = useContext(AuthContext);
   const [logs, setLogs] = useState([]);
-  const [userMap, setUserMap] = useState({}); // <--- NOVO: Mapa de Usuários
+  const [userMap, setUserMap] = useState({});
   const [loading, setLoading] = useState(true);
 
   // Filtros
@@ -26,7 +27,7 @@ export function History() {
   useEffect(() => {
     fetchData();
 
-    // Atualizar em tempo real (Histórico)
+    // Atualizar em tempo real
     const subscription = supabase
       .channel("realtime_history")
       .on(
@@ -45,7 +46,6 @@ export function History() {
 
   async function fetchData() {
     try {
-      // 1. Buscar Histórico
       const { data: historyData, error: historyError } = await supabase
         .from("app_history")
         .select("*")
@@ -54,15 +54,12 @@ export function History() {
 
       if (historyError) throw historyError;
 
-      // 2. Buscar Perfis (Para saber os nomes)
       const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
         .select("id, nickname, full_name, role");
 
       if (profilesError) throw profilesError;
 
-      // 3. Criar um "Dicionário" de usuários para acesso rápido
-      // Ex: { "id-123": { name: "Carlos", role: "Vendedor" } }
       const map = {};
       profilesData.forEach((p) => {
         map[p.id] = p;
@@ -77,7 +74,7 @@ export function History() {
     }
   }
 
-  // Helpers de Tradução Visual
+  // Helpers Visuais
   const getModuleLabel = (mod) => {
     switch (mod) {
       case "machines":
@@ -98,17 +95,36 @@ export function History() {
   const getActionStyle = (action) => {
     switch (action) {
       case "Criação":
-        return { color: "text-green-600", bg: "bg-green-50", icon: PlusCircle };
+        return {
+          color: "text-green-600",
+          bg: "bg-green-50",
+          border: "border-green-100",
+          icon: Plus,
+        };
       case "Edição":
-        return { color: "text-blue-600", bg: "bg-blue-50", icon: Edit };
+        return {
+          color: "text-blue-600",
+          bg: "bg-blue-50",
+          border: "border-blue-100",
+          icon: Edit2,
+        };
       case "Exclusão":
-        return { color: "text-red-600", bg: "bg-red-50", icon: Trash2 };
+        return {
+          color: "text-red-600",
+          bg: "bg-red-50",
+          border: "border-red-100",
+          icon: Trash2,
+        };
       default:
-        return { color: "text-gray-600", bg: "bg-gray-50", icon: Clock };
+        return {
+          color: "text-gray-600",
+          bg: "bg-gray-50",
+          border: "border-gray-100",
+          icon: Clock,
+        };
     }
   };
 
-  // Filtragem local
   const filteredLogs = logs.filter((log) => {
     const matchModule =
       filterModule === "Todos" || getModuleLabel(log.module) === filterModule;
@@ -118,27 +134,28 @@ export function History() {
   });
 
   return (
-    <div className="min-h-screen pb-20 bg-gray-50 animate-fade-in">
+    <div className="min-h-screen bg-gray-50/50 pb-20 animate-fade-in">
       {/* CABEÇALHO */}
-      <div className="p-8 pb-4">
-        <h1 className="text-3xl font-display font-bold text-gray-800 mb-2">
-          Histórico Global
-        </h1>
-        <p className="text-gray-500">
-          Linha do tempo de todas as atividades do sistema.
-        </p>
-      </div>
+      <div className="max-w-5xl mx-auto p-6 md:p-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-display font-bold text-gray-800">
+            Histórico Global
+          </h1>
+          <p className="text-gray-500 mt-1">
+            Linha do tempo de atividades e auditoria do sistema.
+          </p>
+        </div>
 
-      {/* BARRA DE FILTROS */}
-      <div className="px-8 mb-6">
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4 items-center">
-          <div className="flex items-center gap-2 text-gray-500 font-bold text-sm uppercase">
-            <Filter size={18} /> Filtros:
+        {/* BARRA DE FILTROS */}
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 items-center mb-8">
+          <div className="flex items-center gap-2 text-gray-400 font-bold text-xs uppercase tracking-wider pl-2">
+            <Filter size={16} /> Filtros
           </div>
 
-          {/* Filtro Módulo */}
+          <div className="h-8 w-px bg-gray-100 hidden md:block"></div>
+
           <select
-            className="p-2 border rounded-lg bg-gray-50 text-sm focus:outline-none focus:border-amiste-primary"
+            className="flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-amiste-primary outline-none transition-all cursor-pointer"
             value={filterModule}
             onChange={(e) => setFilterModule(e.target.value)}
           >
@@ -149,9 +166,8 @@ export function History() {
             <option>Manutenção</option>
           </select>
 
-          {/* Filtro Ação */}
           <select
-            className="p-2 border rounded-lg bg-gray-50 text-sm focus:outline-none focus:border-amiste-primary"
+            className="flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-amiste-primary outline-none transition-all cursor-pointer"
             value={filterAction}
             onChange={(e) => setFilterAction(e.target.value)}
           >
@@ -161,23 +177,28 @@ export function History() {
             <option>Exclusão</option>
           </select>
 
-          <div className="ml-auto text-xs text-gray-400">
-            Mostrando {filteredLogs.length} eventos
+          <div className="ml-auto text-xs font-bold text-gray-400 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+            {filteredLogs.length} Eventos
           </div>
         </div>
-      </div>
 
-      {/* LISTA DE EVENTOS (TIMELINE) */}
-      <div className="px-8 max-w-5xl">
+        {/* LISTA DE EVENTOS */}
         {loading ? (
-          <p className="text-center text-gray-400 py-10">
-            Carregando auditoria...
-          </p>
+          <div className="text-center py-20 text-gray-400">
+            <Activity
+              size={48}
+              className="mx-auto mb-4 opacity-20 animate-pulse"
+            />
+            <p>Carregando histórico...</p>
+          </div>
         ) : filteredLogs.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
-            <HistoryIcon size={48} className="mx-auto text-gray-300 mb-2" />
-            <p className="text-gray-500">
-              Nenhum registro encontrado para os filtros.
+          <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200">
+            <HistoryIcon
+              size={48}
+              className="mx-auto text-gray-300 mb-2 opacity-50"
+            />
+            <p className="text-gray-500 font-medium">
+              Nenhum registro encontrado.
             </p>
           </div>
         ) : (
@@ -186,7 +207,6 @@ export function History() {
               const style = getActionStyle(log.action_type);
               const Icon = style.icon;
 
-              // Recupera os dados do autor baseado no ID
               const authorProfile = userMap[log.user_id];
               const authorName =
                 authorProfile?.nickname ||
@@ -197,65 +217,68 @@ export function History() {
               return (
                 <div
                   key={log.id}
-                  className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex items-start gap-4 hover:border-amiste-primary/30 transition-all animate-fade-in group"
+                  className="group bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-amiste-primary/30 transition-all flex flex-col md:flex-row gap-4 items-start md:items-center relative overflow-hidden"
                 >
-                  {/* Ícone da Ação */}
+                  {/* Linha colorida lateral (opcional, estilo Jira) */}
                   <div
-                    className={`p-3 rounded-full ${style.bg} ${style.color}`}
+                    className={`absolute left-0 top-0 bottom-0 w-1 ${style.bg.replace("bg-", "bg-").replace("50", "500")}`}
+                  ></div>
+
+                  {/* Ícone */}
+                  <div
+                    className={`p-3 rounded-xl ${style.bg} ${style.color} border ${style.border} shrink-0 ml-2`}
                   >
                     <Icon size={20} />
                   </div>
 
-                  {/* Conteúdo */}
+                  {/* Info Principal */}
                   <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-bold text-gray-800 text-base">
-                        {log.description}
-                      </h3>
-                      <span className="text-xs text-gray-400 whitespace-nowrap flex items-center gap-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <span
+                        className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${style.bg} ${style.color} ${style.border}`}
+                      >
+                        {log.action_type}
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-gray-100 text-gray-500 border border-gray-200">
+                        {getModuleLabel(log.module)}
+                      </span>
+                      <span className="text-xs text-gray-400 flex items-center gap-1 ml-auto md:ml-2">
                         <Calendar size={12} />
-                        {new Date(log.created_at).toLocaleDateString()} às{" "}
+                        {new Date(log.created_at).toLocaleDateString()}
+                        <span className="text-gray-300">|</span>
                         {new Date(log.created_at).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
                       </span>
                     </div>
-
-                    <div className="flex items-center gap-3 mt-1">
-                      <span
-                        className={`text-xs font-bold px-2 py-0.5 rounded border ${style.bg} ${style.color} border-current opacity-70`}
-                      >
-                        {log.action_type}
-                      </span>
-                      <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded uppercase tracking-wide">
-                        {getModuleLabel(log.module)}
-                      </span>
-                    </div>
+                    <h3 className="font-bold text-gray-800 text-sm md:text-base leading-tight">
+                      {log.description}
+                    </h3>
                   </div>
 
-                  {/* USUÁRIO QUE FEZ A AÇÃO (ATUALIZADO) */}
-                  <div className="border-l pl-4 ml-2 flex flex-col items-center justify-center min-w-[100px] text-center">
+                  {/* Divisor Mobile */}
+                  <div className="w-full h-px bg-gray-50 md:hidden"></div>
+
+                  {/* Autor */}
+                  <div className="flex items-center gap-3 md:pl-6 md:border-l border-gray-100 min-w-[140px]">
                     <div
-                      className={`p-1.5 rounded-full mb-1 ${authorProfile ? "bg-gray-100" : "bg-red-50"}`}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center border ${authorProfile ? "bg-gray-50 border-gray-200 text-gray-500" : "bg-red-50 border-red-100 text-red-400"}`}
                     >
                       {authorProfile ? (
-                        <User size={16} className="text-gray-500" />
+                        <User size={14} />
                       ) : (
-                        <ShieldAlert size={16} className="text-red-400" />
+                        <ShieldAlert size={14} />
                       )}
                     </div>
-
-                    <span
-                      className="text-xs font-bold text-gray-700 truncate max-w-[100px]"
-                      title={authorProfile?.full_name}
-                    >
-                      {log.user_id === user?.id ? "Você" : authorName}
-                    </span>
-
-                    <span className="text-[9px] text-gray-400 uppercase tracking-wide">
-                      {authorRole}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-gray-700">
+                        {log.user_id === user?.id ? "Você" : authorName}
+                      </span>
+                      <span className="text-[9px] text-gray-400 uppercase font-bold tracking-wide">
+                        {authorRole}
+                      </span>
+                    </div>
                   </div>
                 </div>
               );

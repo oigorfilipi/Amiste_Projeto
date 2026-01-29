@@ -16,7 +16,6 @@ import {
   Trash2,
   Edit2,
   Shield,
-  User,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -121,13 +120,16 @@ export function DefaultLayout() {
 
       {/* --- SIDEBAR --- */}
       <aside className="w-72 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 z-30 transition-all duration-300">
-        {/* Logo Area */}
+        {/* Logo Area (AGORA COM LINK PARA HOME) */}
         <div className="h-20 flex items-center justify-center border-b border-gray-100 px-6">
-          <div className="bg-amiste-primary w-full py-3 rounded-xl shadow-lg shadow-red-200 flex items-center justify-center transform hover:scale-[1.02] transition-transform cursor-default">
+          <Link
+            to="/home"
+            className="bg-amiste-primary w-full py-3 rounded-xl shadow-lg shadow-red-200 flex items-center justify-center transform hover:scale-[1.02] transition-transform cursor-pointer block text-center"
+          >
             <span className="text-white font-black tracking-[0.25em] text-xl">
               AMISTE
             </span>
-          </div>
+          </Link>
         </div>
 
         {/* Navegação */}

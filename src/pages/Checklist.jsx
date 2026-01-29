@@ -146,6 +146,7 @@ export function Checklist() {
   const [customAccessories, setCustomAccessories] = useState([]);
   const [noAccessories, setNoAccessories] = useState(false);
 
+  // --- INSUMOS COMPLETOS (RESTAURADOS) ---
   const [noSupplies, setNoSupplies] = useState(false);
   const [suppliesData, setSuppliesData] = useState({
     solubles: {
@@ -175,7 +176,25 @@ export function Checklist() {
       "Vora - Maçã Verde": { active: false, qty: "" },
       "Vora - Maracujá": { active: false, qty: "" },
       "Vora - Morango": { active: false, qty: "" },
-      // ... adicione todos os xaropes aqui conforme sua lista original
+      "Vora - Cranberry": { active: false, qty: "" },
+      "Vora - Blue Lemonade": { active: false, qty: "" },
+      "Vora - Pink Lemonade": { active: false, qty: "" },
+      "Vora - Limão Siciliano": { active: false, qty: "" },
+      "Vora - Caramelo": { active: false, qty: "" },
+      "Vora - Caramelo Salgado": { active: false, qty: "" },
+      "Vora - Melancia": { active: false, qty: "" },
+      "Vora - Baunilha": { active: false, qty: "" },
+      "DaVinci - Coco": { active: false, qty: "" },
+      "DaVinci - Kiwi": { active: false, qty: "" },
+      "DaVinci - Maracujá Vermelho": { active: false, qty: "" },
+      "DaVinci - Jabuticaba": { active: false, qty: "" },
+      "DaVinci - Morango": { active: false, qty: "" },
+      "DaVinci - Melancia": { active: false, qty: "" },
+      "Fabri - Maracujá": { active: false, qty: "" },
+      "Fabri - Maça Verde": { active: false, qty: "" },
+      "Fabri - Morango": { active: false, qty: "" },
+      "Fabri - Limão": { active: false, qty: "" },
+      "Fabri - Banana": { active: false, qty: "" },
     },
   });
   const [customSupplies, setCustomSupplies] = useState([]);

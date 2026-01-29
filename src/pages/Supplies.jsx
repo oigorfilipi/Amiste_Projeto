@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
-import { Link } from "react-router-dom"; // Importe Link
+import { Link } from "react-router-dom";
 import {
   Plus,
   Search,
@@ -13,6 +13,8 @@ import {
   Tag,
   Scale,
   ChefHat,
+  Upload,
+  Link as LinkIcon,
 } from "lucide-react";
 
 const BRAND_OPTIONS = [
@@ -30,6 +32,7 @@ export function Supplies() {
   const { permissions } = useContext(AuthContext);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [supplies, setSupplies] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -41,6 +44,9 @@ export function Supplies() {
     photo_url: "",
     price: 0,
   });
+
+  // Estado para alternar entre URL e Upload
+  const [imageMode, setImageMode] = useState("url"); // 'url' ou 'file'
 
   useEffect(() => {
     fetchSupplies();
@@ -61,6 +67,35 @@ export function Supplies() {
     }
   }
 
+  // --- UPLOAD DE IMAGEM ---
+  async function handleImageUpload(e) {
+    try {
+      setUploading(true);
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("images")
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Pega a URL pública
+      const { data } = supabase.storage.from("images").getPublicUrl(filePath);
+
+      setFormData((prev) => ({ ...prev, photo_url: data.publicUrl }));
+      alert("Imagem enviada com sucesso!");
+    } catch (error) {
+      alert("Erro no upload: " + error.message);
+    } finally {
+      setUploading(false);
+    }
+  }
+
   function handleEdit(item) {
     if (!permissions.canManageMachines) return alert("Sem permissão.");
     setEditingId(item.id);
@@ -71,6 +106,7 @@ export function Supplies() {
       photo_url: item.photo_url || "",
       price: item.price || 0,
     });
+    setImageMode(item.photo_url?.includes("supabase") ? "file" : "url");
     setShowModal(true);
   }
 
@@ -84,6 +120,7 @@ export function Supplies() {
       photo_url: "",
       price: 0,
     });
+    setImageMode("url");
     setShowModal(true);
   }
 
@@ -154,7 +191,6 @@ export function Supplies() {
               />
             </div>
 
-            {/* BOTÃO DE RECEITAS */}
             <Link
               to="/recipes"
               className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-5 py-3 rounded-xl font-bold shadow-sm flex items-center gap-2 transition-all"
@@ -221,7 +257,7 @@ export function Supplies() {
           ))}
         </div>
 
-        {/* MODAL (Mantido igual, mas aqui está para garantir) */}
+        {/* MODAL */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
@@ -238,6 +274,7 @@ export function Supplies() {
                   <X size={24} className="text-gray-400 hover:text-red-500" />
                 </button>
               </div>
+
               <form onSubmit={handleSave} className="p-6 space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
@@ -253,6 +290,7 @@ export function Supplies() {
                     placeholder="Ex: Xarope de Maçã Verde"
                   />
                 </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
@@ -291,31 +329,78 @@ export function Supplies() {
                     </select>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
-                    URL da Foto
+
+                {/* SELEÇÃO DE IMAGEM (URL ou ARQUIVO) */}
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-3">
+                    Imagem do Produto
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      className="w-full p-3 border border-gray-200 rounded-xl"
-                      value={formData.photo_url}
-                      onChange={(e) =>
-                        setFormData({ ...formData, photo_url: e.target.value })
-                      }
-                      placeholder="https://..."
-                    />
-                    {formData.photo_url && (
-                      <img
-                        src={formData.photo_url}
-                        className="w-12 h-12 rounded border object-contain"
+
+                  {/* Botões de Alternância */}
+                  <div className="flex bg-white rounded-lg p-1 border border-gray-200 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => setImageMode("url")}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-md flex items-center justify-center gap-1 ${imageMode === "url" ? "bg-amiste-primary text-white shadow-sm" : "text-gray-500 hover:bg-gray-50"}`}
+                    >
+                      <LinkIcon size={12} /> Link (URL)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImageMode("file")}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-md flex items-center justify-center gap-1 ${imageMode === "file" ? "bg-amiste-primary text-white shadow-sm" : "text-gray-500 hover:bg-gray-50"}`}
+                    >
+                      <Upload size={12} /> Upload (Arquivo)
+                    </button>
+                  </div>
+
+                  {/* Inputs */}
+                  <div className="flex gap-3">
+                    {imageMode === "url" ? (
+                      <input
+                        className="w-full p-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-amiste-primary outline-none"
+                        value={formData.photo_url}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            photo_url: e.target.value,
+                          })
+                        }
+                        placeholder="https://exemplo.com/foto.png"
                       />
+                    ) : (
+                      <div className="relative w-full">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          disabled={uploading}
+                          className="w-full p-2 border border-gray-200 rounded-xl text-sm bg-white file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        />
+                        {uploading && (
+                          <div className="absolute right-3 top-2.5 text-xs text-blue-600 font-bold animate-pulse">
+                            Enviando...
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Preview Pequeno */}
+                    {formData.photo_url && (
+                      <div className="w-12 h-12 bg-white border border-gray-200 rounded-lg flex items-center justify-center shrink-0 p-1">
+                        <img
+                          src={formData.photo_url}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
                     )}
                   </div>
                 </div>
+
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full py-3 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 mt-4"
+                  disabled={loading || uploading}
+                  className="w-full py-3 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 mt-4 disabled:opacity-70"
                 >
                   <Save size={20} /> {loading ? "Salvando..." : "Salvar Insumo"}
                 </button>

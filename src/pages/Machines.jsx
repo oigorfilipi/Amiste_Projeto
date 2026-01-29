@@ -13,6 +13,7 @@ import {
   Droplet,
   Ruler,
   Image as ImageIcon,
+  Link as LinkIcon,
 } from "lucide-react";
 
 // --- CONSTANTES ---
@@ -32,15 +33,14 @@ const TYPE_OPTIONS = [
 ];
 
 export function Machines() {
-  const { permissions } = useContext(AuthContext); // Verifica permissão para editar
+  const { permissions } = useContext(AuthContext);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [machines, setMachines] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Estado para controlar Edição
   const [editingId, setEditingId] = useState(null);
-  const [currentPhotoUrl, setCurrentPhotoUrl] = useState("");
 
   // --- FORMULÁRIO ---
   const [name, setName] = useState("");
@@ -51,7 +51,10 @@ export function Machines() {
   const [type, setType] = useState("");
   const [customType, setCustomType] = useState("");
   const [status, setStatus] = useState("Disponível");
-  const [photo, setPhoto] = useState(null);
+
+  // Imagem (URL ou Upload)
+  const [photoUrl, setPhotoUrl] = useState("");
+  const [imageMode, setImageMode] = useState("url"); // 'url' ou 'file'
 
   // Técnicos
   const [voltage, setVoltage] = useState("220v");
@@ -82,18 +85,41 @@ export function Machines() {
     }
   }
 
-  // --- AÇÕES ---
+  // --- UPLOAD DE IMAGEM ---
+  async function handleImageUpload(e) {
+    try {
+      setUploading(true);
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const fileExt = file.name.split(".").pop();
+      const fileName = `machines/${Math.random()}.${fileExt}`; // Pasta machines/ dentro do bucket images
+
+      const { error: uploadError } = await supabase.storage
+        .from("images")
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from("images").getPublicUrl(fileName);
+      setPhotoUrl(data.publicUrl);
+      alert("Imagem enviada com sucesso!");
+    } catch (error) {
+      alert("Erro no upload: " + error.message);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   function handleEdit(machine) {
     if (!permissions.canManageMachines)
       return alert("Sem permissão para editar.");
 
     setEditingId(machine.id);
-    setCurrentPhotoUrl(machine.photo_url);
-    setPhoto(null);
-
     setName(machine.name);
+    setPhotoUrl(machine.photo_url || "");
     setStatus(machine.status || "Disponível");
+    setImageMode(machine.photo_url?.includes("supabase") ? "file" : "url");
 
     // Lógica Dropdown vs Custom
     if (MODEL_OPTIONS.includes(machine.model)) {
@@ -142,6 +168,7 @@ export function Machines() {
     if (!permissions.canManageMachines)
       return alert("Sem permissão para criar.");
     resetForm();
+    setImageMode("url");
     setShowModal(true);
   }
 
@@ -150,23 +177,6 @@ export function Machines() {
     setLoading(true);
 
     try {
-      let finalPhotoUrl = currentPhotoUrl;
-
-      // Upload Foto
-      if (photo) {
-        const fileExt = photo.name.split(".").pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage
-          .from("machines")
-          .upload(fileName, photo);
-        if (uploadError) throw uploadError;
-
-        const { data } = supabase.storage
-          .from("machines")
-          .getPublicUrl(fileName);
-        finalPhotoUrl = data.publicUrl;
-      }
-
       const finalModel = model === "Outro" ? customModel : model;
       const finalBrand = brand === "Outro" ? customBrand : brand;
       const finalType = type === "Outro" ? customType : type;
@@ -174,7 +184,7 @@ export function Machines() {
 
       const payload = {
         name,
-        photo_url: finalPhotoUrl,
+        photo_url: photoUrl,
         model: finalModel,
         brand: finalBrand,
         type: finalType,
@@ -228,9 +238,8 @@ export function Machines() {
 
   function resetForm() {
     setEditingId(null);
-    setCurrentPhotoUrl("");
     setName("");
-    setPhoto(null);
+    setPhotoUrl("");
     setModel("");
     setCustomModel("");
     setBrand("");
@@ -267,7 +276,6 @@ export function Machines() {
         </div>
 
         <div className="flex gap-3 w-full md:w-auto">
-          {/* Barra de Pesquisa */}
           <div className="relative flex-1 md:w-64">
             <Search className="absolute left-3 top-3 text-gray-400" size={20} />
             <input
@@ -281,7 +289,7 @@ export function Machines() {
           {permissions.canManageMachines && (
             <button
               onClick={handleNew}
-              className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-2"
+              className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all hover:-translate-y-1"
             >
               <Plus size={20} />{" "}
               <span className="hidden md:inline">Nova Máquina</span>
@@ -298,7 +306,6 @@ export function Machines() {
             onClick={() => handleEdit(machine)}
             className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col cursor-pointer group hover:-translate-y-1"
           >
-            {/* Foto */}
             <div className="h-56 bg-gray-50 relative flex items-center justify-center p-6">
               <div className="absolute inset-0 bg-amiste-primary/0 group-hover:bg-amiste-primary/5 transition-colors duration-300"></div>
               {machine.photo_url ? (
@@ -312,7 +319,6 @@ export function Machines() {
                 </div>
               )}
 
-              {/* Badges Flutuantes */}
               <div className="absolute top-3 left-3 flex gap-1">
                 <span
                   className={`text-[10px] font-bold px-2 py-1 rounded border ${machine.voltage === "220v" ? "bg-red-50 text-red-700 border-red-100" : "bg-blue-50 text-blue-700 border-blue-100"}`}
@@ -321,7 +327,6 @@ export function Machines() {
                 </span>
               </div>
 
-              {/* Botão Excluir (Hover) */}
               {permissions.canManageMachines && (
                 <button
                   onClick={(e) => handleDelete(machine.id, e)}
@@ -332,7 +337,6 @@ export function Machines() {
               )}
             </div>
 
-            {/* Info */}
             <div className="p-5 flex-1 flex flex-col">
               <h3 className="font-bold text-gray-800 text-lg leading-tight mb-1">
                 {machine.name}
@@ -365,7 +369,6 @@ export function Machines() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-            {/* Header Modal */}
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center z-10">
               <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                 {editingId ? (
@@ -404,30 +407,60 @@ export function Machines() {
                     />
                   </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                  {/* SELEÇÃO DE IMAGEM */}
+                  <div className="md:col-span-2 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-3">
                       Foto da Máquina
                     </label>
-                    <div className="flex items-center gap-4 p-4 border border-dashed border-gray-300 rounded-xl bg-gray-50">
-                      {currentPhotoUrl && !photo && (
-                        <img
-                          src={currentPhotoUrl}
-                          className="w-16 h-16 object-contain bg-white rounded border p-1"
-                        />
-                      )}
-                      <label className="cursor-pointer bg-white border border-gray-200 hover:border-amiste-primary text-gray-600 px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-sm">
-                        Escolher Arquivo
+
+                    <div className="flex bg-white rounded-lg p-1 border border-gray-200 mb-3 w-full md:w-1/2">
+                      <button
+                        type="button"
+                        onClick={() => setImageMode("url")}
+                        className={`flex-1 py-1.5 text-xs font-bold rounded-md flex items-center justify-center gap-1 ${imageMode === "url" ? "bg-amiste-primary text-white shadow-sm" : "text-gray-500 hover:bg-gray-50"}`}
+                      >
+                        <LinkIcon size={12} /> Link (URL)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setImageMode("file")}
+                        className={`flex-1 py-1.5 text-xs font-bold rounded-md flex items-center justify-center gap-1 ${imageMode === "file" ? "bg-amiste-primary text-white shadow-sm" : "text-gray-500 hover:bg-gray-50"}`}
+                      >
+                        <Upload size={12} /> Upload (Arquivo)
+                      </button>
+                    </div>
+
+                    <div className="flex gap-3">
+                      {imageMode === "url" ? (
                         <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => setPhoto(e.target.files[0])}
+                          className="w-full p-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-amiste-primary outline-none"
+                          value={photoUrl}
+                          onChange={(e) => setPhotoUrl(e.target.value)}
+                          placeholder="https://exemplo.com/foto.png"
                         />
-                      </label>
-                      {photo && (
-                        <span className="text-sm text-amiste-primary font-bold">
-                          {photo.name}
-                        </span>
+                      ) : (
+                        <div className="relative w-full">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            disabled={uploading}
+                            className="w-full p-2 border border-gray-200 rounded-xl text-sm bg-white file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                          />
+                          {uploading && (
+                            <div className="absolute right-3 top-2.5 text-xs text-blue-600 font-bold animate-pulse">
+                              Enviando...
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {photoUrl && (
+                        <div className="w-12 h-12 bg-white border border-gray-200 rounded-lg flex items-center justify-center shrink-0 p-1">
+                          <img
+                            src={photoUrl}
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
                       )}
                     </div>
                   </div>
@@ -511,6 +544,7 @@ export function Machines() {
                       <option>Bivolt</option>
                     </select>
                   </div>
+
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Amperagem
@@ -534,6 +568,7 @@ export function Machines() {
                       ))}
                     </div>
                   </div>
+
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Água
@@ -606,7 +641,7 @@ export function Machines() {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || uploading}
                   className="px-8 py-3 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-xl font-bold shadow-lg flex items-center gap-2 disabled:opacity-50"
                 >
                   <Save size={20} />{" "}

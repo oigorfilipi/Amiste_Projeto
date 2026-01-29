@@ -9,8 +9,9 @@ import {
   Coffee,
   Calendar,
   DollarSign,
-  Lock,
-  Tag, // <--- ADICIONEI O ÍCONE AQUI
+  Tag,
+  ArrowRight,
+  Clock,
 } from "lucide-react";
 
 export function Home() {
@@ -39,185 +40,209 @@ export function Home() {
     }
   }
 
-  function MenuCard({ to, icon: Icon, title, desc, color, permission }) {
+  function MenuCard({ to, icon: Icon, title, desc, colorClass, permission }) {
     if (!permission) return null;
+
+    // Mapa de cores para Tailwind (precisa ser explícito ou safelist, mas aqui vamos usar classes diretas passadas via prop ou um map simples)
+    const colorStyles = {
+      red: "bg-red-50 text-red-600 group-hover:bg-red-100",
+      green: "bg-green-50 text-green-600 group-hover:bg-green-100",
+      orange: "bg-orange-50 text-orange-600 group-hover:bg-orange-100",
+      blue: "bg-blue-50 text-blue-600 group-hover:bg-blue-100",
+      pink: "bg-pink-50 text-pink-600 group-hover:bg-pink-100",
+      purple: "bg-purple-50 text-purple-600 group-hover:bg-purple-100",
+    };
+
+    const style = colorStyles[colorClass] || colorStyles.red;
 
     return (
       <Link
         to={to}
-        className="group relative overflow-hidden bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 p-6 flex flex-col items-start gap-4 hover:-translate-y-1"
+        className="group relative bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 p-6 flex flex-col items-start gap-4 hover:-translate-y-1 overflow-hidden"
       >
         <div
-          className={`p-3 rounded-xl bg-${color}-50 text-${color}-600 group-hover:scale-110 transition-transform`}
+          className={`p-3.5 rounded-2xl transition-colors duration-300 ${style}`}
         >
           <Icon size={28} strokeWidth={1.5} />
         </div>
-        <div>
-          <h3 className="font-bold text-gray-800 text-lg group-hover:text-amiste-primary transition-colors">
+
+        <div className="z-10">
+          <h3 className="font-bold text-gray-800 text-lg group-hover:text-gray-900 transition-colors flex items-center justify-between w-full">
             {title}
           </h3>
-          <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
+          <p className="text-sm text-gray-500 leading-relaxed mt-1">{desc}</p>
+        </div>
+
+        {/* Indicador de "Ir" (Seta) que aparece no hover */}
+        <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0 text-gray-300">
+          <ArrowRight size={24} />
         </div>
       </Link>
     );
   }
 
+  const firstName =
+    userProfile?.nickname ||
+    userProfile?.full_name?.split(" ")[0] ||
+    "Visitante";
+
   return (
-    <div className="min-h-screen bg-gray-50 animate-fade-in">
-      <div className="mb-8">
+    <div className="min-h-screen bg-gray-50/50 animate-fade-in pb-20">
+      {/* HEADER BOAS VINDAS */}
+      <div className="max-w-7xl mx-auto mb-10">
         <h1 className="text-3xl font-display font-bold text-gray-800">
-          Olá, {userProfile?.nickname || userProfile?.full_name?.split(" ")[0]}!
+          Olá, {firstName}!
         </h1>
-        <p className="text-gray-500">Bem-vindo ao painel de controle Amiste.</p>
+        <p className="text-gray-500 mt-1">
+          Bem-vindo ao painel de controle Amiste.
+        </p>
       </div>
 
       {/* --- GRID DE ATALHOS --- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        {/* CHECKLIST */}
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
         <MenuCard
           to="/checklists"
           icon={ClipboardList}
           title="Checklist Digital"
           desc="Crie e gerencie ordens de serviço."
-          color="red"
+          colorClass="red"
           permission={permissions.canCreateChecklist}
         />
 
-        {/* FINANCEIRO */}
         <MenuCard
           to="/financial"
           icon={DollarSign}
           title="Financeiro"
           desc="Resumo de receitas e serviços."
-          color="green"
+          colorClass="green"
           permission={permissions.canViewFinancials}
         />
 
-        {/* MÁQUINAS */}
         <MenuCard
           to="/machines"
           icon={Coffee}
           title="Catálogo Máquinas"
-          desc="Gerencie o inventário de equipamentos."
-          color="orange"
+          desc="Inventário de equipamentos."
+          colorClass="orange"
           permission={permissions.canManageMachines}
         />
 
-        {/* PORTFÓLIO */}
         <MenuCard
           to="/portfolio"
           icon={FileText}
           title="Gerador Propostas"
           desc="Crie orçamentos em PDF."
-          color="blue"
+          colorClass="blue"
           permission={permissions.canManagePortfolio}
         />
 
-        {/* --- NOVO: TABELA DE PREÇOS --- */}
         <MenuCard
           to="/prices"
           icon={Tag}
           title="Tabela de Preços"
-          desc="Consulta rápida de valores de venda."
-          color="pink"
-          permission={true}
+          desc="Consulta rápida de valores."
+          colorClass="pink"
+          permission={true} // Todos acessam (a edição que é restrita)
         />
 
-        {/* WIKI */}
         <MenuCard
           to="/wiki"
           icon={Wrench}
           title="Wiki Técnica"
-          desc="Base de conhecimento e soluções."
-          color="purple"
+          desc="Base de conhecimento."
+          colorClass="purple"
           permission={true}
         />
       </div>
 
       {/* --- TABELA RECENTES --- */}
       {(permissions.canCreateChecklist || permissions.canViewFinancials) && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-            <h2 className="font-bold text-gray-800 flex items-center gap-2">
-              <ClipboardList className="text-amiste-primary" size={20} />
-              Últimas Instalações
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-end mb-4 px-2">
+            <h2 className="font-bold text-gray-700 text-lg flex items-center gap-2">
+              <Clock size={20} className="text-gray-400" /> Atividades Recentes
             </h2>
             <Link
               to="/checklists"
-              className="text-sm font-bold text-amiste-primary hover:underline"
+              className="text-sm font-bold text-amiste-primary hover:text-red-700 transition-colors"
             >
-              Ver tudo
+              Ver histórico completo
             </Link>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50 text-gray-500 font-bold uppercase text-xs">
-                <tr>
-                  <th className="p-4">Cliente</th>
-                  <th className="p-4">Máquina</th>
-                  <th className="p-4">Data</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4 text-right">Ação</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {loading ? (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-gray-50/50 border-b border-gray-100 text-gray-400 font-bold uppercase text-[10px] tracking-wider">
                   <tr>
-                    <td colSpan="5" className="p-6 text-center text-gray-400">
-                      Carregando...
-                    </td>
+                    <th className="p-5 pl-6">Cliente / Evento</th>
+                    <th className="p-5">Equipamento</th>
+                    <th className="p-5">Data</th>
+                    <th className="p-5">Status</th>
+                    <th className="p-5 text-right pr-6">Ação</th>
                   </tr>
-                ) : recentChecklists.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="p-6 text-center text-gray-400">
-                      Nenhum registro recente.
-                    </td>
-                  </tr>
-                ) : (
-                  recentChecklists.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="p-4 font-bold text-gray-700">
-                        {item.client_name || item.event_name}
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {loading ? (
+                    <tr>
+                      <td colSpan="5" className="p-8 text-center text-gray-400">
+                        Carregando...
                       </td>
-                      <td className="p-4 text-gray-600">{item.machine_name}</td>
-                      <td className="p-4 text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <Calendar size={16} className="text-gray-400" />
+                    </tr>
+                  ) : recentChecklists.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan="5"
+                        className="p-8 text-center text-gray-400 italic"
+                      >
+                        Nenhuma instalação recente encontrada.
+                      </td>
+                    </tr>
+                  ) : (
+                    recentChecklists.map((item) => (
+                      <tr
+                        key={item.id}
+                        className="hover:bg-gray-50 transition-colors group"
+                      >
+                        <td className="p-5 pl-6 font-bold text-gray-700">
+                          {item.client_name || item.event_name}
+                        </td>
+                        <td className="p-5 text-gray-600 flex items-center gap-2">
+                          <Coffee size={14} className="text-gray-300" />
+                          {item.machine_name || "N/A"}
+                        </td>
+                        <td className="p-5 text-gray-500">
                           {item.install_date
                             ? new Date(item.install_date).toLocaleDateString(
                                 "pt-BR",
                               )
                             : "-"}
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-bold ${
-                            item.status === "Finalizado"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-yellow-100 text-yellow-700"
-                          }`}
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className="p-4 text-right">
-                        <Link
-                          to={`/checklists/${item.id}`}
-                          className="text-gray-400 hover:text-amiste-primary transition-colors font-bold text-xs"
-                        >
-                          Ver
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="p-5">
+                          <span
+                            className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border ${
+                              item.status === "Finalizado"
+                                ? "bg-green-50 text-green-600 border-green-100"
+                                : "bg-amber-50 text-amber-600 border-amber-100"
+                            }`}
+                          >
+                            {item.status}
+                          </span>
+                        </td>
+                        <td className="p-5 pr-6 text-right">
+                          <Link
+                            to={`/checklists/${item.id}`}
+                            className="inline-flex items-center gap-1 text-xs font-bold text-gray-400 hover:text-amiste-primary transition-colors bg-gray-50 hover:bg-red-50 px-3 py-1.5 rounded-lg"
+                          >
+                            Detalhes <ArrowRight size={12} />
+                          </Link>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

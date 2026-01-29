@@ -48,7 +48,11 @@ export function ProfileModal({
 
       const { error } = await supabase
         .from("profiles")
-        .update(updates)
+        .update({
+          full_name: formData.full_name,
+          nickname: formData.nickname,
+          role: formData.role, // <--- TEM QUE TER ESSA LINHA
+        })
         .eq("id", profileToEdit.id);
 
       if (error) throw error;

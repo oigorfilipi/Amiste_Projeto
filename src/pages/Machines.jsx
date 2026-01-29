@@ -14,6 +14,7 @@ import {
   Ruler,
   Image as ImageIcon,
   Link as LinkIcon,
+  Barcode,
 } from "lucide-react";
 
 // --- CONSTANTES ---
@@ -52,9 +53,9 @@ export function Machines() {
   const [customType, setCustomType] = useState("");
   const [status, setStatus] = useState("Disponível");
 
-  // Imagem (URL ou Upload)
+  // Imagem
   const [photoUrl, setPhotoUrl] = useState("");
-  const [imageMode, setImageMode] = useState("url"); // 'url' ou 'file'
+  const [imageMode, setImageMode] = useState("url");
 
   // Técnicos
   const [voltage, setVoltage] = useState("220v");
@@ -64,7 +65,10 @@ export function Machines() {
   const [reservoirs, setReservoirs] = useState("");
   const [hasSteamer, setHasSteamer] = useState("Não");
   const [dimensions, setDimensions] = useState({ w: "", h: "", d: "" });
-  const [patrimony, setPatrimony] = useState("");
+
+  // Identificação Única (Separados)
+  const [patrimony, setPatrimony] = useState(""); // Só Números
+  const [serialNumber, setSerialNumber] = useState(""); // Texto Livre
 
   useEffect(() => {
     fetchMachines();
@@ -93,7 +97,7 @@ export function Machines() {
       if (!file) return;
 
       const fileExt = file.name.split(".").pop();
-      const fileName = `machines/${Math.random()}.${fileExt}`; // Pasta machines/ dentro do bucket images
+      const fileName = `machines/${Math.random()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("images")
@@ -111,6 +115,12 @@ export function Machines() {
     }
   }
 
+  // Helper para Patrimônio (Só números)
+  const handlePatrimonyChange = (e) => {
+    const onlyNums = e.target.value.replace(/\D/g, ""); // Remove tudo que não é dígito
+    setPatrimony(onlyNums);
+  };
+
   function handleEdit(machine) {
     if (!permissions.canManageMachines)
       return alert("Sem permissão para editar.");
@@ -120,6 +130,10 @@ export function Machines() {
     setPhotoUrl(machine.photo_url || "");
     setStatus(machine.status || "Disponível");
     setImageMode(machine.photo_url?.includes("supabase") ? "file" : "url");
+
+    // Identificação
+    setPatrimony(machine.patrimony || "");
+    setSerialNumber(machine.serial_number || "");
 
     // Lógica Dropdown vs Custom
     if (MODEL_OPTIONS.includes(machine.model)) {
@@ -152,7 +166,6 @@ export function Machines() {
     setColor(machine.color || "Preto");
     setReservoirs(machine.reservoirs || "");
     setHasSteamer(machine.has_steamer || "Não");
-    setPatrimony(machine.patrimony || "");
 
     if (machine.dimensions) {
       const dims = machine.dimensions.split("x");
@@ -196,7 +209,8 @@ export function Machines() {
         reservoirs,
         has_steamer: hasSteamer,
         dimensions: dimString,
-        patrimony,
+        patrimony, // Campo Numérico
+        serial_number: serialNumber, // Campo Texto
       };
 
       if (editingId) {
@@ -254,6 +268,7 @@ export function Machines() {
     setHasSteamer("Não");
     setDimensions({ w: "", h: "", d: "" });
     setPatrimony("");
+    setSerialNumber("");
   }
 
   const filteredMachines = machines.filter(
@@ -617,16 +632,37 @@ export function Machines() {
                       />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
-                      Patrimônio / Série
-                    </label>
-                    <input
-                      className="w-full p-3 border border-gray-200 rounded-xl"
-                      value={patrimony}
-                      onChange={(e) => setPatrimony(e.target.value)}
-                      placeholder="Opcional"
-                    />
+
+                  {/* IDENTIFICAÇÃO ÚNICA SEPARADA */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                        Nº Série
+                      </label>
+                      <div className="relative">
+                        <Barcode
+                          size={16}
+                          className="absolute left-3 top-3.5 text-gray-400"
+                        />
+                        <input
+                          className="w-full pl-9 p-3 border border-gray-200 rounded-xl"
+                          value={serialNumber}
+                          onChange={(e) => setSerialNumber(e.target.value)}
+                          placeholder="ABC-123"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                        Patrimônio
+                      </label>
+                      <input
+                        className="w-full p-3 border border-gray-200 rounded-xl"
+                        value={patrimony}
+                        onChange={handlePatrimonyChange}
+                        placeholder="Só números"
+                      />
+                    </div>
                   </div>
                 </div>
               </section>

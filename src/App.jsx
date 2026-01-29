@@ -15,6 +15,11 @@ import { History } from "./pages/History";
 import { Financial } from "./pages/Financial";
 import { PriceList } from "./pages/PriceList";
 
+// --- NOVAS PÁGINAS IMPORTADAS ---
+import { Supplies } from "./pages/Supplies";
+import { Recipes } from "./pages/Recipes";
+import { SupplyPriceList } from "./pages/SupplyPriceList";
+
 // Contexto
 import { AuthProvider, AuthContext } from "./contexts/AuthContext";
 
@@ -31,28 +36,37 @@ const Private = ({ children }) => {
   return children;
 };
 
-// 2. Verifica se tem PERMISSÃO ESPECÍFICA (Novo)
-const ProtectedRoute = ({ children, allowed }) => {
+// 2. Lógica de Login (Se já logado, vai pra home)
+function LoginLogic() {
+  const { signed } = useContext(AuthContext);
+  if (signed) return <Navigate to="/home" />;
+  return <Login />;
+}
+
+// 3. Wrapper de Permissão (Protege rotas específicas)
+function ProtectedRouteRouteWrapper({ children, permissionKey }) {
   const { permissions, loadingAuth } = useContext(AuthContext);
 
-  if (loadingAuth) return null;
+  if (loadingAuth) return null; // Espera carregar permissões
 
-  // Se a permissão 'allowed' for falsa, chuta pra Home
-  if (!allowed) {
+  // Se permissionKey for passado, verifica. Se não, libera (caso de uso futuro).
+  if (permissionKey && !permissions[permissionKey]) {
     return <Navigate to="/home" replace />;
   }
 
   return children;
-};
+}
 
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          {/* Rotas Públicas */}
           <Route path="/" element={<LoginLogic />} />
           <Route path="/register" element={<Register />} />
 
+          {/* Rotas Protegidas (Layout Padrão) */}
           <Route
             element={
               <Private>
@@ -62,8 +76,15 @@ export default function App() {
           >
             {/* Home é liberada pra todos logados */}
             <Route path="/home" element={<Home />} />
-            {/* Rota liberada para todos os logados */}
+
+            {/* Tabelas de Preço (Liberadas leitura geral) */}
             <Route path="/prices" element={<PriceList />} />
+            <Route path="/supply-prices" element={<SupplyPriceList />} />
+
+            {/* Wiki e Receitas (Liberadas leitura geral) */}
+            <Route path="/wiki" element={<Wiki />} />
+            <Route path="/recipes" element={<Recipes />} />
+            <Route path="/history" element={<History />} />
 
             {/* Rotas BLINDADAS por Cargo */}
             <Route
@@ -93,11 +114,20 @@ export default function App() {
               }
             />
 
+            {/* MÁQUINAS E INSUMOS (Quem gerencia máquinas, gerencia insumos) */}
             <Route
               path="/machines"
               element={
                 <ProtectedRouteRouteWrapper permissionKey="canManageMachines">
                   <Machines />
+                </ProtectedRouteRouteWrapper>
+              }
+            />
+            <Route
+              path="/supplies"
+              element={
+                <ProtectedRouteRouteWrapper permissionKey="canManageMachines">
+                  <Supplies />
                 </ProtectedRouteRouteWrapper>
               }
             />
@@ -110,28 +140,12 @@ export default function App() {
                 </ProtectedRouteRouteWrapper>
               }
             />
-
-            {/* Wiki e Histórico (Regras no próprio componente ou liberado leitura) */}
-            <Route path="/wiki" element={<Wiki />} />
-            <Route path="/history" element={<History />} />
           </Route>
 
+          {/* Rota 404 - Redireciona para login/home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
   );
-}
-
-// Pequeno Wrapper para pegar o contexto dentro da rota
-function ProtectedRouteRouteWrapper({ children, permissionKey }) {
-  const { permissions } = useContext(AuthContext);
-  // Se a permissão for true, renderiza. Se não, volta pra home.
-  return permissions[permissionKey] ? children : <Navigate to="/home" />;
-}
-
-function LoginLogic() {
-  const { signed } = useContext(AuthContext);
-  if (signed) return <Navigate to="/home" />;
-  return <Login />;
 }

@@ -16,6 +16,8 @@ import {
   Trash2,
   Edit2,
   Shield,
+  Package, // <--- NOVO: Ícone para Insumos
+  ChefHat, // <--- NOVO: Ícone para Receitas
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -79,6 +81,7 @@ export function DefaultLayout() {
     return "bg-gray-100 text-gray-500 border-gray-200";
   }
 
+  // --- MENU LATERAL ATUALIZADO ---
   const navItems = [
     { path: "/home", icon: LayoutDashboard, label: "Início", visible: true },
     {
@@ -94,6 +97,10 @@ export function DefaultLayout() {
       visible: permissions.canCreateChecklist,
     },
     { path: "/wiki", icon: Wrench, label: "Manutenção", visible: true },
+
+    // NOVOS ITENS ADICIONADOS AQUI
+    { path: "/recipes", icon: ChefHat, label: "Receitas", visible: true },
+
     {
       path: "/portfolio",
       icon: FileText,
@@ -104,6 +111,14 @@ export function DefaultLayout() {
       path: "/machines",
       icon: Coffee,
       label: "Máquinas",
+      visible: permissions.canManageMachines,
+    },
+
+    // NOVO ITEM ADICIONADO AQUI
+    {
+      path: "/supplies",
+      icon: Package,
+      label: "Insumos",
       visible: permissions.canManageMachines,
     },
   ];
@@ -120,11 +135,11 @@ export function DefaultLayout() {
 
       {/* --- SIDEBAR --- */}
       <aside className="w-72 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 z-30 transition-all duration-300">
-        {/* Logo Area (AGORA COM LINK PARA HOME) */}
+        {/* Logo Area (Link para Home) */}
         <div className="h-20 flex items-center justify-center border-b border-gray-100 px-6">
           <Link
             to="/home"
-            className="bg-amiste-primary w-full py-3 rounded-xl shadow-lg shadow-red-200 flex items-center justify-center transform hover:scale-[1.02] transition-transform cursor-pointer block text-center"
+            className="bg-amiste-primary w-full py-3 rounded-xl shadow-lg shadow-red-200 flex items-center justify-center transform hover:scale-[1.02] transition-transform cursor-pointer block text-center decoration-0"
           >
             <span className="text-white font-black tracking-[0.25em] text-xl">
               AMISTE

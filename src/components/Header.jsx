@@ -2,6 +2,7 @@ import { useContext, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AuthContext } from "../contexts/AuthContext";
 import { ProfileModal } from "./ProfileModal";
+import { Package } from "lucide-react";
 import {
   History,
   Tag,
@@ -33,6 +34,12 @@ export function Header() {
       path: "/prices",
       icon: Tag,
       label: "Tabela Preços",
+      visible: true,
+    },
+    {
+      path: "/supply-prices", // <--- NOVO
+      icon: Package,
+      label: "Preços Insumos",
       visible: true,
     },
     {

@@ -14,12 +14,12 @@ import { Machines } from "./pages/Machines";
 import { History } from "./pages/History";
 import { Financial } from "./pages/Financial";
 import { PriceList } from "./pages/PriceList";
-import { MachineConfigs } from "./pages/MachineConfigs";
 
-// --- NOVAS PÁGINAS IMPORTADAS ---
+// --- NOVAS PÁGINAS ---
 import { Supplies } from "./pages/Supplies";
 import { Recipes } from "./pages/Recipes";
 import { SupplyPriceList } from "./pages/SupplyPriceList";
+import { MachineConfigs } from "./pages/MachineConfigs";
 
 // Contexto
 import { AuthProvider, AuthContext } from "./contexts/AuthContext";
@@ -115,7 +115,7 @@ export default function App() {
               }
             />
 
-            {/* MÁQUINAS E INSUMOS (Quem gerencia máquinas, gerencia insumos) */}
+            {/* MÁQUINAS (Quem gerencia máquinas) */}
             <Route
               path="/machines"
               element={

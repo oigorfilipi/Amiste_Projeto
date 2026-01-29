@@ -74,15 +74,6 @@ export function AuthProvider({ children }) {
   // --- PERMISSÕES ---
   const role = activeProfile?.role || "Visitante";
 
-  /* NOVA HIERARQUIA:
-      - DEV  = Desenvolvedor (Deus)
-      - Dono = Dono (Deus)
-      - ADM  = Administrativo (Operacional)
-      - Comercial / Vendedor
-      - Técnico
-      - Financeiro
-  */
-
   const permissions = {
     // 1. FINANCEIRO: Ver totais e gráficos
     canViewFinancials: ["Dono", "Financeiro", "DEV"].includes(role),
@@ -110,17 +101,16 @@ export function AuthProvider({ children }) {
     // 4. CHECKLIST (Excluir): Só os Chefes Supremos
     canDeleteChecklist: ["Dono", "DEV"].includes(role),
 
-    // 5. MÁQUINAS: Todo mundo menos financeiro
+    // 5. MÁQUINAS: ADM REMOVIDO DAQUI
     canManageMachines: [
       "Dono",
       "DEV",
-      "ADM",
       "Comercial",
       "Vendedor",
-      "Técnico",
+      "Técnico", // Técnico geralmente precisa ver/editar detalhes técnicos
     ].includes(role),
 
-    // 6. PORTFÓLIO: Vendas e Chefia (ADM Operacional tb pode se quiser)
+    // 6. PORTFÓLIO: Vendas, Chefia e ADM
     canManagePortfolio: [
       "Dono",
       "DEV",
@@ -135,12 +125,10 @@ export function AuthProvider({ children }) {
     // 8. WIKI: Todo mundo vê, edição restrita a técnicos e chefia
     canManageWiki: ["Dono", "DEV", "Técnico"].includes(role),
 
-    // 9. USUÁRIOS: Só Chefia Suprema vê a lista para testar/excluir
+    // 9. USUÁRIOS: Só Chefia Suprema
     canManageUsers: ["Dono", "DEV"].includes(role),
 
-    // --- NOVAS REGRAS ---
-
-    // 10. INSUMOS: ADM, DEV, Dono e Comercial
+    // 10. INSUMOS: ADM TEM ACESSO
     canManageSupplies: ["Dono", "DEV", "ADM", "Comercial", "Vendedor"].includes(
       role,
     ),

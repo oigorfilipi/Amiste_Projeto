@@ -16,7 +16,8 @@ import {
   Trash2,
   Edit2,
   Shield,
-  Package, // Mantive Package para Insumos, removi ChefHat
+  Package, // <--- Ícone de Insumos
+  ChefHat, // <--- Ícone de Receitas (caso precise no futuro)
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -80,7 +81,7 @@ export function DefaultLayout() {
     return "bg-gray-100 text-gray-500 border-gray-200";
   }
 
-  // --- MENU LATERAL (Sem Receitas) ---
+  // --- MENU LATERAL ---
   const navItems = [
     { path: "/home", icon: LayoutDashboard, label: "Início", visible: true },
     {
@@ -97,7 +98,7 @@ export function DefaultLayout() {
     },
     { path: "/wiki", icon: Wrench, label: "Manutenção", visible: true },
 
-    // Receitas saiu daqui e foi para dentro de Insumos
+    // Receitas foi removido daqui e colocado dentro de Insumos
 
     {
       path: "/portfolio",
@@ -111,17 +112,13 @@ export function DefaultLayout() {
       label: "Máquinas",
       visible: permissions.canManageMachines,
     },
+
+    // Insumos (Visível apenas se tiver permissão)
     {
       path: "/supplies",
       icon: Package,
       label: "Insumos",
       visible: permissions.canManageSupplies,
-    },
-    {
-      path: "/supplies",
-      icon: Package,
-      label: "Insumos",
-      visible: permissions.canManageMachines,
     },
   ];
 
@@ -248,6 +245,7 @@ export function DefaultLayout() {
                           </div>
                         </button>
 
+                        {/* Ações */}
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={(e) => handleEditMember(member, e)}
@@ -283,8 +281,10 @@ export function DefaultLayout() {
         </nav>
       </aside>
 
+      {/* --- CONTEÚDO PRINCIPAL --- */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
         <Header />
+
         <main className="flex-1 overflow-auto p-6 md:p-10 scroll-smooth">
           <Outlet />
         </main>

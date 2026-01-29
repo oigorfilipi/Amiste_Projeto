@@ -224,7 +224,7 @@ export function MachineConfigs() {
                       <span className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
                         Reservatório {i}
                       </span>
-                      <span className="font-bold text-gray-700">
+                      <span className="font-bold text-gray-700 break-words">
                         {config.product_map?.[i] || "-"}
                       </span>
                     </div>
@@ -232,7 +232,8 @@ export function MachineConfigs() {
                 </div>
 
                 {config.description && (
-                  <div className="bg-blue-50 p-4 rounded-xl text-sm text-blue-800 leading-relaxed">
+                  // AQUI ESTÁ A CORREÇÃO: whitespace-pre-wrap e break-words
+                  <div className="bg-blue-50 p-4 rounded-xl text-sm text-blue-800 leading-relaxed whitespace-pre-wrap break-words">
                     {config.description}
                   </div>
                 )}

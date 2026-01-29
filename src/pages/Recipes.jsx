@@ -67,9 +67,12 @@ export function Recipes() {
       yield: recipe.yield || "",
     });
     setShowForm(true);
-    document
-      .getElementById("recipe-form")
-      ?.scrollIntoView({ behavior: "smooth" });
+    // Pequeno timeout para garantir que o elemento existe antes de rolar
+    setTimeout(() => {
+      document
+        .getElementById("recipe-form")
+        ?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
   }
 
   async function handleSave(e) {
@@ -326,13 +329,19 @@ export function Recipes() {
                       <strong className="block text-gray-400 text-xs uppercase mb-2">
                         Ingredientes
                       </strong>
-                      <p className="whitespace-pre-wrap">{r.ingredients}</p>
+                      {/* AQUI ESTÁ A CORREÇÃO: break-words */}
+                      <p className="whitespace-pre-wrap break-words">
+                        {r.ingredients}
+                      </p>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-xl">
                       <strong className="block text-gray-400 text-xs uppercase mb-2">
                         Preparo
                       </strong>
-                      <p className="whitespace-pre-wrap">{r.instructions}</p>
+                      {/* AQUI ESTÁ A CORREÇÃO: break-words */}
+                      <p className="whitespace-pre-wrap break-words">
+                        {r.instructions}
+                      </p>
                     </div>
                   </div>
                 </div>

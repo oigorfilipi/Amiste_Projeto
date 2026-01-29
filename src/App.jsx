@@ -14,6 +14,7 @@ import { Machines } from "./pages/Machines";
 import { History } from "./pages/History";
 import { Financial } from "./pages/Financial";
 import { PriceList } from "./pages/PriceList";
+import { MachineConfigs } from "./pages/MachineConfigs";
 
 // --- NOVAS PÁGINAS IMPORTADAS ---
 import { Supplies } from "./pages/Supplies";
@@ -120,6 +121,14 @@ export default function App() {
               element={
                 <ProtectedRouteRouteWrapper permissionKey="canManageMachines">
                   <Machines />
+                </ProtectedRouteRouteWrapper>
+              }
+            />
+            <Route
+              path="/machine-configs"
+              element={
+                <ProtectedRouteRouteWrapper permissionKey="canManageMachines">
+                  <MachineConfigs />
                 </ProtectedRouteRouteWrapper>
               }
             />

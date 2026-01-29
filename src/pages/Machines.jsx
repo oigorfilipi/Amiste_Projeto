@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Plus,
   Search,
@@ -15,9 +16,10 @@ import {
   Image as ImageIcon,
   Link as LinkIcon,
   Barcode,
+  Settings,
+  Database,
 } from "lucide-react";
 
-// --- CONSTANTES ---
 const MODEL_OPTIONS = [
   "Iper Automática",
   "Kalerm 1602",
@@ -35,6 +37,7 @@ const TYPE_OPTIONS = [
 
 export function Machines() {
   const { permissions } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -52,8 +55,6 @@ export function Machines() {
   const [type, setType] = useState("");
   const [customType, setCustomType] = useState("");
   const [status, setStatus] = useState("Disponível");
-
-  // Imagem
   const [photoUrl, setPhotoUrl] = useState("");
   const [imageMode, setImageMode] = useState("url");
 
@@ -62,13 +63,16 @@ export function Machines() {
   const [waterSystem, setWaterSystem] = useState("Reservatório");
   const [amperage, setAmperage] = useState("10A");
   const [color, setColor] = useState("Preto");
-  const [reservoirs, setReservoirs] = useState("");
+
+  // NOVOS CAMPOS TÉCNICOS
+  const [hasSewage, setHasSewage] = useState(false); // Esgoto
+  const [hasExtraReservoir, setHasExtraReservoir] = useState(true); // Controle visual
+  const [reservoirCount, setReservoirCount] = useState(0); // Quantidade numérica
+
   const [hasSteamer, setHasSteamer] = useState("Não");
   const [dimensions, setDimensions] = useState({ w: "", h: "", d: "" });
-
-  // Identificação Única (Separados)
-  const [patrimony, setPatrimony] = useState(""); // Só Números
-  const [serialNumber, setSerialNumber] = useState(""); // Texto Livre
+  const [patrimony, setPatrimony] = useState("");
+  const [serialNumber, setSerialNumber] = useState("");
 
   useEffect(() => {
     fetchMachines();
@@ -89,53 +93,41 @@ export function Machines() {
     }
   }
 
-  // --- UPLOAD DE IMAGEM ---
   async function handleImageUpload(e) {
     try {
       setUploading(true);
       const file = e.target.files[0];
       if (!file) return;
-
       const fileExt = file.name.split(".").pop();
       const fileName = `machines/${Math.random()}.${fileExt}`;
-
       const { error: uploadError } = await supabase.storage
         .from("images")
         .upload(fileName, file);
-
       if (uploadError) throw uploadError;
-
       const { data } = supabase.storage.from("images").getPublicUrl(fileName);
       setPhotoUrl(data.publicUrl);
-      alert("Imagem enviada com sucesso!");
+      alert("Imagem enviada!");
     } catch (error) {
-      alert("Erro no upload: " + error.message);
+      alert("Erro: " + error.message);
     } finally {
       setUploading(false);
     }
   }
 
-  // Helper para Patrimônio (Só números)
-  const handlePatrimonyChange = (e) => {
-    const onlyNums = e.target.value.replace(/\D/g, ""); // Remove tudo que não é dígito
-    setPatrimony(onlyNums);
-  };
+  const handlePatrimonyChange = (e) =>
+    setPatrimony(e.target.value.replace(/\D/g, ""));
 
   function handleEdit(machine) {
-    if (!permissions.canManageMachines)
-      return alert("Sem permissão para editar.");
-
+    if (!permissions.canManageMachines) return alert("Sem permissão.");
     setEditingId(machine.id);
     setName(machine.name);
     setPhotoUrl(machine.photo_url || "");
     setStatus(machine.status || "Disponível");
     setImageMode(machine.photo_url?.includes("supabase") ? "file" : "url");
-
-    // Identificação
     setPatrimony(machine.patrimony || "");
     setSerialNumber(machine.serial_number || "");
 
-    // Lógica Dropdown vs Custom
+    // Dropdowns
     if (MODEL_OPTIONS.includes(machine.model)) {
       setModel(machine.model);
       setCustomModel("");
@@ -143,7 +135,6 @@ export function Machines() {
       setModel("Outro");
       setCustomModel(machine.model);
     }
-
     if (BRAND_OPTIONS.includes(machine.brand)) {
       setBrand(machine.brand);
       setCustomBrand("");
@@ -151,7 +142,6 @@ export function Machines() {
       setBrand("Outro");
       setCustomBrand(machine.brand);
     }
-
     if (TYPE_OPTIONS.includes(machine.type)) {
       setType(machine.type);
       setCustomType("");
@@ -164,8 +154,12 @@ export function Machines() {
     setWaterSystem(machine.water_system || "Reservatório");
     setAmperage(machine.amperage || "10A");
     setColor(machine.color || "Preto");
-    setReservoirs(machine.reservoirs || "");
     setHasSteamer(machine.has_steamer || "Não");
+
+    // Novos Campos
+    setHasSewage(machine.has_sewage || false);
+    setReservoirCount(machine.reservoir_count || 0);
+    setHasExtraReservoir((machine.reservoir_count || 0) > 0);
 
     if (machine.dimensions) {
       const dims = machine.dimensions.split("x");
@@ -173,13 +167,11 @@ export function Machines() {
     } else {
       setDimensions({ w: "", h: "", d: "" });
     }
-
     setShowModal(true);
   }
 
   function handleNew() {
-    if (!permissions.canManageMachines)
-      return alert("Sem permissão para criar.");
+    if (!permissions.canManageMachines) return alert("Sem permissão.");
     resetForm();
     setImageMode("url");
     setShowModal(true);
@@ -188,12 +180,16 @@ export function Machines() {
   async function handleSave(e) {
     e.preventDefault();
     setLoading(true);
-
     try {
       const finalModel = model === "Outro" ? customModel : model;
       const finalBrand = brand === "Outro" ? customBrand : brand;
       const finalType = type === "Outro" ? customType : type;
       const dimString = `${dimensions.w}x${dimensions.h}x${dimensions.d}`;
+
+      // Lógica Reservatório: Se marcou "Não tem", salva 0
+      const finalReservoirCount = hasExtraReservoir
+        ? parseInt(reservoirCount)
+        : 0;
 
       const payload = {
         name,
@@ -206,11 +202,12 @@ export function Machines() {
         water_system: waterSystem,
         amperage,
         color,
-        reservoirs,
+        has_sewage: hasSewage, // Novo
+        reservoir_count: finalReservoirCount, // Novo
         has_steamer: hasSteamer,
         dimensions: dimString,
-        patrimony, // Campo Numérico
-        serial_number: serialNumber, // Campo Texto
+        patrimony,
+        serial_number: serialNumber,
       };
 
       if (editingId) {
@@ -219,13 +216,12 @@ export function Machines() {
           .update(payload)
           .eq("id", editingId);
         if (error) throw error;
-        alert("Máquina atualizada!");
+        alert("Atualizado!");
       } else {
         const { error } = await supabase.from("machines").insert(payload);
         if (error) throw error;
-        alert("Máquina cadastrada!");
+        alert("Criado!");
       }
-
       setShowModal(false);
       resetForm();
       fetchMachines();
@@ -238,16 +234,16 @@ export function Machines() {
 
   async function handleDelete(id, e) {
     e.stopPropagation();
-    if (!permissions.canManageMachines) return alert("Sem permissão.");
-    if (!confirm("Tem certeza que deseja excluir esta máquina?")) return;
+    if (!permissions.canManageMachines) return;
+    if (!confirm("Excluir máquina?")) return;
+    await supabase.from("machines").delete().eq("id", id);
+    fetchMachines();
+  }
 
-    try {
-      const { error } = await supabase.from("machines").delete().eq("id", id);
-      if (error) throw error;
-      fetchMachines();
-    } catch (err) {
-      alert("Erro ao excluir: " + err.message);
-    }
+  // Navegar para Configurações (Passando a máquina inteira via state)
+  function handleOpenConfigs(machine, e) {
+    e.stopPropagation();
+    navigate("/machine-configs", { state: { machine } });
   }
 
   function resetForm() {
@@ -264,11 +260,13 @@ export function Machines() {
     setWaterSystem("Reservatório");
     setAmperage("10A");
     setColor("Preto");
-    setReservoirs("");
     setHasSteamer("Não");
     setDimensions({ w: "", h: "", d: "" });
     setPatrimony("");
     setSerialNumber("");
+    setHasSewage(false);
+    setReservoirCount(0);
+    setHasExtraReservoir(true);
   }
 
   const filteredMachines = machines.filter(
@@ -279,17 +277,16 @@ export function Machines() {
 
   return (
     <div className="min-h-screen pb-20 animate-fade-in">
-      {/* CABEÇALHO */}
+      {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-display font-bold text-gray-800">
             Catálogo de Máquinas
           </h1>
           <p className="text-gray-500 mt-1">
-            Gerencie os modelos disponíveis para instalação.
+            Gerencie modelos e configurações técnicas.
           </p>
         </div>
-
         <div className="flex gap-3 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">
             <Search className="absolute left-3 top-3 text-gray-400" size={20} />
@@ -300,7 +297,6 @@ export function Machines() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-
           {permissions.canManageMachines && (
             <button
               onClick={handleNew}
@@ -313,7 +309,7 @@ export function Machines() {
         </div>
       </div>
 
-      {/* GRID DE CARDS */}
+      {/* GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredMachines.map((machine) => (
           <div
@@ -360,14 +356,14 @@ export function Machines() {
                 {machine.brand}
               </p>
 
-              <div className="mt-auto flex gap-2">
-                <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs flex items-center gap-1">
-                  <Zap size={12} /> {machine.amperage}
-                </span>
-                <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs flex items-center gap-1">
-                  <Droplet size={12} />{" "}
-                  {machine.water_system === "Rede Hídrica" ? "Rede" : "Tanque"}
-                </span>
+              <div className="mt-auto pt-3 border-t border-gray-100">
+                {/* Botão Configurações */}
+                <button
+                  onClick={(e) => handleOpenConfigs(machine, e)}
+                  className="w-full py-2 bg-gray-50 hover:bg-amiste-primary hover:text-white text-gray-600 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                >
+                  <Settings size={16} /> Configurações
+                </button>
               </div>
             </div>
           </div>
@@ -380,7 +376,7 @@ export function Machines() {
         </p>
       )}
 
-      {/* --- MODAL DE FORMULÁRIO --- */}
+      {/* --- MODAL --- */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -395,19 +391,18 @@ export function Machines() {
               </h2>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-full text-gray-500"
               >
                 <X size={24} />
               </button>
             </div>
 
             <form onSubmit={handleSave} className="p-6 md:p-8 space-y-8">
-              {/* 1. DADOS BÁSICOS */}
+              {/* Identificação e Imagem (Mantido igual) */}
               <section className="space-y-4">
                 <h3 className="text-xs uppercase font-bold text-gray-400 tracking-wider mb-4 flex items-center gap-2">
                   <ImageIcon size={14} /> Identificação
                 </h3>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
@@ -418,40 +413,36 @@ export function Machines() {
                       className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="Ex: Phedra Evo Espresso"
+                      placeholder="Ex: Phedra Evo"
                     />
                   </div>
-
-                  {/* SELEÇÃO DE IMAGEM */}
                   <div className="md:col-span-2 bg-gray-50 p-4 rounded-xl border border-gray-100">
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-3">
-                      Foto da Máquina
+                      Foto
                     </label>
-
                     <div className="flex bg-white rounded-lg p-1 border border-gray-200 mb-3 w-full md:w-1/2">
                       <button
                         type="button"
                         onClick={() => setImageMode("url")}
-                        className={`flex-1 py-1.5 text-xs font-bold rounded-md flex items-center justify-center gap-1 ${imageMode === "url" ? "bg-amiste-primary text-white shadow-sm" : "text-gray-500 hover:bg-gray-50"}`}
+                        className={`flex-1 py-1.5 text-xs font-bold rounded-md ${imageMode === "url" ? "bg-amiste-primary text-white" : "text-gray-500"}`}
                       >
-                        <LinkIcon size={12} /> Link (URL)
+                        Link
                       </button>
                       <button
                         type="button"
                         onClick={() => setImageMode("file")}
-                        className={`flex-1 py-1.5 text-xs font-bold rounded-md flex items-center justify-center gap-1 ${imageMode === "file" ? "bg-amiste-primary text-white shadow-sm" : "text-gray-500 hover:bg-gray-50"}`}
+                        className={`flex-1 py-1.5 text-xs font-bold rounded-md ${imageMode === "file" ? "bg-amiste-primary text-white" : "text-gray-500"}`}
                       >
-                        <Upload size={12} /> Upload (Arquivo)
+                        Upload
                       </button>
                     </div>
-
                     <div className="flex gap-3">
                       {imageMode === "url" ? (
                         <input
-                          className="w-full p-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-amiste-primary outline-none"
+                          className="w-full p-2.5 border border-gray-200 rounded-xl text-sm bg-white"
                           value={photoUrl}
                           onChange={(e) => setPhotoUrl(e.target.value)}
-                          placeholder="https://exemplo.com/foto.png"
+                          placeholder="https://..."
                         />
                       ) : (
                         <div className="relative w-full">
@@ -460,7 +451,7 @@ export function Machines() {
                             accept="image/*"
                             onChange={handleImageUpload}
                             disabled={uploading}
-                            className="w-full p-2 border border-gray-200 rounded-xl text-sm bg-white file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            className="w-full p-2 border border-gray-200 rounded-xl text-sm bg-white"
                           />
                           {uploading && (
                             <div className="absolute right-3 top-2.5 text-xs text-blue-600 font-bold animate-pulse">
@@ -470,7 +461,7 @@ export function Machines() {
                         </div>
                       )}
                       {photoUrl && (
-                        <div className="w-12 h-12 bg-white border border-gray-200 rounded-lg flex items-center justify-center shrink-0 p-1">
+                        <div className="w-12 h-12 bg-white border rounded-lg p-1">
                           <img
                             src={photoUrl}
                             className="w-full h-full object-contain"
@@ -479,7 +470,6 @@ export function Machines() {
                       )}
                     </div>
                   </div>
-
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Marca *
@@ -499,14 +489,13 @@ export function Machines() {
                     </select>
                     {brand === "Outro" && (
                       <input
-                        className="mt-2 w-full p-2 border rounded-lg bg-gray-50 text-sm"
-                        placeholder="Digite a marca..."
+                        className="mt-2 w-full p-2 border rounded-lg"
+                        placeholder="Marca..."
                         value={customBrand}
                         onChange={(e) => setCustomBrand(e.target.value)}
                       />
                     )}
                   </div>
-
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Categoria *
@@ -526,8 +515,8 @@ export function Machines() {
                     </select>
                     {type === "Outro" && (
                       <input
-                        className="mt-2 w-full p-2 border rounded-lg bg-gray-50 text-sm"
-                        placeholder="Digite o tipo..."
+                        className="mt-2 w-full p-2 border rounded-lg"
+                        placeholder="Tipo..."
                         value={customType}
                         onChange={(e) => setCustomType(e.target.value)}
                       />
@@ -538,12 +527,106 @@ export function Machines() {
 
               <div className="h-px bg-gray-100"></div>
 
-              {/* 2. DADOS TÉCNICOS */}
+              {/* 2. DADOS TÉCNICOS ATUALIZADOS */}
               <section className="space-y-4">
                 <h3 className="text-xs uppercase font-bold text-gray-400 tracking-wider mb-4 flex items-center gap-2">
                   <Zap size={14} /> Especificações Técnicas
                 </h3>
 
+                {/* Hidráulica e Esgoto */}
+                <div className="grid grid-cols-2 gap-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                      <Droplet size={12} className="inline" /> Abastecimento
+                    </label>
+                    <div className="flex gap-2">
+                      {["Reservatório", "Rede Hídrica"].map((opt) => (
+                        <label
+                          key={opt}
+                          className={`cursor-pointer px-3 py-2 rounded-lg text-xs font-bold border transition-all ${waterSystem === opt ? "bg-blue-500 text-white border-blue-500" : "bg-white border-gray-200 text-gray-500"}`}
+                        >
+                          <input
+                            type="radio"
+                            className="hidden"
+                            checked={waterSystem === opt}
+                            onChange={() => setWaterSystem(opt)}
+                          />
+                          {opt === "Reservatório" ? "Tanque" : "Rede"}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                      Rede de Esgoto
+                    </label>
+                    <div className="flex gap-2">
+                      <label
+                        className={`cursor-pointer px-3 py-2 rounded-lg text-xs font-bold border transition-all ${hasSewage ? "bg-green-500 text-white border-green-500" : "bg-white border-gray-200 text-gray-500"}`}
+                      >
+                        <input
+                          type="radio"
+                          className="hidden"
+                          checked={hasSewage}
+                          onChange={() => setHasSewage(true)}
+                        />{" "}
+                        Sim
+                      </label>
+                      <label
+                        className={`cursor-pointer px-3 py-2 rounded-lg text-xs font-bold border transition-all ${!hasSewage ? "bg-gray-500 text-white border-gray-500" : "bg-white border-gray-200 text-gray-500"}`}
+                      >
+                        <input
+                          type="radio"
+                          className="hidden"
+                          checked={!hasSewage}
+                          onChange={() => setHasSewage(false)}
+                        />{" "}
+                        Não
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reservatórios (Solúveis/Grãos) */}
+                <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-xs font-bold text-orange-800 uppercase flex items-center gap-1">
+                      <Database size={12} /> Reservatórios de Insumos
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-amiste-primary rounded"
+                        checked={!hasExtraReservoir}
+                        onChange={(e) =>
+                          setHasExtraReservoir(!e.target.checked)
+                        }
+                      />
+                      <span className="text-xs text-orange-700 font-medium">
+                        Não possui reservatórios extras
+                      </span>
+                    </label>
+                  </div>
+
+                  {hasExtraReservoir && (
+                    <div className="animate-fade-in">
+                      <input
+                        type="number"
+                        min="1"
+                        max="10"
+                        className="w-full p-2 border border-orange-200 rounded-lg text-sm"
+                        placeholder="Quantidade (ex: 3)"
+                        value={reservoirCount}
+                        onChange={(e) => setReservoirCount(e.target.value)}
+                      />
+                      <p className="text-[10px] text-orange-600 mt-1">
+                        Informe quantos espaços para pó/grão a máquina tem.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Outros */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
@@ -559,7 +642,6 @@ export function Machines() {
                       <option>Bivolt</option>
                     </select>
                   </div>
-
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Amperagem
@@ -583,32 +665,14 @@ export function Machines() {
                       ))}
                     </div>
                   </div>
-
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
-                      Água
+                      Dimensões (LxAxP)
                     </label>
-                    <select
-                      className="w-full p-3 border border-gray-200 rounded-xl bg-white"
-                      value={waterSystem}
-                      onChange={(e) => setWaterSystem(e.target.value)}
-                    >
-                      <option value="Reservatório">Reservatório</option>
-                      <option value="Rede Hídrica">Rede Hídrica</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
-                      <Ruler size={12} className="inline mr-1" /> Dimensões
-                      (LxAxP)
-                    </label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <input
                         placeholder="L"
-                        className="w-1/3 p-3 border border-gray-200 rounded-xl text-center"
+                        className="w-1/3 p-2 border rounded-lg text-center"
                         value={dimensions.w}
                         onChange={(e) =>
                           setDimensions({ ...dimensions, w: e.target.value })
@@ -616,7 +680,7 @@ export function Machines() {
                       />
                       <input
                         placeholder="A"
-                        className="w-1/3 p-3 border border-gray-200 rounded-xl text-center"
+                        className="w-1/3 p-2 border rounded-lg text-center"
                         value={dimensions.h}
                         onChange={(e) =>
                           setDimensions({ ...dimensions, h: e.target.value })
@@ -624,7 +688,7 @@ export function Machines() {
                       />
                       <input
                         placeholder="P"
-                        className="w-1/3 p-3 border border-gray-200 rounded-xl text-center"
+                        className="w-1/3 p-2 border rounded-lg text-center"
                         value={dimensions.d}
                         onChange={(e) =>
                           setDimensions({ ...dimensions, d: e.target.value })
@@ -632,37 +696,36 @@ export function Machines() {
                       />
                     </div>
                   </div>
+                </div>
 
-                  {/* IDENTIFICAÇÃO ÚNICA SEPARADA */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
-                        Nº Série
-                      </label>
-                      <div className="relative">
-                        <Barcode
-                          size={16}
-                          className="absolute left-3 top-3.5 text-gray-400"
-                        />
-                        <input
-                          className="w-full pl-9 p-3 border border-gray-200 rounded-xl"
-                          value={serialNumber}
-                          onChange={(e) => setSerialNumber(e.target.value)}
-                          placeholder="ABC-123"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
-                        Patrimônio
-                      </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Nº Série
+                    </label>
+                    <div className="relative">
+                      <Barcode
+                        size={16}
+                        className="absolute left-3 top-3.5 text-gray-400"
+                      />
                       <input
-                        className="w-full p-3 border border-gray-200 rounded-xl"
-                        value={patrimony}
-                        onChange={handlePatrimonyChange}
-                        placeholder="Só números"
+                        className="w-full pl-9 p-3 border border-gray-200 rounded-xl"
+                        value={serialNumber}
+                        onChange={(e) => setSerialNumber(e.target.value)}
+                        placeholder="ABC-123"
                       />
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Patrimônio
+                    </label>
+                    <input
+                      className="w-full p-3 border border-gray-200 rounded-xl"
+                      value={patrimony}
+                      onChange={handlePatrimonyChange}
+                      placeholder="Só números"
+                    />
                   </div>
                 </div>
               </section>

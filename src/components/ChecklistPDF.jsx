@@ -5,71 +5,262 @@ import {
   View,
   Document,
   StyleSheet,
-  Image,
+  Font,
 } from "@react-pdf/renderer";
 
-// Estilos do PDF (Parece CSS, mas é limitado)
+// Registrando fonte para garantir negrito real
+Font.register({
+  family: "Helvetica-Bold",
+  src: "https://fonts.gstatic.com/s/helveticaneue/5.13.0/HelveticaNeue-Bold.ttf",
+});
+
 const styles = StyleSheet.create({
-  page: { padding: 30, fontSize: 10, fontFamily: "Helvetica" },
+  page: {
+    padding: 0,
+    fontFamily: "Helvetica",
+    backgroundColor: "#fff",
+    color: "#1F2937",
+  },
+
+  // --- HEADER ---
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-    paddingBottom: 10,
+    alignItems: "center",
+    paddingHorizontal: 30,
+    paddingTop: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 3,
+    borderBottomColor: "#A82020",
   },
-  headerTitle: { fontSize: 18, fontWeight: "bold", color: "#A82020" },
+  brandTitle: {
+    fontSize: 20,
+    fontFamily: "Helvetica-Bold",
+    color: "#111",
+    textTransform: "uppercase",
+  },
+  brandSub: {
+    fontSize: 8,
+    color: "#A82020",
+    textTransform: "uppercase",
+    letterSpacing: 2,
+    marginTop: 2,
+  },
+  metaBox: {
+    alignItems: "flex-end",
+  },
+  metaTitle: {
+    fontSize: 14,
+    fontFamily: "Helvetica-Bold",
+    color: "#1F2937",
+  },
+  metaDate: {
+    fontSize: 9,
+    color: "#6B7280",
+  },
+
+  // --- CORPO ---
+  body: {
+    padding: 30,
+  },
+
+  // Seções
   section: {
-    marginBottom: 10,
-    padding: 10,
-    border: "1pt solid #eee",
-    borderRadius: 4,
+    marginBottom: 20,
+  },
+  sectionHeader: {
+    backgroundColor: "#F3F4F6",
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginBottom: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: "#A82020",
+    borderRadius: 2,
   },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: "bold",
+    fontSize: 10,
+    fontFamily: "Helvetica-Bold",
+    color: "#111",
+    textTransform: "uppercase",
+  },
+
+  // Grids de Informação
+  row: {
+    flexDirection: "row",
     marginBottom: 6,
-    color: "#333",
-    backgroundColor: "#f9f9f9",
-    padding: 4,
+    flexWrap: "wrap",
   },
-  row: { flexDirection: "row", marginBottom: 4 },
-  label: { fontWeight: "bold", width: 100, color: "#666" },
-  value: { flex: 1 },
-  table: {
-    display: "table",
-    width: "auto",
-    borderStyle: "solid",
-    borderRightWidth: 0,
-    borderBottomWidth: 0,
+  col2: { width: "50%" },
+  col3: { width: "33.33%" },
+  col4: { width: "25%" },
+
+  label: {
+    fontSize: 8,
+    color: "#6B7280",
+    textTransform: "uppercase",
+    marginBottom: 2,
+    fontFamily: "Helvetica-Bold",
   },
-  tableRow: { margin: "auto", flexDirection: "row" },
-  tableCol: {
-    width: "25%",
-    borderStyle: "solid",
-    borderLeftWidth: 0,
-    borderTopWidth: 0,
+  value: {
+    fontSize: 10,
+    color: "#111",
   },
-  tableCell: { margin: "auto", marginTop: 5, fontSize: 9 },
-  signatureBox: {
-    marginTop: 40,
+
+  // Cards de Status (Sim/Não)
+  statusRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 4,
+  },
+  statusCard: {
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 4,
+    padding: 6,
+    width: "23%",
+    alignItems: "center",
+  },
+  statusLabel: {
+    fontSize: 7,
+    color: "#9CA3AF",
+    textTransform: "uppercase",
+    marginBottom: 2,
+  },
+  statusValue: { fontSize: 9, fontFamily: "Helvetica-Bold" },
+
+  // Tabela de Unidades
+  tableHeader: {
+    flexDirection: "row",
+    backgroundColor: "#F9FAFB",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+    paddingVertical: 4,
+    marginTop: 5,
+  },
+  tableRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+    paddingVertical: 4,
+  },
+  th: { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#4B5563" },
+  td: { fontSize: 9, color: "#1F2937" },
+
+  // Listas (Bebidas/Insumos)
+  listBox: {
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 4,
+    padding: 8,
+    minHeight: 40,
+  },
+  listText: {
+    fontSize: 8,
+    color: "#374151",
+    lineHeight: 1.5,
+  },
+
+  // Assinaturas
+  signatureSection: {
     flexDirection: "row",
     justifyContent: "space-between",
+    marginTop: 40,
   },
-  signatureLine: {
+  signatureBox: {
     width: "45%",
     borderTopWidth: 1,
     borderTopColor: "#000",
-    paddingTop: 5,
+    paddingTop: 8,
+    alignItems: "center",
+  },
+  signatureText: {
+    fontSize: 9,
+    fontFamily: "Helvetica-Bold",
+    marginBottom: 2,
+  },
+  signatureSub: {
+    fontSize: 8,
+    color: "#6B7280",
+  },
+
+  footer: {
+    position: "absolute",
+    bottom: 20,
+    left: 0,
+    right: 0,
     textAlign: "center",
     fontSize: 8,
+    color: "#9CA3AF",
   },
 });
 
-// Funções Auxiliares
+// --- HELPERS PARA TRATAR DADOS ---
+
 const formatDate = (date) =>
   date ? new Date(date).toLocaleDateString("pt-BR") : "-";
+
+// Formata lista de insumos complexa (Standard + Custom)
+const formatSupplies = (data) => {
+  const items = [];
+
+  // 1. Standard (Categorias)
+  if (data.supplies_list?.standard) {
+    const std = data.supplies_list.standard;
+    Object.keys(std).forEach((category) => {
+      Object.keys(std[category]).forEach((itemKey) => {
+        const item = std[category][itemKey];
+        if (item.active) {
+          items.push(`${itemKey}${item.qty ? ` (${item.qty})` : ""}`);
+        }
+      });
+    });
+  }
+
+  // 2. Custom
+  if (data.supplies_list?.custom && Array.isArray(data.supplies_list.custom)) {
+    data.supplies_list.custom.forEach((item) => items.push(item));
+  }
+
+  return items.length > 0 ? items.join(", ") : "Nenhum selecionado.";
+};
+
+// Formata lista de bebidas
+const formatDrinks = (data) => {
+  const items = [];
+  if (data.drinks_list?.standard) {
+    Object.entries(data.drinks_list.standard).forEach(([name, ml]) => {
+      items.push(`${name} ${ml ? `(${ml}ml)` : ""}`);
+    });
+  }
+  return items.length > 0 ? items.join(", ") : "Nenhuma selecionada.";
+};
+
+// Formata lista de ferramentas
+const formatTools = (data) => {
+  const items = [];
+  const tools = data.tools_list || {};
+  const accs = data.accessories_list?.standard || {};
+
+  // Ferramentas booleanas
+  Object.keys(tools).forEach((key) => {
+    if (key !== "gallonQty" && tools[key] === true) {
+      items.push(
+        key
+          .replace(/([A-Z])/g, " $1")
+          .replace(/^./, (str) => str.toUpperCase()),
+      );
+    }
+  });
+  // Galão
+  if (tools.gallonQty) items.push(`Galão (${tools.gallonQty})`);
+
+  // Acessórios com qtd
+  Object.entries(accs).forEach(([name, qty]) => {
+    items.push(`${name}${qty && qty !== "1" ? ` (${qty})` : ""}`);
+  });
+
+  return items.length > 0 ? items.join(", ") : "Nenhum item.";
+};
 
 export function ChecklistPDF({ data }) {
   if (!data)
@@ -84,161 +275,223 @@ export function ChecklistPDF({ data }) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* CABEÇALHO */}
+        {/* HEADER */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.headerTitle}>AMISTE CAFÉ</Text>
-            <Text style={{ fontSize: 8, color: "#666" }}>
-              Sistema de Gestão Integrado
-            </Text>
+            <Text style={styles.brandTitle}>AMISTE CAFÉ</Text>
+            <Text style={styles.brandSub}>Ordem de Serviço / Instalação</Text>
           </View>
-          <View style={{ alignItems: "flex-end" }}>
-            <Text style={{ fontSize: 14, fontWeight: "bold" }}>
-              Checklist #{data.id}
+          <View style={styles.metaBox}>
+            <Text style={styles.metaTitle}>Checklist #{data.id}</Text>
+            <Text style={styles.metaDate}>
+              Emitido em: {formatDate(data.created_at)}
             </Text>
-            <Text>{formatDate(data.created_at)}</Text>
           </View>
         </View>
 
-        {/* 1. DADOS DO CLIENTE */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            1. Dados da Instalação ({data.install_type})
-          </Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Cliente/Evento:</Text>
-            <Text style={styles.value}>
-              {data.client_name || data.event_name}
-            </Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Data Instalação:</Text>
-            <Text style={styles.value}>{formatDate(data.install_date)}</Text>
-            {data.install_type === "Evento" && (
-              <>
-                <Text style={styles.label}>Retirada:</Text>
+        <View style={styles.body}>
+          {/* 1. DADOS GERAIS */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                1. Dados da Instalação ({data.install_type})
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <View style={styles.col2}>
+                <Text style={styles.label}>Cliente / Evento</Text>
                 <Text style={styles.value}>
-                  {formatDate(data.pickup_date)} ({data.event_days} dias)
+                  {data.client_name || data.event_name}
                 </Text>
-              </>
+              </View>
+              <View style={styles.col2}>
+                <Text style={styles.label}>Data Instalação</Text>
+                <Text style={styles.value}>
+                  {formatDate(data.install_date)}
+                </Text>
+              </View>
+            </View>
+            {data.install_type === "Evento" && (
+              <View style={styles.row}>
+                <View style={styles.col2}>
+                  <Text style={styles.label}>Dias de Evento</Text>
+                  <Text style={styles.value}>{data.event_days} dias</Text>
+                </View>
+                <View style={styles.col2}>
+                  <Text style={styles.label}>Data Retirada</Text>
+                  <Text style={styles.value}>
+                    {formatDate(data.pickup_date)}
+                  </Text>
+                </View>
+              </View>
             )}
           </View>
-        </View>
 
-        {/* 2. DADOS DA MÁQUINA */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            2. Equipamento ({data.quantity} un)
-          </Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Modelo:</Text>
-            <Text style={styles.value}>{data.machine_name}</Text>
-          </View>
-
-          {/* Configs Técnicas */}
-          <View
-            style={{
-              flexDirection: "row",
-              marginTop: 5,
-              marginBottom: 10,
-              backgroundColor: "#f0f0f0",
-              padding: 5,
-            }}
-          >
-            <Text style={{ width: "25%" }}>Hídrica: {data.tech_water}</Text>
-            <Text style={{ width: "25%" }}>Esgoto: {data.tech_sewage}</Text>
-            <Text style={{ width: "25%" }}>Vapor: {data.tech_steam}</Text>
-            <Text style={{ width: "25%" }}>Pgto: {data.tech_payment}</Text>
-          </View>
-
-          {/* Tabela de Séries */}
-          <View>
-            <Text style={{ fontSize: 8, marginBottom: 2, color: "#666" }}>
-              Identificação das Unidades:
-            </Text>
-            {data.machine_units?.map((u, i) => (
-              <Text key={i} style={{ fontSize: 9, marginBottom: 2 }}>
-                {i + 1}. Voltagem: {u.voltage} | Série: {u.serial || "N/A"} |
-                Patr: {u.patrimony || "N/A"}
+          {/* 2. EQUIPAMENTO */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                2. Equipamento ({data.quantity} un)
               </Text>
-            ))}
+            </View>
+            <View style={styles.row}>
+              <View style={styles.col2}>
+                <Text style={styles.label}>Modelo da Máquina</Text>
+                <Text style={styles.value}>{data.machine_name}</Text>
+              </View>
+            </View>
+
+            {/* Grid de Status Técnico */}
+            <View style={styles.statusRow}>
+              <View style={styles.statusCard}>
+                <Text style={styles.statusLabel}>Rede Hídrica</Text>
+                <Text style={styles.statusValue}>{data.tech_water}</Text>
+              </View>
+              <View style={styles.statusCard}>
+                <Text style={styles.statusLabel}>Esgoto</Text>
+                <Text style={styles.statusValue}>{data.tech_sewage}</Text>
+              </View>
+              <View style={styles.statusCard}>
+                <Text style={styles.statusLabel}>Vapor</Text>
+                <Text style={styles.statusValue}>{data.tech_steam}</Text>
+              </View>
+              <View style={styles.statusCard}>
+                <Text style={styles.statusLabel}>Pagamento</Text>
+                <Text style={styles.statusValue}>{data.tech_payment}</Text>
+              </View>
+            </View>
+
+            {/* Tabela de Unidades */}
+            <View style={{ marginTop: 10 }}>
+              <Text
+                style={{
+                  fontSize: 8,
+                  fontFamily: "Helvetica-Bold",
+                  marginBottom: 2,
+                }}
+              >
+                IDENTIFICAÇÃO DAS UNIDADES:
+              </Text>
+              <View style={styles.tableHeader}>
+                <Text style={[styles.th, { width: "10%" }]}>#</Text>
+                <Text style={[styles.th, { width: "30%" }]}>Voltagem</Text>
+                <Text style={[styles.th, { width: "30%" }]}>Nº Série</Text>
+                <Text style={[styles.th, { width: "30%" }]}>Patrimônio</Text>
+              </View>
+              {data.machine_units?.map((u, i) => (
+                <View key={i} style={styles.tableRow}>
+                  <Text style={[styles.td, { width: "10%" }]}>{i + 1}</Text>
+                  <Text style={[styles.td, { width: "30%" }]}>{u.voltage}</Text>
+                  <Text style={[styles.td, { width: "30%" }]}>
+                    {u.serial || "-"}
+                  </Text>
+                  <Text style={[styles.td, { width: "30%" }]}>
+                    {u.patrimony || "-"}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* 3. INSUMOS E FERRAMENTAS */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>3. Preparação e Insumos</Text>
+            </View>
+
+            <View style={styles.row}>
+              {/* Coluna 1: Ferramentas */}
+              <View style={[styles.col2, { paddingRight: 5 }]}>
+                <Text style={styles.label}>Aparatos & Acessórios</Text>
+                <View style={styles.listBox}>
+                  <Text style={styles.listText}>{formatTools(data)}</Text>
+                </View>
+              </View>
+
+              {/* Coluna 2: Insumos */}
+              <View style={[styles.col2, { paddingLeft: 5 }]}>
+                <Text style={styles.label}>Bebidas & Insumos Habilitados</Text>
+                <View style={styles.listBox}>
+                  <Text style={styles.listText}>
+                    <Text style={{ fontFamily: "Helvetica-Bold" }}>
+                      Bebidas:{" "}
+                    </Text>
+                    {formatDrinks(data)}
+                    {"\n\n"}
+                    <Text style={{ fontFamily: "Helvetica-Bold" }}>
+                      Insumos:{" "}
+                    </Text>
+                    {formatSupplies(data)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* 4. VALIDAÇÃO LOCAL */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                4. Validação do Local e Observações
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <View style={styles.col3}>
+                <Text style={styles.label}>Tomada Local</Text>
+                <Text style={styles.value}>
+                  {data.local_validation?.localSocket || "N/A"}
+                </Text>
+              </View>
+              <View style={styles.col3}>
+                <Text style={styles.label}>Ponto de Água</Text>
+                <Text style={styles.value}>
+                  {data.local_validation?.localWater || "N/A"}
+                </Text>
+              </View>
+              <View style={styles.col3}>
+                <Text style={styles.label}>Treinamento</Text>
+                <Text style={styles.value}>
+                  {data.local_validation?.trainedPeople || "0"} pessoas
+                </Text>
+              </View>
+            </View>
+
+            <View style={{ marginTop: 8 }}>
+              <Text style={styles.label}>Observações de Venda</Text>
+              <View
+                style={{
+                  borderWidth: 1,
+                  borderColor: "#eee",
+                  padding: 6,
+                  minHeight: 30,
+                  borderRadius: 4,
+                }}
+              >
+                <Text style={{ fontSize: 9 }}>
+                  {data.sales_obs || "Nenhuma observação registrada."}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* 5. ASSINATURAS */}
+          <View style={styles.signatureSection}>
+            <View style={styles.signatureBox}>
+              <Text style={styles.signatureText}>Técnico Responsável</Text>
+              <Text style={styles.signatureSub}>Amiste Café</Text>
+            </View>
+            <View style={styles.signatureBox}>
+              <Text style={styles.signatureText}>
+                {data.client_name || "Cliente Responsável"}
+              </Text>
+              <Text style={styles.signatureSub}>Assinatura do Cliente</Text>
+            </View>
           </View>
         </View>
 
-        {/* 3. ITENS E PREPARATIVOS */}
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          {/* Coluna Esquerda */}
-          <View style={{ flex: 1, border: "1pt solid #eee", padding: 5 }}>
-            <Text style={{ fontWeight: "bold", fontSize: 10, marginBottom: 4 }}>
-              Aparatos & Acessórios
-            </Text>
-            <Text style={{ fontSize: 9, color: "#444", lineHeight: 1.5 }}>
-              {/* Junta as chaves dos objetos tools e accessories */}
-              {[
-                ...Object.keys(data.tools_list || {}).filter(
-                  (k) => data.tools_list[k] === true,
-                ),
-                ...Object.keys(data.accessories_list || {}),
-              ]
-                .map((k) => k.replace(/([A-Z])/g, " $1"))
-                .join(", ")}
-            </Text>
-          </View>
-          {/* Coluna Direita */}
-          <View style={{ flex: 1, border: "1pt solid #eee", padding: 5 }}>
-            <Text style={{ fontWeight: "bold", fontSize: 10, marginBottom: 4 }}>
-              Bebidas & Insumos
-            </Text>
-            <Text style={{ fontSize: 9, color: "#444", lineHeight: 1.5 }}>
-              {[
-                ...Object.keys(data.drinks_list?.standard || {}),
-                ...(data.drinks_list?.custom || []).map((d) => d.name),
-                ...Object.keys(data.supplies_list || {}),
-              ].join(", ")}
-            </Text>
-          </View>
-        </View>
-
-        {/* 4. VALIDAÇÃO E OBS */}
-        <View style={{ marginTop: 10, border: "1pt solid #eee", padding: 5 }}>
-          <Text style={{ fontWeight: "bold", fontSize: 10 }}>
-            Observações / Validação Local
-          </Text>
-          <Text style={{ fontSize: 9, marginTop: 2 }}>
-            Local: Tomada {data.local_validation?.localSocket} | Água:{" "}
-            {data.local_validation?.localWater}
-          </Text>
-          <Text style={{ fontSize: 9, marginTop: 2, fontStyle: "italic" }}>
-            Obs Venda: {data.sales_obs || "Nenhuma."}
-          </Text>
-          <Text style={{ fontSize: 9, marginTop: 2 }}>
-            Contrato Nº: {data.contract_num}
-          </Text>
-        </View>
-
-        {/* 5. ASSINATURAS */}
-        <View style={styles.signatureBox}>
-          <View style={styles.signatureLine}>
-            <Text>Técnico Responsável</Text>
-          </View>
-          <View style={styles.signatureLine}>
-            <Text>Cliente ({data.client_name || data.event_name})</Text>
-          </View>
-        </View>
-
-        {/* Rodapé */}
-        <Text
-          style={{
-            position: "absolute",
-            bottom: 30,
-            left: 30,
-            right: 30,
-            fontSize: 8,
-            textAlign: "center",
-            color: "#999",
-          }}
-        >
-          Gerado pelo Sistema Amiste em {new Date().toLocaleString("pt-BR")}
+        <Text style={styles.footer}>
+          Documento gerado eletronicamente pelo Sistema Amiste •{" "}
+          {new Date().getFullYear()}
         </Text>
       </Page>
     </Document>

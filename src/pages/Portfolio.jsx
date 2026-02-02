@@ -43,7 +43,7 @@ export function Portfolio() {
 
   // NOVOS CAMPOS
   const [status, setStatus] = useState("Aguardando");
-  const [obs, setObs] = useState(""); // <--- NOVO CAMPO OBSERVAÇÃO
+  const [obs, setObs] = useState("");
 
   useEffect(() => {
     fetchMachines();
@@ -82,7 +82,7 @@ export function Portfolio() {
     setTotalValue(0);
     setInstallments(1);
     setVideoUrl("");
-    setObs(""); // Reset OBS
+    setObs("");
     setStatus("Aguardando");
     setDescription(
       "Equipamento de alta performance, ideal para seu estabelecimento. Design moderno e extração perfeita.",
@@ -100,7 +100,7 @@ export function Portfolio() {
     setInstallments(p.installments);
     setDescription(p.description);
     setVideoUrl(p.video_url || "");
-    setObs(p.obs || ""); // Carrega OBS
+    setObs(p.obs || "");
     setStatus(p.status || "Aguardando");
     setView("editor");
   }
@@ -135,7 +135,7 @@ export function Portfolio() {
       description: description,
       video_url: videoUrl,
       status: status,
-      obs: obs, // Salva OBS
+      obs: obs,
     };
 
     try {
@@ -185,7 +185,7 @@ export function Portfolio() {
     installment_value: parseFloat(installmentValue),
     description: description,
     video_url: videoUrl,
-    obs: obs, // Passa OBS para PDF
+    obs: obs,
   };
 
   const filteredPortfolios = savedPortfolios.filter(
@@ -212,7 +212,6 @@ export function Portfolio() {
     setInstallments(v.installments);
     setDescription(v.description);
     setVideoUrl(v.video_url || "");
-    // Não restauramos status pois é gestão atual
     alert("Dados restaurados! Clique em Salvar para confirmar.");
     e.target.value = "";
   }
@@ -354,7 +353,6 @@ export function Portfolio() {
       {/* --- MODO EDITOR --- */}
       {view === "editor" && (
         <div className="flex flex-col h-screen overflow-hidden bg-gray-100">
-          {/* Header Editor */}
           <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center z-20 shadow-sm">
             <div className="flex items-center gap-4">
               <button
@@ -394,10 +392,8 @@ export function Portfolio() {
           </div>
 
           <div className="flex flex-1 overflow-hidden">
-            {/* SIDEBAR DE EDIÇÃO */}
             <div className="w-96 bg-white border-r border-gray-200 flex flex-col z-10 overflow-y-auto">
               <div className="p-6 space-y-6">
-                {/* Status (Mantido igual) */}
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                   <label className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-1">
                     <AlertCircle size={14} /> Status da Negociação
@@ -429,7 +425,11 @@ export function Portfolio() {
                       <button
                         key={st.id}
                         onClick={() => setStatus(st.id)}
-                        className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${status === st.id ? `${st.bg} ${st.border} ${st.color} ring-2 ring-offset-1 ring-${st.color.split("-")[1]}-200` : "bg-white border-gray-100 text-gray-400 hover:bg-gray-50"}`}
+                        className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${
+                          status === st.id
+                            ? `${st.bg} ${st.border} ${st.color} ring-2 ring-offset-1 ring-${st.color.split("-")[1]}-200`
+                            : "bg-white border-gray-100 text-gray-400 hover:bg-gray-50"
+                        }`}
                       >
                         <st.icon size={20} className="mb-1" />
                         <span className="text-[10px] font-bold uppercase">
@@ -456,7 +456,8 @@ export function Portfolio() {
                         </option>
                         {versions.slice(0, 5).map((v, i) => (
                           <option key={i} value={i}>
-                            {new Date(v.saved_at).toLocaleString()} - R${" "}
+                            {v.customer_name} - {v.machine_data?.name} -{" "}
+                            {new Date(v.saved_at).toLocaleDateString()} - R${" "}
                             {v.total_value}
                           </option>
                         ))}
@@ -584,8 +585,6 @@ export function Portfolio() {
                       onChange={(e) => setDescription(e.target.value)}
                     ></textarea>
                   </div>
-
-                  {/* NOVO CAMPO: OBSERVAÇÕES */}
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Observações Gerais
@@ -610,7 +609,6 @@ export function Portfolio() {
               </div>
             </div>
 
-            {/* PREVIEW DA FOLHA */}
             <div className="flex-1 bg-gray-100 overflow-y-auto p-8 flex justify-center items-start">
               <div className="bg-white w-[210mm] min-h-[297mm] shadow-2xl rounded-sm flex flex-col relative overflow-hidden transition-all scale-[0.8] md:scale-100 origin-top">
                 <div className="h-24 border-b-4 border-amiste-primary mx-8 mt-8 flex flex-col justify-center">
@@ -654,13 +652,24 @@ export function Portfolio() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-x-12 gap-y-4 mb-8">
+                      {/* ADICIONADO ESGOTO AQUI EMBAIXO */}
                       {[
                         { l: "Tipo", v: selectedMachine.type },
                         { l: "Voltagem", v: selectedMachine.voltage },
                         { l: "Cor", v: selectedMachine.color },
-                        { l: "Abastecimento", v: selectedMachine.water_system },
-                        { l: "Reservatórios", v: selectedMachine.reservoirs },
+                        {
+                          l: "Abastecimento",
+                          v: selectedMachine.water_system,
+                        },
+                        {
+                          l: "Reservatórios",
+                          v: selectedMachine.reservoir_count || 0,
+                        },
                         { l: "Dimensões", v: selectedMachine.dimensions },
+                        {
+                          l: "Esgoto",
+                          v: selectedMachine.has_sewage ? "Sim" : "Não",
+                        },
                       ].map((item, i) => (
                         <div
                           key={i}
@@ -676,7 +685,6 @@ export function Portfolio() {
                       ))}
                     </div>
 
-                    {/* OBSERVAÇÕES NA FOLHA (NOVO) */}
                     {obs && (
                       <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-12">
                         <p className="text-[10px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-1">

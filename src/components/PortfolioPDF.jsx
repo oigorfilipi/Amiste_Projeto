@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   heroSection: {
     flexDirection: "row",
     marginBottom: 30,
-    gap: 20, // React-PDF moderno suporta gap, mas usaremos margin safe
+    gap: 20,
   },
   imageContainer: {
     width: "45%",
@@ -187,6 +187,28 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "#111827",
     fontFamily: "Helvetica-Bold",
+  },
+
+  // --- OBSERVAÇÕES ---
+  obsBox: {
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: "#FFFBEB", // Fundo amarelado suave
+    borderWidth: 1,
+    borderColor: "#FCD34D",
+    borderRadius: 6,
+  },
+  obsTitle: {
+    fontSize: 8,
+    color: "#B45309",
+    textTransform: "uppercase",
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  obsText: {
+    fontSize: 9,
+    color: "#78350F",
+    lineHeight: 1.4,
   },
 
   // --- FOOTER (Estilo Ficha Técnica) ---
@@ -319,7 +341,7 @@ export function PortfolioPDF({ data }) {
             </View>
             <View style={styles.specItem}>
               <Text style={styles.specLabel}>Reservatórios</Text>
-              <Text style={styles.specValue}>{m.reservoirs || "-"}</Text>
+              <Text style={styles.specValue}>{m.reservoir_count || 0}</Text>
             </View>
 
             <View style={styles.specItem}>
@@ -335,11 +357,28 @@ export function PortfolioPDF({ data }) {
               <Text style={styles.specLabel}>Vaporizador</Text>
               <Text style={styles.specValue}>{m.has_steamer || "Não"}</Text>
             </View>
+
+            {/* NOVO: Campo Esgoto */}
+            <View style={styles.specItem}>
+              <Text style={styles.specLabel}>Esgoto</Text>
+              <Text style={styles.specValue}>
+                {m.has_sewage ? "Sim" : "Não"}
+              </Text>
+            </View>
+
             <View style={styles.specItem}>
               <Text style={styles.specLabel}>Amperagem</Text>
               <Text style={styles.specValue}>{m.amperage || "10A"}</Text>
             </View>
           </View>
+
+          {/* NOVO: Campo Observações */}
+          {data.obs && (
+            <View style={styles.obsBox}>
+              <Text style={styles.obsTitle}>Observações Importantes</Text>
+              <Text style={styles.obsText}>{data.obs}</Text>
+            </View>
+          )}
         </View>
 
         {/* FOOTER */}

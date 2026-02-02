@@ -12,6 +12,7 @@ import {
   Tag,
   ArrowRight,
   Clock,
+  Package, // <--- Importei o ícone Package
 } from "lucide-react";
 
 export function Home() {
@@ -41,9 +42,9 @@ export function Home() {
   }
 
   function MenuCard({ to, icon: Icon, title, desc, colorClass, permission }) {
+    // Se a permissão for undefined ou false, não mostra o card
     if (!permission) return null;
 
-    // Mapa de cores para Tailwind (precisa ser explícito ou safelist, mas aqui vamos usar classes diretas passadas via prop ou um map simples)
     const colorStyles = {
       red: "bg-red-50 text-red-600 group-hover:bg-red-100",
       green: "bg-green-50 text-green-600 group-hover:bg-green-100",
@@ -51,6 +52,7 @@ export function Home() {
       blue: "bg-blue-50 text-blue-600 group-hover:bg-blue-100",
       pink: "bg-pink-50 text-pink-600 group-hover:bg-pink-100",
       purple: "bg-purple-50 text-purple-600 group-hover:bg-purple-100",
+      teal: "bg-teal-50 text-teal-600 group-hover:bg-teal-100", // Adicionei teal caso precise
     };
 
     const style = colorStyles[colorClass] || colorStyles.red;
@@ -136,14 +138,17 @@ export function Home() {
           permission={permissions.canManagePortfolio}
         />
 
+        {/* NOVO CARD: INSUMOS (Usando a cor Pink que era da tabela) */}
         <MenuCard
-          to="/prices"
-          icon={Tag}
-          title="Tabela de Preços"
-          desc="Consulta rápida de valores."
+          to="/supplies"
+          icon={Package}
+          title="Insumos"
+          desc="Gestão de produtos e estoque."
           colorClass="pink"
-          permission={true} // Todos acessam (a edição que é restrita)
+          permission={permissions.canManageSupplies}
         />
+
+        {/* CARD TABELA DE PREÇOS REMOVIDO DAQUI */}
 
         <MenuCard
           to="/wiki"

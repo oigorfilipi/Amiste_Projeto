@@ -58,7 +58,9 @@ export function Portfolio() {
     async function convertImage() {
       if (selectedMachine?.photo_url) {
         try {
-          const response = await fetch(selectedMachine.photo_url);
+          const response = await fetch(
+            `https://wsrv.nl/?url=${encodeURIComponent(selectedMachine.photo_url)}`,
+          );
           const blob = await response.blob();
           const reader = new FileReader();
           reader.onloadend = () => {

@@ -33,6 +33,8 @@ export function Portfolio() {
   const [editingId, setEditingId] = useState(null);
   const [versions, setVersions] = useState([]);
 
+  const [machineImageBase64, setMachineImageBase64] = useState(null);
+
   const [selectedMachine, setSelectedMachine] = useState(null);
   const [customerName, setCustomerName] = useState("");
   const [negotiationType, setNegotiationType] = useState("Venda");
@@ -50,6 +52,32 @@ export function Portfolio() {
     fetchMachines();
     fetchPortfolios();
   }, []);
+
+  useEffect(() => {
+    async function convertImage() {
+      if (selectedMachine?.photo_url) {
+        try {
+          // O navegador baixa a imagem como "dados" (blob)
+          const response = await fetch(selectedMachine.photo_url);
+          const blob = await response.blob();
+          const reader = new FileReader();
+
+          // Quando terminar de ler, salva o texto Base64 no estado
+          reader.onloadend = () => {
+            setMachineImageBase64(reader.result);
+          };
+          // Lê o arquivo como URL de dados
+          reader.readAsDataURL(blob);
+        } catch (error) {
+          console.error("Erro ao converter imagem:", error);
+          setMachineImageBase64(null);
+        }
+      } else {
+        setMachineImageBase64(null);
+      }
+    }
+    convertImage();
+  }, [selectedMachine]);
 
   useEffect(() => {
     if (totalValue > 0 && installments > 0) {
@@ -178,6 +206,9 @@ export function Portfolio() {
 
   const previewData = {
     machine_data: selectedMachine,
+    machine_image_base64:
+      machineImageBase64 ||
+      (selectedMachine ? selectedMachine.photo_url : null),
     customer_name: customerName,
     negotiation_type: negotiationType,
     total_value: parseFloat(totalValue),
@@ -272,7 +303,7 @@ export function Portfolio() {
               </div>
               <button
                 onClick={handleNewPortfolio}
-                className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2"
+                className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all hover:-translate-y-1"
               >
                 <Plus size={20} />{" "}
                 <span className="hidden md:inline">Nova Proposta</span>
@@ -417,6 +448,7 @@ export function Portfolio() {
           </div>
 
           <div className="flex flex-1 overflow-hidden">
+            {/* SIDEBAR DE EDIÇÃO */}
             <div className="w-96 bg-white border-r border-gray-200 flex flex-col z-10 overflow-y-auto">
               <div className="p-6 space-y-6">
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
@@ -685,8 +717,8 @@ export function Portfolio() {
                         {
                           l: "Ambiente",
                           v: selectedMachine.environment_recommendation,
-                        }, // NOVO
-                        { l: "Peso", v: selectedMachine.weight }, // NOVO
+                        },
+                        { l: "Peso", v: selectedMachine.weight },
                         { l: "Dimensões", v: selectedMachine.dimensions },
                         {
                           l: "Abastecimento",
@@ -700,7 +732,7 @@ export function Portfolio() {
                                   l: "Tanque Água",
                                   v: selectedMachine.water_tank_size,
                                 },
-                              ] // NOVO
+                              ]
                             : [],
                         )
                         .concat(
@@ -713,7 +745,7 @@ export function Portfolio() {
                                 {
                                   l: "Capacidade Extra",
                                   v: selectedMachine.extra_reservoir_capacity,
-                                }, // NOVO
+                                },
                               ]
                             : [],
                         )
@@ -723,11 +755,11 @@ export function Portfolio() {
                                 {
                                   l: "Grupos",
                                   v: selectedMachine.extraction_cups,
-                                }, // NOVO
+                                },
                                 {
                                   l: "Bicos Vapor",
                                   v: selectedMachine.extraction_nozzles,
-                                }, // NOVO
+                                },
                               ]
                             : [],
                         )
@@ -737,11 +769,11 @@ export function Portfolio() {
                                 {
                                   l: "Combinações",
                                   v: selectedMachine.drink_combinations,
-                                }, // NOVO
+                                },
                                 {
                                   l: "Autonomia",
                                   v: selectedMachine.dose_autonomy,
-                                }, // NOVO
+                                },
                               ]
                             : [],
                         )
@@ -752,11 +784,23 @@ export function Portfolio() {
                                 {
                                   l: "Bandejas",
                                   v: selectedMachine.tray_count,
-                                }, // NOVO
+                                },
                                 {
                                   l: "Seleções",
                                   v: selectedMachine.selection_count,
-                                }, // NOVO
+                                },
+                              ]
+                            : [],
+                        )
+                        .concat(
+                          selectedMachine.type === "Café em Grãos"
+                            ? [
+                                {
+                                  l: "Simultâneo",
+                                  v: selectedMachine.simultaneous_dispenser
+                                    ? "Sim"
+                                    : "Não",
+                                },
                               ]
                             : [],
                         )
@@ -764,6 +808,10 @@ export function Portfolio() {
                           {
                             l: "Esgoto",
                             v: selectedMachine.has_sewage ? "Sim" : "Não",
+                          },
+                          {
+                            l: "Amperagem",
+                            v: selectedMachine.amperage,
                           },
                         ])
                         .map((item, i) =>

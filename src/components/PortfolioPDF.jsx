@@ -10,7 +10,7 @@ import {
   Font,
 } from "@react-pdf/renderer";
 
-// Registrando fontes padrão (opcional, mas garante consistência)
+// Registrando fontes padrão
 Font.register({
   family: "Helvetica-Bold",
   src: "https://fonts.gstatic.com/s/helveticaneue/5.13.0/HelveticaNeue-Bold.ttf",
@@ -18,9 +18,12 @@ Font.register({
 
 const styles = StyleSheet.create({
   page: {
-    padding: 0,
+    paddingTop: 30, // Reduzi de 30 para ganhar espaço
+    paddingBottom: 80, // Espaço para o footer não cobrir conteúdo
+    paddingHorizontal: 30, // Reduzi de 40 para 30
     fontFamily: "Helvetica",
-    backgroundColor: "#F9FAFB", // Fundo levemente cinza (papel premium)
+    backgroundColor: "#F9FAFB",
+    position: "relative", // Necessário para o footer absoluto funcionar bem
   },
 
   // --- HEADER ---
@@ -28,25 +31,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 40,
-    paddingTop: 30,
-    paddingBottom: 20,
-    backgroundColor: "#fff",
-    borderBottomWidth: 3,
-    borderBottomColor: "#A82020", // Amiste Primary
+    marginBottom: 20, // Margem para separar do conteúdo
+    borderBottomWidth: 2, // Mais fino
+    borderBottomColor: "#A82020",
+    paddingBottom: 10,
   },
   brandColumn: {
     flexDirection: "column",
   },
   brandTitle: {
-    fontSize: 24,
+    fontSize: 20, // Reduzi um pouco
     fontFamily: "Helvetica-Bold",
     color: "#111827",
     textTransform: "uppercase",
     letterSpacing: 1,
   },
   brandSub: {
-    fontSize: 8,
+    fontSize: 7,
     color: "#A82020",
     textTransform: "uppercase",
     fontWeight: "bold",
@@ -59,27 +60,28 @@ const styles = StyleSheet.create({
   },
 
   // --- CORPO ---
+  // Removi o padding do body para usar o da página
   body: {
-    padding: 40,
     flex: 1,
   },
 
   // Hero (Imagem + Info)
   heroSection: {
     flexDirection: "row",
-    marginBottom: 30,
-    gap: 20,
+    marginBottom: 20, // Reduzi de 30
+    gap: 15, // Reduzi de 20
+    height: 200, // Fixei uma altura para garantir alinhamento
   },
   imageContainer: {
-    width: "45%",
-    height: 250,
+    width: "40%", // Imagem um pouco menor
+    height: "100%",
     backgroundColor: "#fff",
-    borderRadius: 8,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     justifyContent: "center",
     alignItems: "center",
-    padding: 10,
+    padding: 5,
   },
   image: {
     width: "100%",
@@ -87,67 +89,67 @@ const styles = StyleSheet.create({
     objectFit: "contain",
   },
   infoContainer: {
-    width: "55%",
-    paddingLeft: 20,
-    justifyContent: "center",
+    width: "60%",
+    paddingLeft: 10,
+    justifyContent: "flex-start", // Mudei para topo
   },
   categoryBadge: {
     backgroundColor: "#FEF2F2",
     color: "#A82020",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    fontSize: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 3,
+    fontSize: 7,
     textTransform: "uppercase",
     alignSelf: "flex-start",
-    marginBottom: 10,
+    marginBottom: 8,
   },
   title: {
-    fontSize: 26,
+    fontSize: 22, // Reduzi de 26
     fontFamily: "Helvetica-Bold",
     color: "#1F2937",
-    marginBottom: 4,
+    marginBottom: 2,
     lineHeight: 1,
   },
   subtitle: {
-    fontSize: 10,
+    fontSize: 9,
     color: "#6B7280",
     textTransform: "uppercase",
-    marginBottom: 15,
+    marginBottom: 10,
     fontFamily: "Helvetica-Bold",
   },
   description: {
-    fontSize: 10,
+    fontSize: 9, // Reduzi de 10
     color: "#4B5563",
-    lineHeight: 1.6,
+    lineHeight: 1.4, // Reduzi entrelinha
     textAlign: "left",
-    marginBottom: 15,
+    marginBottom: 10,
   },
 
   // Card de Vídeo
   videoCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#EFF6FF", // Azul bem claro
+    backgroundColor: "#EFF6FF",
     borderWidth: 1,
     borderColor: "#BFDBFE",
-    borderRadius: 6,
-    padding: 10,
-    marginTop: 5,
+    borderRadius: 4,
+    padding: 6, // Mais compacto
+    marginTop: "auto", // Empurra pro final do container de info
   },
   videoTextGroup: {
     flexDirection: "column",
     marginLeft: 0,
   },
   videoLabel: {
-    fontSize: 7,
+    fontSize: 6,
     color: "#1D4ED8",
     fontWeight: "bold",
     textTransform: "uppercase",
-    marginBottom: 2,
+    marginBottom: 1,
   },
   videoLink: {
-    fontSize: 9,
+    fontSize: 8,
     color: "#2563EB",
     textDecoration: "none",
     fontFamily: "Helvetica-Bold",
@@ -157,58 +159,64 @@ const styles = StyleSheet.create({
   separatorLine: {
     height: 1,
     backgroundColor: "#E5E7EB",
-    marginVertical: 20,
+    marginVertical: 15, // Reduzi margem
   },
   specsHeader: {
-    fontSize: 10,
+    fontSize: 9,
     color: "#A82020",
     textTransform: "uppercase",
     fontFamily: "Helvetica-Bold",
-    marginBottom: 15,
+    marginBottom: 10,
   },
   specsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
+    marginBottom: 10, // Espaço antes das obs
   },
   specItem: {
-    width: "50%", // 2 Colunas
-    marginBottom: 12,
+    width: "50%",
+    marginBottom: 6, // Reduzi de 12 para ficar mais compacto
     flexDirection: "row",
     alignItems: "center",
+    borderBottomWidth: 0.5, // Linha fina para guiar o olho
+    borderBottomColor: "#F3F4F6",
+    paddingBottom: 2,
   },
   specLabel: {
-    width: "35%",
-    fontSize: 8,
+    width: "40%",
+    fontSize: 7, // Reduzi fonte
     color: "#9CA3AF",
     textTransform: "uppercase",
     fontWeight: "bold",
   },
   specValue: {
-    fontSize: 10,
+    width: "60%",
+    fontSize: 8, // Reduzi fonte
     color: "#111827",
     fontFamily: "Helvetica-Bold",
+    textAlign: "right", // Alinhar valores à direita fica mais organizado
   },
 
   // --- OBSERVAÇÕES ---
   obsBox: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: "#FFFBEB", // Fundo amarelado suave
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: "#FFFBEB",
     borderWidth: 1,
     borderColor: "#FCD34D",
-    borderRadius: 6,
+    borderRadius: 4,
   },
   obsTitle: {
-    fontSize: 8,
+    fontSize: 7,
     color: "#B45309",
     textTransform: "uppercase",
     fontWeight: "bold",
-    marginBottom: 5,
+    marginBottom: 4,
   },
   obsText: {
-    fontSize: 9,
+    fontSize: 8,
     color: "#78350F",
-    lineHeight: 1.4,
+    lineHeight: 1.3,
   },
 
   // --- FOOTER (Estilo Ficha Técnica) ---
@@ -217,25 +225,25 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 90,
+    height: 70, // Reduzi de 90 para 70
     backgroundColor: "#A82020",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 40,
+    paddingHorizontal: 30, // Alinhado com o padding da página
   },
   footerLeft: {
     flexDirection: "column",
   },
   footerLabel: {
-    color: "#FECACA", // Vermelho claro
-    fontSize: 8,
+    color: "#FECACA",
+    fontSize: 7,
     textTransform: "uppercase",
     marginBottom: 2,
   },
   clientName: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 12, // Reduzi um pouco
     fontFamily: "Helvetica-Bold",
   },
   footerRight: {
@@ -243,13 +251,13 @@ const styles = StyleSheet.create({
   },
   priceValue: {
     color: "#FFFFFF",
-    fontSize: 28,
+    fontSize: 22, // Reduzi de 28
     fontFamily: "Helvetica-Bold",
   },
   installmentsText: {
     color: "#FEE2E2",
-    fontSize: 10,
-    marginTop: 2,
+    fontSize: 9,
+    marginTop: 1,
   },
 });
 
@@ -288,7 +296,10 @@ export function PortfolioPDF({ data }) {
           {/* HERO SECTION */}
           <View style={styles.heroSection}>
             <View style={styles.imageContainer}>
-              {m.photo_url ? (
+              {/* LÓGICA ATUALIZADA: Se tiver Base64, usa ele. Se não, tenta a URL normal. */}
+              {data.machine_image_base64 ? (
+                <Image src={data.machine_image_base64} style={styles.image} />
+              ) : m.photo_url ? (
                 <Image src={m.photo_url} style={styles.image} />
               ) : (
                 <Text style={{ fontSize: 10, color: "#999" }}>Sem Foto</Text>
@@ -326,63 +337,98 @@ export function PortfolioPDF({ data }) {
           {/* SPECS GRID */}
           <Text style={styles.specsHeader}>Especificações Técnicas</Text>
           <View style={styles.specsGrid}>
-            <View style={styles.specItem}>
-              <Text style={styles.specLabel}>Categoria</Text>
-              <Text style={styles.specValue}>{m.type}</Text>
-            </View>
-            <View style={styles.specItem}>
-              <Text style={styles.specLabel}>Dimensões</Text>
-              <Text style={styles.specValue}>{m.dimensions || "-"}</Text>
-            </View>
-
-            <View style={styles.specItem}>
-              <Text style={styles.specLabel}>Voltagem</Text>
-              <Text style={styles.specValue}>{m.voltage}</Text>
-            </View>
-            <View style={styles.specItem}>
-              <Text style={styles.specLabel}>Reservatórios</Text>
-              <Text style={styles.specValue}>{m.reservoir_count || 0}</Text>
-            </View>
-
-            <View style={styles.specItem}>
-              <Text style={styles.specLabel}>Cor</Text>
-              <Text style={styles.specValue}>{m.color}</Text>
-            </View>
-            <View style={styles.specItem}>
-              <Text style={styles.specLabel}>Hídrica</Text>
-              <Text style={styles.specValue}>{m.water_system}</Text>
-            </View>
-
-            <View style={styles.specItem}>
-              <Text style={styles.specLabel}>Vaporizador</Text>
-              <Text style={styles.specValue}>{m.has_steamer || "Não"}</Text>
-            </View>
-
-            {/* NOVO: Campo Esgoto */}
-            <View style={styles.specItem}>
-              <Text style={styles.specLabel}>Esgoto</Text>
-              <Text style={styles.specValue}>
-                {m.has_sewage ? "Sim" : "Não"}
-              </Text>
-            </View>
-
-            <View style={styles.specItem}>
-              <Text style={styles.specLabel}>Amperagem</Text>
-              <Text style={styles.specValue}>{m.amperage || "10A"}</Text>
-            </View>
+            {[
+              { l: "Tipo", v: m.type },
+              { l: "Voltagem", v: m.voltage },
+              { l: "Cor", v: m.color },
+              { l: "Ambiente", v: m.environment_recommendation },
+              { l: "Peso", v: m.weight },
+              { l: "Dimensões", v: m.dimensions || "-" },
+              { l: "Abastecimento", v: m.water_system },
+            ]
+              .concat(
+                m.water_system === "Reservatório"
+                  ? [{ l: "Tanque Água", v: m.water_tank_size }]
+                  : [],
+              )
+              .concat(
+                m.reservoir_count > 0
+                  ? [
+                      { l: "Reservatórios", v: m.reservoir_count },
+                      {
+                        l: "Capacidade Extra",
+                        v: m.extra_reservoir_capacity,
+                      },
+                    ]
+                  : [],
+              )
+              .concat(
+                m.type === "Profissional"
+                  ? [
+                      { l: "Grupos", v: m.extraction_cups },
+                      { l: "Bicos Vapor", v: m.extraction_nozzles },
+                    ]
+                  : [],
+              )
+              .concat(
+                m.type === "Multibebidas"
+                  ? [
+                      {
+                        l: "Combinações",
+                        v: m.drink_combinations,
+                      },
+                      { l: "Autonomia", v: m.dose_autonomy },
+                    ]
+                  : [],
+              )
+              .concat(
+                m.type === "Snacks" || m.type === "Vending"
+                  ? [
+                      { l: "Bandejas", v: m.tray_count },
+                      { l: "Seleções", v: m.selection_count },
+                    ]
+                  : [],
+              )
+              .concat(
+                m.type === "Café em Grãos"
+                  ? [
+                      {
+                        l: "Simultâneo",
+                        v: m.simultaneous_dispenser ? "Sim" : "Não",
+                      },
+                    ]
+                  : [],
+              )
+              .concat([
+                {
+                  l: "Esgoto",
+                  v: m.has_sewage ? "Sim" : "Não",
+                },
+                { l: "Amperagem", v: m.amperage || "10A" },
+              ])
+              .map((item, i) =>
+                item.v ? (
+                  <View key={i} style={styles.specItem}>
+                    <Text style={styles.specLabel}>{item.l}</Text>
+                    <Text style={styles.specValue}>{item.v}</Text>
+                  </View>
+                ) : null,
+              )}
           </View>
 
-          {/* NOVO: Campo Observações */}
+          {/* OBSERVAÇÕES - Agora com quebra de página automática se necessário */}
           {data.obs && (
-            <View style={styles.obsBox}>
+            <View style={styles.obsBox} wrap={false}>
+              {" "}
+              {/* wrap=false tenta manter junto */}
               <Text style={styles.obsTitle}>Observações Importantes</Text>
               <Text style={styles.obsText}>{data.obs}</Text>
             </View>
           )}
         </View>
 
-        {/* FOOTER */}
-        <View style={styles.footer}>
+        {/* FOOTER - Fixo no final */}
+        <View style={styles.footer} fixed>
           <View style={styles.footerLeft}>
             <Text style={styles.footerLabel}>Proposta preparada para</Text>
             <Text style={styles.clientName}>

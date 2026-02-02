@@ -18,12 +18,12 @@ Font.register({
 
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 30, // Reduzi de 30 para ganhar espaço
-    paddingBottom: 120, // Espaço para o footer não cobrir conteúdo
-    paddingHorizontal: 30, // Reduzi de 40 para 30
+    paddingTop: 30,
+    paddingBottom: 100,
+    paddingHorizontal: 30,
     fontFamily: "Helvetica",
     backgroundColor: "#F9FAFB",
-    position: "relative", // Necessário para o footer absoluto funcionar bem
+    position: "relative",
   },
 
   // --- HEADER ---
@@ -59,10 +59,12 @@ const styles = StyleSheet.create({
     color: "#9CA3AF",
   },
 
+  // --- CORPO ---
   body: {
     flex: 1,
   },
 
+  // Hero (Imagem + Info)
   heroSection: {
     flexDirection: "row",
     marginBottom: 20,
@@ -105,7 +107,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontFamily: "Helvetica-Bold",
     color: "#1F2937",
-    marginBottom: 2,
+    marginBottom: 8, // <--- AJUSTE 1: Aumentei de 2 para 8 (Espaço entre Nome e Modelo)
     lineHeight: 1,
   },
   subtitle: {
@@ -123,6 +125,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
+  // Card de Vídeo
   videoCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -151,6 +154,7 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
   },
 
+  // --- SPECS EM GRID ---
   separatorLine: {
     height: 1,
     backgroundColor: "#E5E7EB",
@@ -176,6 +180,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: "#F3F4F6",
     paddingBottom: 2,
+    paddingRight: 15, // <--- AJUSTE 2: Adicionei espaçamento à direita para não colar na coluna vizinha
   },
   specLabel: {
     width: "40%",
@@ -192,6 +197,7 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
 
+  // --- OBSERVAÇÕES ---
   obsBox: {
     marginTop: 10,
     padding: 10,
@@ -214,6 +220,7 @@ const styles = StyleSheet.create({
     lineHeight: 1.3,
   },
 
+  // --- FOOTER (Estilo Ficha Técnica) ---
   footer: {
     position: "absolute",
     bottom: 0,
@@ -410,7 +417,7 @@ export function PortfolioPDF({ data }) {
               )}
           </View>
 
-          {/* OBSERVAÇÕES */}
+          {/* OBSERVAÇÕES - Agora com quebra de página automática se necessário */}
           {data.obs && (
             <View style={styles.obsBox} wrap={false}>
               <Text style={styles.obsTitle}>Observações Importantes</Text>

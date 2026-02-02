@@ -19,7 +19,7 @@ Font.register({
 const styles = StyleSheet.create({
   page: {
     paddingTop: 30, // Reduzi de 30 para ganhar espaço
-    paddingBottom: 80, // Espaço para o footer não cobrir conteúdo
+    paddingBottom: 120, // Espaço para o footer não cobrir conteúdo
     paddingHorizontal: 30, // Reduzi de 40 para 30
     fontFamily: "Helvetica",
     backgroundColor: "#F9FAFB",
@@ -31,8 +31,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20, // Margem para separar do conteúdo
-    borderBottomWidth: 2, // Mais fino
+    marginBottom: 20,
+    borderBottomWidth: 2,
     borderBottomColor: "#A82020",
     paddingBottom: 10,
   },
@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
     flexDirection: "column",
   },
   brandTitle: {
-    fontSize: 20, // Reduzi um pouco
+    fontSize: 20,
     fontFamily: "Helvetica-Bold",
     color: "#111827",
     textTransform: "uppercase",
@@ -59,21 +59,18 @@ const styles = StyleSheet.create({
     color: "#9CA3AF",
   },
 
-  // --- CORPO ---
-  // Removi o padding do body para usar o da página
   body: {
     flex: 1,
   },
 
-  // Hero (Imagem + Info)
   heroSection: {
     flexDirection: "row",
-    marginBottom: 20, // Reduzi de 30
-    gap: 15, // Reduzi de 20
-    height: 200, // Fixei uma altura para garantir alinhamento
+    marginBottom: 20,
+    gap: 15,
+    height: 200,
   },
   imageContainer: {
-    width: "40%", // Imagem um pouco menor
+    width: "40%",
     height: "100%",
     backgroundColor: "#fff",
     borderRadius: 6,
@@ -91,7 +88,7 @@ const styles = StyleSheet.create({
   infoContainer: {
     width: "60%",
     paddingLeft: 10,
-    justifyContent: "flex-start", // Mudei para topo
+    justifyContent: "flex-start",
   },
   categoryBadge: {
     backgroundColor: "#FEF2F2",
@@ -105,7 +102,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: {
-    fontSize: 22, // Reduzi de 26
+    fontSize: 22,
     fontFamily: "Helvetica-Bold",
     color: "#1F2937",
     marginBottom: 2,
@@ -119,14 +116,13 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
   },
   description: {
-    fontSize: 9, // Reduzi de 10
+    fontSize: 9,
     color: "#4B5563",
-    lineHeight: 1.4, // Reduzi entrelinha
+    lineHeight: 1.4,
     textAlign: "left",
     marginBottom: 10,
   },
 
-  // Card de Vídeo
   videoCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -134,8 +130,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#BFDBFE",
     borderRadius: 4,
-    padding: 6, // Mais compacto
-    marginTop: "auto", // Empurra pro final do container de info
+    padding: 6,
+    marginTop: "auto",
   },
   videoTextGroup: {
     flexDirection: "column",
@@ -155,11 +151,10 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
   },
 
-  // --- SPECS EM GRID ---
   separatorLine: {
     height: 1,
     backgroundColor: "#E5E7EB",
-    marginVertical: 15, // Reduzi margem
+    marginVertical: 15,
   },
   specsHeader: {
     fontSize: 9,
@@ -171,33 +166,32 @@ const styles = StyleSheet.create({
   specsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginBottom: 10, // Espaço antes das obs
+    marginBottom: 10,
   },
   specItem: {
     width: "50%",
-    marginBottom: 6, // Reduzi de 12 para ficar mais compacto
+    marginBottom: 6,
     flexDirection: "row",
     alignItems: "center",
-    borderBottomWidth: 0.5, // Linha fina para guiar o olho
+    borderBottomWidth: 0.5,
     borderBottomColor: "#F3F4F6",
     paddingBottom: 2,
   },
   specLabel: {
     width: "40%",
-    fontSize: 7, // Reduzi fonte
+    fontSize: 7,
     color: "#9CA3AF",
     textTransform: "uppercase",
     fontWeight: "bold",
   },
   specValue: {
     width: "60%",
-    fontSize: 8, // Reduzi fonte
+    fontSize: 8,
     color: "#111827",
     fontFamily: "Helvetica-Bold",
-    textAlign: "right", // Alinhar valores à direita fica mais organizado
+    textAlign: "right",
   },
 
-  // --- OBSERVAÇÕES ---
   obsBox: {
     marginTop: 10,
     padding: 10,
@@ -205,6 +199,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#FCD34D",
     borderRadius: 4,
+    marginBottom: 20,
   },
   obsTitle: {
     fontSize: 7,
@@ -219,18 +214,17 @@ const styles = StyleSheet.create({
     lineHeight: 1.3,
   },
 
-  // --- FOOTER (Estilo Ficha Técnica) ---
   footer: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    height: 70, // Reduzi de 90 para 70
+    height: 70,
     backgroundColor: "#A82020",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 30, // Alinhado com o padding da página
+    paddingHorizontal: 30,
   },
   footerLeft: {
     flexDirection: "column",
@@ -243,7 +237,7 @@ const styles = StyleSheet.create({
   },
   clientName: {
     color: "#FFFFFF",
-    fontSize: 12, // Reduzi um pouco
+    fontSize: 12,
     fontFamily: "Helvetica-Bold",
   },
   footerRight: {
@@ -251,7 +245,7 @@ const styles = StyleSheet.create({
   },
   priceValue: {
     color: "#FFFFFF",
-    fontSize: 22, // Reduzi de 28
+    fontSize: 22,
     fontFamily: "Helvetica-Bold",
   },
   installmentsText: {
@@ -416,11 +410,9 @@ export function PortfolioPDF({ data }) {
               )}
           </View>
 
-          {/* OBSERVAÇÕES - Agora com quebra de página automática se necessário */}
+          {/* OBSERVAÇÕES */}
           {data.obs && (
             <View style={styles.obsBox} wrap={false}>
-              {" "}
-              {/* wrap=false tenta manter junto */}
               <Text style={styles.obsTitle}>Observações Importantes</Text>
               <Text style={styles.obsText}>{data.obs}</Text>
             </View>

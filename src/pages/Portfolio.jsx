@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../services/supabaseClient";
-import { PDFDownloadLink } from "@react-pdf/renderer";
+import { PDFDownloadLink, PDFViewer } from "@react-pdf/renderer"; // <--- IMPORTANTE: PDFViewer
 import { PortfolioPDF } from "../components/PortfolioPDF";
 import {
   FileText,
@@ -53,20 +53,17 @@ export function Portfolio() {
     fetchPortfolios();
   }, []);
 
+  // Conversão de Imagem para Base64 (Para funcionar no PDF)
   useEffect(() => {
     async function convertImage() {
       if (selectedMachine?.photo_url) {
         try {
-          // O navegador baixa a imagem como "dados" (blob)
           const response = await fetch(selectedMachine.photo_url);
           const blob = await response.blob();
           const reader = new FileReader();
-
-          // Quando terminar de ler, salva o texto Base64 no estado
           reader.onloadend = () => {
             setMachineImageBase64(reader.result);
           };
-          // Lê o arquivo como URL de dados
           reader.readAsDataURL(blob);
         } catch (error) {
           console.error("Erro ao converter imagem:", error);
@@ -303,7 +300,7 @@ export function Portfolio() {
               </div>
               <button
                 onClick={handleNewPortfolio}
-                className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all hover:-translate-y-1"
+                className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2"
               >
                 <Plus size={20} />{" "}
                 <span className="hidden md:inline">Nova Proposta</span>
@@ -311,13 +308,11 @@ export function Portfolio() {
             </div>
           </div>
 
-          {/* CONDICIONAL DE CONTEÚDO */}
           {loading ? (
             <p className="text-center text-gray-400 py-10">
               Carregando propostas...
             </p>
           ) : filteredPortfolios.length === 0 ? (
-            // --- EMPTY STATE ---
             <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in mx-auto max-w-2xl mt-8">
               <div className="bg-gray-50 p-6 rounded-full mb-4">
                 <FileBarChart size={48} className="text-gray-300" />
@@ -337,7 +332,6 @@ export function Portfolio() {
               </button>
             </div>
           ) : (
-            // --- GRID DE PROPOSTAS ---
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {filteredPortfolios.map((p) => {
                 const statusStyle = getStatusStyle(p.status || "Aguardando");
@@ -434,7 +428,7 @@ export function Portfolio() {
                   className="px-4 py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors"
                 >
                   <Search size={16} />{" "}
-                  <span className="hidden md:inline">Visualizar PDF</span>
+                  <span className="hidden md:inline">Baixar PDF</span>
                 </PDFDownloadLink>
               )}
               <button
@@ -496,36 +490,6 @@ export function Portfolio() {
                     ))}
                   </div>
                 </div>
-
-                {versions.length > 0 && (
-                  <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                    <label className="text-xs font-bold text-blue-800 mb-2 flex items-center gap-1">
-                      <History size={14} /> Histórico de Versões
-                    </label>
-                    <div className="relative">
-                      <select
-                        className="w-full p-2 pl-8 border border-blue-200 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-200 text-gray-600 appearance-none"
-                        onChange={handleRestoreVersion}
-                        defaultValue=""
-                      >
-                        <option value="" disabled>
-                          Restaurar versão anterior...
-                        </option>
-                        {versions.slice(0, 5).map((v, i) => (
-                          <option key={i} value={i}>
-                            {v.customer_name} - {v.machine_data?.name} -{" "}
-                            {new Date(v.saved_at).toLocaleDateString()} - R${" "}
-                            {v.total_value}
-                          </option>
-                        ))}
-                      </select>
-                      <Clock
-                        size={14}
-                        className="absolute left-3 top-3 text-blue-400"
-                      />
-                    </div>
-                  </div>
-                )}
 
                 <div className="space-y-4">
                   <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide border-b border-gray-100 pb-2">
@@ -666,219 +630,23 @@ export function Portfolio() {
               </div>
             </div>
 
-            <div className="flex-1 bg-gray-100 overflow-y-auto p-8 flex justify-center items-start">
-              <div className="bg-white w-[210mm] min-h-[297mm] shadow-2xl rounded-sm flex flex-col relative overflow-hidden transition-all scale-[0.8] md:scale-100 origin-top">
-                <div className="h-24 border-b-4 border-amiste-primary mx-8 mt-8 flex flex-col justify-center">
-                  <h1 className="text-4xl font-black text-gray-900 uppercase tracking-tighter">
-                    AMISTE CAFÉ
-                  </h1>
-                  <p className="text-amiste-primary font-bold tracking-[0.3em] text-xs uppercase mt-1">
-                    Soluções em Café Corporativo
+            {/* --- ÁREA DE PREVIEW COM PDFVIEWER (FINALMENTE! 🚀) --- */}
+            <div className="flex-1 bg-gray-200 overflow-hidden flex justify-center items-center">
+              {selectedMachine ? (
+                <PDFViewer
+                  showToolbar={false} // Remove a barra preta do navegador (opcional)
+                  className="w-full h-full" // Ocupa todo o espaço disponível
+                >
+                  <PortfolioPDF data={previewData} />
+                </PDFViewer>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-gray-400">
+                  <Coffee size={64} className="mb-4 opacity-20" />
+                  <p className="font-bold text-lg">
+                    Selecione um modelo para visualizar
                   </p>
                 </div>
-
-                {selectedMachine ? (
-                  <div className="flex flex-col flex-1 px-8 py-8 relative">
-                    <div className="flex gap-8 mb-12">
-                      <div className="w-1/2 h-[300px] bg-gray-50 rounded-xl flex items-center justify-center p-4">
-                        <img
-                          src={selectedMachine.photo_url}
-                          className="w-full h-full object-contain mix-blend-multiply"
-                        />
-                      </div>
-                      <div className="w-1/2 flex flex-col justify-center">
-                        <span className="text-amiste-primary font-bold uppercase tracking-widest text-xs mb-2">
-                          Equipamento Selecionado
-                        </span>
-                        <h2 className="text-4xl font-bold text-gray-900 leading-none mb-2">
-                          {selectedMachine.name}
-                        </h2>
-                        <p className="text-gray-500 font-medium text-sm mb-6">
-                          {selectedMachine.brand} | {selectedMachine.model}
-                        </p>
-                        <div className="w-12 h-1 bg-gray-200 mb-6"></div>
-                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap break-words">
-                          {description}
-                        </p>
-                        {videoUrl && (
-                          <div className="mt-6 flex items-center gap-2 text-xs text-blue-600 bg-blue-50 p-2 rounded-lg border border-blue-100 w-fit">
-                            <ExternalLink size={14} /> Link interativo no PDF
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-x-12 gap-y-4 mb-8">
-                      {/* CAMPOS DINÂMICOS BASEADOS NO TIPO DA MÁQUINA */}
-                      {[
-                        { l: "Tipo", v: selectedMachine.type },
-                        { l: "Voltagem", v: selectedMachine.voltage },
-                        { l: "Cor", v: selectedMachine.color },
-                        {
-                          l: "Ambiente",
-                          v: selectedMachine.environment_recommendation,
-                        },
-                        { l: "Peso", v: selectedMachine.weight },
-                        { l: "Dimensões", v: selectedMachine.dimensions },
-                        {
-                          l: "Abastecimento",
-                          v: selectedMachine.water_system,
-                        },
-                      ]
-                        .concat(
-                          selectedMachine.water_system === "Reservatório"
-                            ? [
-                                {
-                                  l: "Tanque Água",
-                                  v: selectedMachine.water_tank_size,
-                                },
-                              ]
-                            : [],
-                        )
-                        .concat(
-                          selectedMachine.reservoir_count > 0
-                            ? [
-                                {
-                                  l: "Reservatórios",
-                                  v: selectedMachine.reservoir_count,
-                                },
-                                {
-                                  l: "Capacidade Extra",
-                                  v: selectedMachine.extra_reservoir_capacity,
-                                },
-                              ]
-                            : [],
-                        )
-                        .concat(
-                          selectedMachine.type === "Profissional"
-                            ? [
-                                {
-                                  l: "Grupos",
-                                  v: selectedMachine.extraction_cups,
-                                },
-                                {
-                                  l: "Bicos Vapor",
-                                  v: selectedMachine.extraction_nozzles,
-                                },
-                              ]
-                            : [],
-                        )
-                        .concat(
-                          selectedMachine.type === "Multibebidas"
-                            ? [
-                                {
-                                  l: "Combinações",
-                                  v: selectedMachine.drink_combinations,
-                                },
-                                {
-                                  l: "Autonomia",
-                                  v: selectedMachine.dose_autonomy,
-                                },
-                              ]
-                            : [],
-                        )
-                        .concat(
-                          selectedMachine.type === "Snacks" ||
-                            selectedMachine.type === "Vending"
-                            ? [
-                                {
-                                  l: "Bandejas",
-                                  v: selectedMachine.tray_count,
-                                },
-                                {
-                                  l: "Seleções",
-                                  v: selectedMachine.selection_count,
-                                },
-                              ]
-                            : [],
-                        )
-                        .concat(
-                          selectedMachine.type === "Café em Grãos"
-                            ? [
-                                {
-                                  l: "Simultâneo",
-                                  v: selectedMachine.simultaneous_dispenser
-                                    ? "Sim"
-                                    : "Não",
-                                },
-                              ]
-                            : [],
-                        )
-                        .concat([
-                          {
-                            l: "Esgoto",
-                            v: selectedMachine.has_sewage ? "Sim" : "Não",
-                          },
-                          {
-                            l: "Amperagem",
-                            v: selectedMachine.amperage,
-                          },
-                        ])
-                        .map((item, i) =>
-                          // Renderiza apenas se tiver valor
-                          item.v ? (
-                            <div
-                              key={i}
-                              className="flex justify-between border-b border-gray-100 pb-2"
-                            >
-                              <span className="text-gray-400 text-xs font-bold uppercase">
-                                {item.l}
-                              </span>
-                              <span className="text-gray-800 text-sm font-bold text-right">
-                                {item.v}
-                              </span>
-                            </div>
-                          ) : null,
-                        )}
-                    </div>
-
-                    {obs && (
-                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-12">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-1">
-                          <AlertCircle size={10} /> Observações Importantes
-                        </p>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap break-words leading-relaxed">
-                          {obs}
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="absolute bottom-0 left-0 w-full h-32 bg-amiste-primary text-white px-8 flex justify-between items-center">
-                      <div>
-                        <p className="text-red-200 text-xs font-bold uppercase tracking-wider mb-1">
-                          Proposta elaborada para
-                        </p>
-                        <p className="text-2xl font-bold">
-                          {customerName || "Nome do Cliente"}
-                        </p>
-                        <p className="text-red-200/80 text-xs mt-1">
-                          Modalidade: {negotiationType}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-red-200 text-xs uppercase font-bold mb-1">
-                          Investimento Total
-                        </p>
-                        <p className="text-5xl font-bold tracking-tight">
-                          {formatMoney(totalValue)}
-                        </p>
-                        {installments > 1 && (
-                          <p className="text-red-100 font-medium text-sm mt-1">
-                            {installments}x de {formatMoney(installmentValue)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center text-gray-300">
-                    <Coffee size={64} className="mb-4 opacity-20" />
-                    <p className="font-bold text-lg">
-                      Selecione um modelo para visualizar
-                    </p>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </div>
         </div>

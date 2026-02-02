@@ -2,7 +2,6 @@ import { useContext, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AuthContext } from "../contexts/AuthContext";
 import { ProfileModal } from "./ProfileModal";
-import { Package } from "lucide-react";
 import {
   History,
   Tag,
@@ -12,6 +11,8 @@ import {
   XCircle,
   Settings,
   ChevronDown,
+  Package,
+  ChefHat, // <--- Importei ChefHat para Receitas
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -37,11 +38,25 @@ export function Header() {
       visible: true,
     },
     {
-      path: "/supply-prices", // <--- NOVO
+      path: "/supply-prices",
       icon: Package,
       label: "Preços Insumos",
       visible: true,
     },
+    // --- NOVOS ITENS ---
+    {
+      path: "/recipes",
+      icon: ChefHat,
+      label: "Receitas",
+      visible: true, // Visível para todos
+    },
+    {
+      path: "/machine-configs",
+      icon: Settings,
+      label: "Configurações",
+      visible: permissions.canConfigureMachines, // Só aparece para quem tem permissão
+    },
+    // -------------------
     {
       path: "/history",
       icon: History,

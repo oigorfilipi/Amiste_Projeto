@@ -19,7 +19,7 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  FileBarChart, // <--- Novo ícone para empty state
+  FileBarChart,
 } from "lucide-react";
 
 export function Portfolio() {
@@ -375,7 +375,7 @@ export function Portfolio() {
         </div>
       )}
 
-      {/* --- MODO EDITOR (MANTIDO IGUAL) --- */}
+      {/* --- MODO EDITOR --- */}
       {view === "editor" && (
         <div className="flex flex-col h-screen overflow-hidden bg-gray-100">
           <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center z-20 shadow-sm">
@@ -417,10 +417,8 @@ export function Portfolio() {
           </div>
 
           <div className="flex flex-1 overflow-hidden">
-            {/* SIDEBAR DE EDIÇÃO */}
             <div className="w-96 bg-white border-r border-gray-200 flex flex-col z-10 overflow-y-auto">
               <div className="p-6 space-y-6">
-                {/* Status */}
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                   <label className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-1">
                     <AlertCircle size={14} /> Status da Negociação
@@ -679,36 +677,111 @@ export function Portfolio() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-x-12 gap-y-4 mb-8">
+                      {/* CAMPOS DINÂMICOS BASEADOS NO TIPO DA MÁQUINA */}
                       {[
                         { l: "Tipo", v: selectedMachine.type },
                         { l: "Voltagem", v: selectedMachine.voltage },
                         { l: "Cor", v: selectedMachine.color },
                         {
+                          l: "Ambiente",
+                          v: selectedMachine.environment_recommendation,
+                        }, // NOVO
+                        { l: "Peso", v: selectedMachine.weight }, // NOVO
+                        { l: "Dimensões", v: selectedMachine.dimensions },
+                        {
                           l: "Abastecimento",
                           v: selectedMachine.water_system,
                         },
-                        {
-                          l: "Reservatórios",
-                          v: selectedMachine.reservoir_count || 0,
-                        },
-                        { l: "Dimensões", v: selectedMachine.dimensions },
-                        {
-                          l: "Esgoto",
-                          v: selectedMachine.has_sewage ? "Sim" : "Não",
-                        },
-                      ].map((item, i) => (
-                        <div
-                          key={i}
-                          className="flex justify-between border-b border-gray-100 pb-2"
-                        >
-                          <span className="text-gray-400 text-xs font-bold uppercase">
-                            {item.l}
-                          </span>
-                          <span className="text-gray-800 text-sm font-bold">
-                            {item.v}
-                          </span>
-                        </div>
-                      ))}
+                      ]
+                        .concat(
+                          selectedMachine.water_system === "Reservatório"
+                            ? [
+                                {
+                                  l: "Tanque Água",
+                                  v: selectedMachine.water_tank_size,
+                                },
+                              ] // NOVO
+                            : [],
+                        )
+                        .concat(
+                          selectedMachine.reservoir_count > 0
+                            ? [
+                                {
+                                  l: "Reservatórios",
+                                  v: selectedMachine.reservoir_count,
+                                },
+                                {
+                                  l: "Capacidade Extra",
+                                  v: selectedMachine.extra_reservoir_capacity,
+                                }, // NOVO
+                              ]
+                            : [],
+                        )
+                        .concat(
+                          selectedMachine.type === "Profissional"
+                            ? [
+                                {
+                                  l: "Grupos",
+                                  v: selectedMachine.extraction_cups,
+                                }, // NOVO
+                                {
+                                  l: "Bicos Vapor",
+                                  v: selectedMachine.extraction_nozzles,
+                                }, // NOVO
+                              ]
+                            : [],
+                        )
+                        .concat(
+                          selectedMachine.type === "Multibebidas"
+                            ? [
+                                {
+                                  l: "Combinações",
+                                  v: selectedMachine.drink_combinations,
+                                }, // NOVO
+                                {
+                                  l: "Autonomia",
+                                  v: selectedMachine.dose_autonomy,
+                                }, // NOVO
+                              ]
+                            : [],
+                        )
+                        .concat(
+                          selectedMachine.type === "Snacks" ||
+                            selectedMachine.type === "Vending"
+                            ? [
+                                {
+                                  l: "Bandejas",
+                                  v: selectedMachine.tray_count,
+                                }, // NOVO
+                                {
+                                  l: "Seleções",
+                                  v: selectedMachine.selection_count,
+                                }, // NOVO
+                              ]
+                            : [],
+                        )
+                        .concat([
+                          {
+                            l: "Esgoto",
+                            v: selectedMachine.has_sewage ? "Sim" : "Não",
+                          },
+                        ])
+                        .map((item, i) =>
+                          // Renderiza apenas se tiver valor
+                          item.v ? (
+                            <div
+                              key={i}
+                              className="flex justify-between border-b border-gray-100 pb-2"
+                            >
+                              <span className="text-gray-400 text-xs font-bold uppercase">
+                                {item.l}
+                              </span>
+                              <span className="text-gray-800 text-sm font-bold text-right">
+                                {item.v}
+                              </span>
+                            </div>
+                          ) : null,
+                        )}
                     </div>
 
                     {obs && (

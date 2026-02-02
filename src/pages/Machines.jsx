@@ -19,7 +19,9 @@ import {
   Settings,
   Database,
   FileText,
-  Coffee, // <--- Adicionei o ícone Coffee
+  Coffee,
+  Scale, // Ícone para peso
+  MapPin, // Ícone para ambiente
 } from "lucide-react";
 
 const MODEL_OPTIONS = [
@@ -35,6 +37,7 @@ const TYPE_OPTIONS = [
   "Café em Grãos",
   "Profissional",
   "Vending",
+  "Snacks", // <--- NOVO TIPO
 ];
 
 export function Machines() {
@@ -61,17 +64,31 @@ export function Machines() {
   const [photoUrl, setPhotoUrl] = useState("");
   const [imageMode, setImageMode] = useState("url");
 
-  // Técnicos
+  // Técnicos Básicos
   const [voltage, setVoltage] = useState("220v");
   const [waterSystem, setWaterSystem] = useState("Reservatório");
   const [amperage, setAmperage] = useState("10A");
   const [color, setColor] = useState("Preto");
 
-  // NOVOS CAMPOS TÉCNICOS
+  // NOVOS CAMPOS GERAIS
+  const [waterTankSize, setWaterTankSize] = useState(""); // Tamanho Reservatório
+  const [weight, setWeight] = useState(""); // Peso
+  const [environmentRecommendation, setEnvironmentRecommendation] =
+    useState(""); // Ambiente
+
+  // CAMPOS ESPECÍFICOS
+  const [extractionCups, setExtractionCups] = useState(""); // Profissional
+  const [extractionNozzles, setExtractionNozzles] = useState(""); // Profissional
+  const [drinkCombinations, setDrinkCombinations] = useState(""); // Multi
+  const [doseAutonomy, setDoseAutonomy] = useState(""); // Multi
+  const [simultaneousDispenser, setSimultaneousDispenser] = useState(false); // Grãos
+  const [trayCount, setTrayCount] = useState(""); // Snacks
+  const [selectionCount, setSelectionCount] = useState(""); // Snacks
+
+  // CAMPOS TÉCNICOS ANTERIORES
   const [hasSewage, setHasSewage] = useState(false);
   const [hasExtraReservoir, setHasExtraReservoir] = useState(true);
   const [reservoirCount, setReservoirCount] = useState(0);
-
   const [hasSteamer, setHasSteamer] = useState("Não");
   const [dimensions, setDimensions] = useState({ w: "", h: "", d: "" });
   const [patrimony, setPatrimony] = useState("");
@@ -170,6 +187,19 @@ export function Machines() {
     } else {
       setDimensions({ w: "", h: "", d: "" });
     }
+
+    // NOVOS CAMPOS - CARREGAMENTO
+    setWaterTankSize(machine.water_tank_size || "");
+    setWeight(machine.weight || "");
+    setEnvironmentRecommendation(machine.environment_recommendation || "");
+    setExtractionCups(machine.extraction_cups || "");
+    setExtractionNozzles(machine.extraction_nozzles || "");
+    setDrinkCombinations(machine.drink_combinations || "");
+    setDoseAutonomy(machine.dose_autonomy || "");
+    setSimultaneousDispenser(machine.simultaneous_dispenser || false);
+    setTrayCount(machine.tray_count || "");
+    setSelectionCount(machine.selection_count || "");
+
     setShowModal(true);
   }
 
@@ -211,6 +241,17 @@ export function Machines() {
         dimensions: dimString,
         patrimony,
         serial_number: serialNumber,
+        // NOVOS CAMPOS - PAYLOAD
+        water_tank_size: waterTankSize,
+        weight: weight,
+        environment_recommendation: environmentRecommendation,
+        extraction_cups: extractionCups,
+        extraction_nozzles: extractionNozzles,
+        drink_combinations: drinkCombinations,
+        dose_autonomy: doseAutonomy,
+        simultaneous_dispenser: simultaneousDispenser,
+        tray_count: trayCount,
+        selection_count: selectionCount,
       };
 
       if (editingId) {
@@ -284,6 +325,17 @@ export function Machines() {
     setHasSewage(false);
     setReservoirCount(0);
     setHasExtraReservoir(true);
+    // Reset Novos Campos
+    setWaterTankSize("");
+    setWeight("");
+    setEnvironmentRecommendation("");
+    setExtractionCups("");
+    setExtractionNozzles("");
+    setDrinkCombinations("");
+    setDoseAutonomy("");
+    setSimultaneousDispenser(false);
+    setTrayCount("");
+    setSelectionCount("");
   }
 
   const filteredMachines = machines.filter(
@@ -326,13 +378,13 @@ export function Machines() {
         </div>
       </div>
 
-      {/* --- CONTEÚDO PRINCIPAL (CONDICIONAL) --- */}
+      {/* CONTEÚDO */}
       {loading ? (
         <p className="text-center text-gray-400 py-10">
           Carregando catálogo...
         </p>
       ) : filteredMachines.length === 0 ? (
-        // --- EMPTY STATE (NENHUMA MÁQUINA) ---
+        // EMPTY STATE
         <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in mx-auto max-w-2xl mt-8">
           <div className="bg-gray-50 p-6 rounded-full mb-4">
             <Coffee size={48} className="text-gray-300" />
@@ -354,7 +406,7 @@ export function Machines() {
           )}
         </div>
       ) : (
-        // --- GRID DE MÁQUINAS ---
+        // GRID
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredMachines.map((machine) => (
             <div
@@ -593,6 +645,34 @@ export function Machines() {
                   <Zap size={14} /> Especificações Técnicas
                 </h3>
 
+                {/* --- DETALHES ADICIONAIS GERAIS (NOVO) --- */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-blue-50 p-4 rounded-xl border border-blue-100 mb-4">
+                  <div>
+                    <label className="block text-xs font-bold text-blue-800 uppercase mb-1 flex items-center gap-1">
+                      <Scale size={12} /> Peso (kg)
+                    </label>
+                    <input
+                      className="w-full p-2 border border-blue-200 rounded-lg text-sm bg-white"
+                      placeholder="Ex: 35 kg"
+                      value={weight}
+                      onChange={(e) => setWeight(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-blue-800 uppercase mb-1 flex items-center gap-1">
+                      <MapPin size={12} /> Indicação de Ambiente
+                    </label>
+                    <input
+                      className="w-full p-2 border border-blue-200 rounded-lg text-sm bg-white"
+                      placeholder="Ex: Escritórios, Padarias..."
+                      value={environmentRecommendation}
+                      onChange={(e) =>
+                        setEnvironmentRecommendation(e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
@@ -646,6 +726,131 @@ export function Machines() {
                   </div>
                 </div>
 
+                {/* CAMPO CONDICIONAL: Tamanho do Reservatório */}
+                {waterSystem === "Reservatório" && (
+                  <div className="animate-fade-in bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <label className="block text-xs font-bold text-blue-800 uppercase mb-1">
+                      Tamanho do Tanque de Água
+                    </label>
+                    <input
+                      className="w-full p-2 border border-blue-200 rounded-lg text-sm bg-white"
+                      placeholder="Ex: 4 Litros"
+                      value={waterTankSize}
+                      onChange={(e) => setWaterTankSize(e.target.value)}
+                    />
+                  </div>
+                )}
+
+                {/* --- CAMPOS ESPECÍFICOS POR TIPO --- */}
+
+                {/* TIPO: PROFISSIONAL */}
+                {type === "Profissional" && (
+                  <div className="animate-fade-in bg-purple-50 p-4 rounded-xl border border-purple-100 grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-purple-800 uppercase mb-1">
+                        Copos de Extração
+                      </label>
+                      <input
+                        type="number"
+                        className="w-full p-2 border border-purple-200 rounded-lg text-sm bg-white"
+                        placeholder="Ex: 2"
+                        value={extractionCups}
+                        onChange={(e) => setExtractionCups(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-purple-800 uppercase mb-1">
+                        Bicos de Extração
+                      </label>
+                      <input
+                        type="number"
+                        className="w-full p-2 border border-purple-200 rounded-lg text-sm bg-white"
+                        placeholder="Ex: 1"
+                        value={extractionNozzles}
+                        onChange={(e) => setExtractionNozzles(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* TIPO: MULTIBEBIDAS */}
+                {type === "Multibebidas" && (
+                  <div className="animate-fade-in bg-indigo-50 p-4 rounded-xl border border-indigo-100 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-indigo-800 uppercase mb-1">
+                        Variedade (Combinações)
+                      </label>
+                      <input
+                        className="w-full p-2 border border-indigo-200 rounded-lg text-sm bg-white"
+                        placeholder="Ex: 8 opções"
+                        value={drinkCombinations}
+                        onChange={(e) => setDrinkCombinations(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-indigo-800 uppercase mb-1">
+                        Autonomia de Doses
+                      </label>
+                      <input
+                        className="w-full p-2 border border-indigo-200 rounded-lg text-sm bg-white"
+                        placeholder="Ex: 50 doses/dia"
+                        value={doseAutonomy}
+                        onChange={(e) => setDoseAutonomy(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* TIPO: SNACKS (VENDING) */}
+                {(type === "Snacks" || type === "Vending") && (
+                  <div className="animate-fade-in bg-pink-50 p-4 rounded-xl border border-pink-100 grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-pink-800 uppercase mb-1">
+                        Número de Bandejas
+                      </label>
+                      <input
+                        type="number"
+                        className="w-full p-2 border border-pink-200 rounded-lg text-sm bg-white"
+                        placeholder="Ex: 6"
+                        value={trayCount}
+                        onChange={(e) => setTrayCount(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-pink-800 uppercase mb-1">
+                        Número de Seleções
+                      </label>
+                      <input
+                        type="number"
+                        className="w-full p-2 border border-pink-200 rounded-lg text-sm bg-white"
+                        placeholder="Ex: 32"
+                        value={selectionCount}
+                        onChange={(e) => setSelectionCount(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* TIPO: CAFÉ EM GRÃOS */}
+                {type === "Café em Grãos" && (
+                  <div className="animate-fade-in bg-amber-50 p-4 rounded-xl border border-amber-100">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="w-5 h-5 text-amber-600 rounded focus:ring-amber-500 border-gray-300"
+                        checked={simultaneousDispenser}
+                        onChange={(e) =>
+                          setSimultaneousDispenser(e.target.checked)
+                        }
+                      />
+                      <span className="text-sm font-bold text-amber-900">
+                        Dispensador Simultâneo (2 cafés ao mesmo tempo)
+                      </span>
+                    </label>
+                  </div>
+                )}
+
+                {/* RESERVATÓRIOS DE INSUMOS (SOLÚVEIS/GRÃOS) */}
                 <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
                   <div className="flex justify-between items-center mb-2">
                     <label className="text-xs font-bold text-orange-800 uppercase flex items-center gap-1">

@@ -20,8 +20,8 @@ import {
   Database,
   FileText,
   Coffee,
-  Scale, // Ícone para peso
-  MapPin, // Ícone para ambiente
+  Scale,
+  MapPin,
 } from "lucide-react";
 
 const MODEL_OPTIONS = [
@@ -37,7 +37,7 @@ const TYPE_OPTIONS = [
   "Café em Grãos",
   "Profissional",
   "Vending",
-  "Snacks", // <--- NOVO TIPO
+  "Snacks",
 ];
 
 export function Machines() {
@@ -71,24 +71,26 @@ export function Machines() {
   const [color, setColor] = useState("Preto");
 
   // NOVOS CAMPOS GERAIS
-  const [waterTankSize, setWaterTankSize] = useState(""); // Tamanho Reservatório
-  const [weight, setWeight] = useState(""); // Peso
+  const [waterTankSize, setWaterTankSize] = useState("");
+  const [weight, setWeight] = useState("");
   const [environmentRecommendation, setEnvironmentRecommendation] =
-    useState(""); // Ambiente
+    useState("");
 
   // CAMPOS ESPECÍFICOS
-  const [extractionCups, setExtractionCups] = useState(""); // Profissional
-  const [extractionNozzles, setExtractionNozzles] = useState(""); // Profissional
-  const [drinkCombinations, setDrinkCombinations] = useState(""); // Multi
-  const [doseAutonomy, setDoseAutonomy] = useState(""); // Multi
-  const [simultaneousDispenser, setSimultaneousDispenser] = useState(false); // Grãos
-  const [trayCount, setTrayCount] = useState(""); // Snacks
-  const [selectionCount, setSelectionCount] = useState(""); // Snacks
+  const [extractionCups, setExtractionCups] = useState("");
+  const [extractionNozzles, setExtractionNozzles] = useState("");
+  const [drinkCombinations, setDrinkCombinations] = useState("");
+  const [doseAutonomy, setDoseAutonomy] = useState("");
+  const [simultaneousDispenser, setSimultaneousDispenser] = useState(false);
+  const [trayCount, setTrayCount] = useState("");
+  const [selectionCount, setSelectionCount] = useState("");
 
   // CAMPOS TÉCNICOS ANTERIORES
   const [hasSewage, setHasSewage] = useState(false);
   const [hasExtraReservoir, setHasExtraReservoir] = useState(true);
   const [reservoirCount, setReservoirCount] = useState(0);
+  const [extraReservoirCapacity, setExtraReservoirCapacity] = useState(""); // <--- NOVO CAMPO
+
   const [hasSteamer, setHasSteamer] = useState("Não");
   const [dimensions, setDimensions] = useState({ w: "", h: "", d: "" });
   const [patrimony, setPatrimony] = useState("");
@@ -179,6 +181,7 @@ export function Machines() {
 
     setHasSewage(machine.has_sewage || false);
     setReservoirCount(machine.reservoir_count || 0);
+    setExtraReservoirCapacity(machine.extra_reservoir_capacity || ""); // <--- Carrega capacidade
     setHasExtraReservoir((machine.reservoir_count || 0) > 0);
 
     if (machine.dimensions) {
@@ -223,6 +226,10 @@ export function Machines() {
         ? parseInt(reservoirCount)
         : 0;
 
+      const finalExtraCapacity = hasExtraReservoir
+        ? extraReservoirCapacity
+        : "";
+
       const payload = {
         name,
         description,
@@ -237,6 +244,7 @@ export function Machines() {
         color,
         has_sewage: hasSewage,
         reservoir_count: finalReservoirCount,
+        extra_reservoir_capacity: finalExtraCapacity, // <--- Salva capacidade
         has_steamer: hasSteamer,
         dimensions: dimString,
         patrimony,
@@ -324,6 +332,7 @@ export function Machines() {
     setSerialNumber("");
     setHasSewage(false);
     setReservoirCount(0);
+    setExtraReservoirCapacity("");
     setHasExtraReservoir(true);
     // Reset Novos Campos
     setWaterTankSize("");
@@ -872,19 +881,34 @@ export function Machines() {
                   </div>
 
                   {hasExtraReservoir && (
-                    <div className="animate-fade-in">
-                      <input
-                        type="number"
-                        min="1"
-                        max="10"
-                        className="w-full p-2 border border-orange-200 rounded-lg text-sm"
-                        placeholder="Quantidade (ex: 3)"
-                        value={reservoirCount}
-                        onChange={(e) => setReservoirCount(e.target.value)}
-                      />
-                      <p className="text-[10px] text-orange-600 mt-1">
-                        Informe quantos espaços para pó/grão a máquina tem.
-                      </p>
+                    <div className="animate-fade-in space-y-3">
+                      <div>
+                        <label className="block text-[10px] text-orange-600 font-bold mb-1">
+                          Quantidade de Reservatórios
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="10"
+                          className="w-full p-2 border border-orange-200 rounded-lg text-sm"
+                          placeholder="Quantidade (ex: 3)"
+                          value={reservoirCount}
+                          onChange={(e) => setReservoirCount(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-orange-600 font-bold mb-1">
+                          Capacidade por Reservatório
+                        </label>
+                        <input
+                          className="w-full p-2 border border-orange-200 rounded-lg text-sm"
+                          placeholder="Ex: 1kg ou 500g"
+                          value={extraReservoirCapacity}
+                          onChange={(e) =>
+                            setExtraReservoirCapacity(e.target.value)
+                          }
+                        />
+                      </div>
                     </div>
                   )}
                 </div>

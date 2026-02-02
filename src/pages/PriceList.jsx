@@ -10,6 +10,7 @@ import {
   Check,
   X,
   DollarSign,
+  ShoppingCart, // <--- Novo ícone para empty state
 } from "lucide-react";
 
 export function PriceList() {
@@ -96,12 +97,28 @@ export function PriceList() {
           </div>
         </div>
 
+        {/* CONDICIONAL: LOADING ou EMPTY STATE ou GRID */}
         {loading ? (
           <div className="text-center py-20 text-gray-400">
             <Tag size={48} className="mx-auto mb-4 opacity-20" />
             <p>Carregando catálogo...</p>
           </div>
+        ) : filteredMachines.length === 0 ? (
+          // --- EMPTY STATE (NENHUMA MÁQUINA ENCONTRADA) ---
+          <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in max-w-2xl mx-auto mt-8">
+            <div className="bg-gray-50 p-6 rounded-full mb-4">
+              <ShoppingCart size={48} className="text-gray-300" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-600 mb-2">
+              Nenhuma máquina encontrada
+            </h3>
+            <p className="text-gray-400 max-w-sm mx-auto text-sm">
+              Não encontramos equipamentos no catálogo. Cadastre máquinas na aba
+              "Catálogo Máquinas" para definir preços.
+            </p>
+          </div>
         ) : (
+          // --- GRID DE PREÇOS ---
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredMachines.map((machine) => (
               <div
@@ -152,8 +169,8 @@ export function PriceList() {
                               R$
                             </span>
                             <input
-                              type="number"
                               autoFocus
+                              type="number"
                               className="w-full p-1 bg-transparent border-none outline-none font-bold text-gray-800 text-sm"
                               value={editPrice}
                               placeholder="0.00"

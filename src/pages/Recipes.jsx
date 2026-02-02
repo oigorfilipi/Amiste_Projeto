@@ -138,32 +138,54 @@ export function Recipes() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {filteredSupplies.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => openSupplyRecipes(item)}
-                className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-xl transition-all cursor-pointer group hover:-translate-y-1"
-              >
-                <div className="h-32 flex items-center justify-center mb-4 bg-gray-50 rounded-xl relative overflow-hidden">
-                  {item.photo_url ? (
-                    <img
-                      src={item.photo_url}
-                      className="h-full w-full object-contain mix-blend-multiply"
-                    />
-                  ) : (
-                    <Package size={40} className="text-gray-300" />
-                  )}
-                </div>
-                <h3 className="font-bold text-gray-800 text-lg leading-tight">
-                  {item.name}
-                </h3>
-                <div className="flex items-center text-amiste-primary text-sm font-bold gap-1 mt-3">
-                  Ver Receitas <ChevronRight size={16} />
-                </div>
+          {/* CONDICIONAL: LOADING ou EMPTY STATE ou GRID */}
+          {loading ? (
+            <p className="text-center text-gray-400 py-10">
+              Carregando insumos...
+            </p>
+          ) : filteredSupplies.length === 0 ? (
+            // --- EMPTY STATE (Nenhum Insumo) ---
+            <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in max-w-2xl mx-auto mt-8">
+              <div className="bg-gray-50 p-6 rounded-full mb-4">
+                <Package size={48} className="text-gray-300" />
               </div>
-            ))}
-          </div>
+              <h3 className="text-xl font-bold text-gray-600 mb-2">
+                Nenhum insumo encontrado
+              </h3>
+              <p className="text-gray-400 max-w-sm mx-auto text-sm">
+                Não encontramos insumos para mostrar. Cadastre novos insumos no
+                menu "Insumos" para gerenciar receitas.
+              </p>
+            </div>
+          ) : (
+            // --- GRID DE INSUMOS ---
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {filteredSupplies.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => openSupplyRecipes(item)}
+                  className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-xl transition-all cursor-pointer group hover:-translate-y-1"
+                >
+                  <div className="h-32 flex items-center justify-center mb-4 bg-gray-50 rounded-xl relative overflow-hidden">
+                    {item.photo_url ? (
+                      <img
+                        src={item.photo_url}
+                        className="h-full w-full object-contain mix-blend-multiply"
+                      />
+                    ) : (
+                      <Package size={40} className="text-gray-300" />
+                    )}
+                  </div>
+                  <h3 className="font-bold text-gray-800 text-lg leading-tight">
+                    {item.name}
+                  </h3>
+                  <div className="flex items-center text-amiste-primary text-sm font-bold gap-1 mt-3">
+                    Ver Receitas <ChevronRight size={16} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -286,9 +308,18 @@ export function Recipes() {
 
           <div className="grid grid-cols-1 gap-4">
             {recipes.length === 0 ? (
-              <p className="text-center py-10 text-gray-400">
-                Nenhuma receita cadastrada.
-              </p>
+              // --- EMPTY STATE (Nenhuma Receita neste Insumo) ---
+              <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200">
+                <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <ChefHat size={32} className="text-gray-300" />
+                </div>
+                <p className="text-gray-600 font-bold text-lg">
+                  Nenhuma receita cadastrada.
+                </p>
+                <p className="text-sm text-gray-400">
+                  Crie a primeira receita para este insumo!
+                </p>
+              </div>
             ) : (
               recipes.map((r) => (
                 <div
@@ -329,7 +360,6 @@ export function Recipes() {
                       <strong className="block text-gray-400 text-xs uppercase mb-2">
                         Ingredientes
                       </strong>
-                      {/* AQUI ESTÁ A CORREÇÃO: break-words */}
                       <p className="whitespace-pre-wrap break-words">
                         {r.ingredients}
                       </p>
@@ -338,7 +368,6 @@ export function Recipes() {
                       <strong className="block text-gray-400 text-xs uppercase mb-2">
                         Preparo
                       </strong>
-                      {/* AQUI ESTÁ A CORREÇÃO: break-words */}
                       <p className="whitespace-pre-wrap break-words">
                         {r.instructions}
                       </p>

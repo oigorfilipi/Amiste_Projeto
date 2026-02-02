@@ -19,6 +19,7 @@ import {
   Settings,
   Database,
   FileText,
+  Coffee, // <--- Adicionei o ícone Coffee
 } from "lucide-react";
 
 const MODEL_OPTIONS = [
@@ -49,7 +50,7 @@ export function Machines() {
 
   // --- FORMULÁRIO ---
   const [name, setName] = useState("");
-  const [description, setDescription] = useState(""); // <--- NOVO CAMPO
+  const [description, setDescription] = useState("");
   const [model, setModel] = useState("");
   const [customModel, setCustomModel] = useState("");
   const [brand, setBrand] = useState("");
@@ -123,7 +124,7 @@ export function Machines() {
     if (!permissions.canManageMachines) return alert("Sem permissão.");
     setEditingId(machine.id);
     setName(machine.name);
-    setDescription(machine.description || ""); // <--- Carrega descrição
+    setDescription(machine.description || "");
     setPhotoUrl(machine.photo_url || "");
     setStatus(machine.status || "Disponível");
     setImageMode(machine.photo_url?.includes("supabase") ? "file" : "url");
@@ -159,7 +160,6 @@ export function Machines() {
     setColor(machine.color || "Preto");
     setHasSteamer(machine.has_steamer || "Não");
 
-    // Novos Campos
     setHasSewage(machine.has_sewage || false);
     setReservoirCount(machine.reservoir_count || 0);
     setHasExtraReservoir((machine.reservoir_count || 0) > 0);
@@ -195,7 +195,7 @@ export function Machines() {
 
       const payload = {
         name,
-        description, // <--- Salva descrição
+        description,
         photo_url: photoUrl,
         model: finalModel,
         brand: finalBrand,
@@ -237,10 +237,24 @@ export function Machines() {
 
   async function handleDelete(id, e) {
     e.stopPropagation();
-    if (!permissions.canManageMachines) return;
-    if (!confirm("Excluir máquina?")) return;
-    await supabase.from("machines").delete().eq("id", id);
-    fetchMachines();
+    if (!permissions.canManageMachines) return alert("Sem permissão.");
+    if (!confirm("Tem certeza que deseja excluir esta máquina?")) return;
+
+    try {
+      const { error } = await supabase.from("machines").delete().eq("id", id);
+      if (error) {
+        if (error.code === "23503") {
+          throw new Error(
+            "Não é possível excluir: Esta máquina está vinculada a um Checklist ou Portfólio.",
+          );
+        }
+        throw error;
+      }
+      alert("Máquina excluída com sucesso.");
+      fetchMachines();
+    } catch (err) {
+      alert("Erro ao excluir: " + err.message);
+    }
   }
 
   function handleOpenConfigs(machine, e) {
@@ -312,77 +326,100 @@ export function Machines() {
         </div>
       </div>
 
-      {/* GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredMachines.map((machine) => (
-          <div
-            key={machine.id}
-            onClick={() => handleEdit(machine)}
-            className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col cursor-pointer group hover:-translate-y-1"
-          >
-            <div className="h-56 bg-gray-50 relative flex items-center justify-center p-6">
-              <div className="absolute inset-0 bg-amiste-primary/0 group-hover:bg-amiste-primary/5 transition-colors duration-300"></div>
-              {machine.photo_url ? (
-                <img
-                  src={machine.photo_url}
-                  className="h-full w-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500"
-                />
-              ) : (
-                <div className="text-gray-300">
-                  <ImageIcon size={48} />
-                </div>
-              )}
-
-              <div className="absolute top-3 left-3 flex gap-1">
-                <span
-                  className={`text-[10px] font-bold px-2 py-1 rounded border ${machine.voltage === "220v" ? "bg-red-50 text-red-700 border-red-100" : "bg-blue-50 text-blue-700 border-blue-100"}`}
-                >
-                  {machine.voltage}
-                </span>
-              </div>
-
-              {permissions.canManageMachines && (
-                <button
-                  onClick={(e) => handleDelete(machine.id, e)}
-                  className="absolute top-3 right-3 p-2 bg-white rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-50"
-                >
-                  <Trash2 size={16} />
-                </button>
-              )}
-            </div>
-
-            <div className="p-5 flex-1 flex flex-col">
-              <h3 className="font-bold text-gray-800 text-lg leading-tight mb-1">
-                {machine.name}
-              </h3>
-              <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-4">
-                {machine.brand}
-              </p>
-
-              <div className="mt-auto pt-3 border-t border-gray-100">
-                {permissions.canConfigureMachines && (
-                  <button
-                    onClick={(e) => handleOpenConfigs(machine, e)}
-                    className="w-full py-2 bg-gray-50 hover:bg-amiste-primary hover:text-white text-gray-600 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all"
-                  >
-                    <Settings size={16} /> Configurações
-                  </button>
-                )}
-                {!permissions.canConfigureMachines && (
-                  <div className="text-center py-2 text-xs text-gray-400 font-medium bg-gray-50 rounded-lg">
-                    Apenas visualização
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {loading && (
+      {/* --- CONTEÚDO PRINCIPAL (CONDICIONAL) --- */}
+      {loading ? (
         <p className="text-center text-gray-400 py-10">
           Carregando catálogo...
         </p>
+      ) : filteredMachines.length === 0 ? (
+        // --- EMPTY STATE (NENHUMA MÁQUINA) ---
+        <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in mx-auto max-w-2xl mt-8">
+          <div className="bg-gray-50 p-6 rounded-full mb-4">
+            <Coffee size={48} className="text-gray-300" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-600 mb-2">
+            Nenhuma máquina encontrada
+          </h3>
+          <p className="text-gray-400 max-w-sm mx-auto mb-8 text-sm">
+            Não encontramos nenhum equipamento com esse critério. Cadastre uma
+            nova máquina para vê-la aqui.
+          </p>
+          {permissions.canManageMachines && (
+            <button
+              onClick={handleNew}
+              className="bg-amiste-primary hover:bg-amiste-secondary text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all hover:-translate-y-1"
+            >
+              <Plus size={20} /> Cadastrar Máquina
+            </button>
+          )}
+        </div>
+      ) : (
+        // --- GRID DE MÁQUINAS ---
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredMachines.map((machine) => (
+            <div
+              key={machine.id}
+              onClick={() => handleEdit(machine)}
+              className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col cursor-pointer group hover:-translate-y-1"
+            >
+              <div className="h-56 bg-gray-50 relative flex items-center justify-center p-6">
+                <div className="absolute inset-0 bg-amiste-primary/0 group-hover:bg-amiste-primary/5 transition-colors duration-300"></div>
+                {machine.photo_url ? (
+                  <img
+                    src={machine.photo_url}
+                    className="h-full w-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500"
+                  />
+                ) : (
+                  <div className="text-gray-300">
+                    <ImageIcon size={48} />
+                  </div>
+                )}
+
+                <div className="absolute top-3 left-3 flex gap-1">
+                  <span
+                    className={`text-[10px] font-bold px-2 py-1 rounded border ${machine.voltage === "220v" ? "bg-red-50 text-red-700 border-red-100" : "bg-blue-50 text-blue-700 border-blue-100"}`}
+                  >
+                    {machine.voltage}
+                  </span>
+                </div>
+
+                {permissions.canManageMachines && (
+                  <button
+                    onClick={(e) => handleDelete(machine.id, e)}
+                    className="absolute top-3 right-3 p-2 bg-white rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-50 z-10"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
+
+              <div className="p-5 flex-1 flex flex-col">
+                <h3 className="font-bold text-gray-800 text-lg leading-tight mb-1">
+                  {machine.name}
+                </h3>
+                <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-4">
+                  {machine.brand}
+                </p>
+
+                <div className="mt-auto pt-3 border-t border-gray-100">
+                  {permissions.canConfigureMachines && (
+                    <button
+                      onClick={(e) => handleOpenConfigs(machine, e)}
+                      className="w-full py-2 bg-gray-50 hover:bg-amiste-primary hover:text-white text-gray-600 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                    >
+                      <Settings size={16} /> Configurações
+                    </button>
+                  )}
+                  {!permissions.canConfigureMachines && (
+                    <div className="text-center py-2 text-xs text-gray-400 font-medium bg-gray-50 rounded-lg">
+                      Apenas visualização
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
       {/* --- MODAL --- */}
@@ -426,7 +463,7 @@ export function Machines() {
                     />
                   </div>
 
-                  {/* NOVO CAMPO: DESCRIÇÃO */}
+                  {/* DESCRIÇÃO */}
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Descrição Comercial (Para Propostas)
@@ -550,7 +587,7 @@ export function Machines() {
 
               <div className="h-px bg-gray-100"></div>
 
-              {/* Especificações Técnicas (Mantido igual) */}
+              {/* Especificações Técnicas */}
               <section className="space-y-4">
                 <h3 className="text-xs uppercase font-bold text-gray-400 tracking-wider mb-4 flex items-center gap-2">
                   <Zap size={14} /> Especificações Técnicas

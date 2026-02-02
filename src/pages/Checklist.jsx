@@ -19,6 +19,7 @@ import {
   Zap,
   ArrowLeft,
   XCircle,
+  ClipboardList,
 } from "lucide-react";
 
 // --- COMPONENTES VISUAIS REUTILIZÁVEIS ---
@@ -605,71 +606,111 @@ export function Checklist() {
             ))}
           </div>
 
+          {/* LISTA DE CHECKLISTS OU EMPTY STATE */}
           <div className="grid grid-cols-1 gap-4">
-            {checklistsHistory
-              .filter(
-                (c) => filterStatus === "Todos" || c.status === filterStatus,
-              )
-              .map((c) => (
-                <div
-                  key={c.id}
-                  className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4"
-                >
-                  <div className="flex items-start gap-4">
-                    <div
-                      className={`p-3 rounded-full ${c.status === "Finalizado" ? "bg-green-50 text-green-600" : c.status === "Cancelado" ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-600"}`}
-                    >
-                      {c.status === "Finalizado" ? (
-                        <Check size={20} />
-                      ) : c.status === "Cancelado" ? (
-                        <XCircle size={20} />
-                      ) : (
-                        <Edit2 size={20} />
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-gray-800 text-lg">
-                        {c.client_name || c.event_name}
-                      </h3>
-                      <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
-                        <Coffee size={14} /> {c.machine_name || "Sem máquina"}
-                        <span className="text-gray-300">•</span>
-                        <Calendar size={14} />{" "}
-                        {new Date(c.created_at).toLocaleDateString()}
+            {checklistsHistory.filter(
+              (c) => filterStatus === "Todos" || c.status === filterStatus,
+            ).length === 0 ? (
+              // --- EMPTY STATE ---
+              <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in">
+                <div className="bg-gray-50 p-6 rounded-full mb-4">
+                  <ClipboardList size={48} className="text-gray-300" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-600 mb-2">
+                  Nenhum checklist encontrado
+                </h3>
+                <p className="text-gray-400 max-w-sm mx-auto mb-6 text-sm">
+                  Não há ordens de serviço com o status "{filterStatus}".
+                </p>
+                {permissions.canCreateChecklist && (
+                  <button
+                    onClick={handleNewChecklist}
+                    className="bg-amiste-primary hover:bg-amiste-secondary text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all hover:-translate-y-1"
+                  >
+                    <Plus size={20} /> Criar Primeiro Checklist
+                  </button>
+                )}
+              </div>
+            ) : (
+              // --- LISTA EXISTENTE ---
+              checklistsHistory
+                .filter(
+                  (c) => filterStatus === "Todos" || c.status === filterStatus,
+                )
+                .map((c) => (
+                  <div
+                    key={c.id}
+                    className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex flex-col md:flex-row md:items-center justify-between gap-4 group"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div
+                        className={`p-3 rounded-full ${
+                          c.status === "Finalizado"
+                            ? "bg-green-50 text-green-600"
+                            : c.status === "Cancelado"
+                              ? "bg-red-50 text-red-600"
+                              : "bg-amber-50 text-amber-600"
+                        }`}
+                      >
+                        {c.status === "Finalizado" ? (
+                          <Check size={20} />
+                        ) : c.status === "Cancelado" ? (
+                          <XCircle size={20} />
+                        ) : (
+                          <Edit2 size={20} />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-800 text-lg leading-tight">
+                          {c.client_name || c.event_name}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
+                          <Coffee size={14} /> {c.machine_name || "Sem máquina"}
+                          <span className="text-gray-300">•</span>
+                          <Calendar size={14} />{" "}
+                          {new Date(c.created_at).toLocaleDateString()}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 justify-end">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mr-2 ${getStatusColor(c.status)}`}
-                    >
-                      {c.status}
-                    </span>
-                    {permissions.canEditChecklist && (
-                      <button
-                        onClick={() => handleEdit(c)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+
+                    <div className="flex items-center gap-2 border-t md:border-t-0 pt-4 md:pt-0 mt-2 md:mt-0 justify-end">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mr-2 ${getStatusColor(
+                          c.status,
+                        )}`}
                       >
-                        <Edit2 size={18} />
-                      </button>
-                    )}
-                    <Link
-                      to={`/checklists/${c.id}`}
-                      className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg"
-                    >
-                      <Search size={18} />
-                    </Link>
-                    {permissions.canDeleteChecklist && (
-                      <button
-                        onClick={() => handleDelete(c.id)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                        {c.status}
+                      </span>
+
+                      {permissions.canEditChecklist && (
+                        <button
+                          onClick={() => handleEdit(c)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Editar"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                      )}
+                      <Link
+                        to={`/checklists/${c.id}`}
+                        className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Visualizar"
                       >
-                        <Trash2 size={18} />
-                      </button>
-                    )}
+                        <Search size={18} />
+                      </Link>
+                      {permissions.canDeleteChecklist && (
+                        <button
+                          onClick={() => handleDelete(c.id)}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+            )}
           </div>
         </div>
       )}

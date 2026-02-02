@@ -15,6 +15,7 @@ import {
   ChefHat,
   Upload,
   Link as LinkIcon,
+  ShoppingCart, // <--- Adicionei este ícone para o empty state
 } from "lucide-react";
 
 const BRAND_OPTIONS = [
@@ -45,8 +46,7 @@ export function Supplies() {
     price: 0,
   });
 
-  // Estado para alternar entre URL e Upload
-  const [imageMode, setImageMode] = useState("url"); // 'url' ou 'file'
+  const [imageMode, setImageMode] = useState("url");
 
   useEffect(() => {
     fetchSupplies();
@@ -67,7 +67,6 @@ export function Supplies() {
     }
   }
 
-  // --- UPLOAD DE IMAGEM ---
   async function handleImageUpload(e) {
     try {
       setUploading(true);
@@ -84,7 +83,6 @@ export function Supplies() {
 
       if (uploadError) throw uploadError;
 
-      // Pega a URL pública
       const { data } = supabase.storage.from("images").getPublicUrl(filePath);
 
       setFormData((prev) => ({ ...prev, photo_url: data.publicUrl }));
@@ -211,51 +209,80 @@ export function Supplies() {
           </div>
         </div>
 
-        {/* GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredSupplies.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => handleEdit(item)}
-              className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col cursor-pointer group hover:-translate-y-1"
-            >
-              <div className="h-48 bg-gray-50 relative flex items-center justify-center p-6">
-                <div className="absolute inset-0 bg-amiste-primary/0 group-hover:bg-amiste-primary/5 transition-colors duration-300"></div>
-                {item.photo_url ? (
-                  <img
-                    src={item.photo_url}
-                    className="h-full w-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500"
-                  />
-                ) : (
-                  <div className="text-gray-300">
-                    <Package size={48} />
+        {/* CONTEÚDO CONDICIONAL */}
+        {loading ? (
+          <p className="text-center text-gray-400 py-10">
+            Carregando catálogo...
+          </p>
+        ) : filteredSupplies.length === 0 ? (
+          // --- EMPTY STATE ---
+          <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in max-w-2xl mx-auto mt-8">
+            <div className="bg-gray-50 p-6 rounded-full mb-4">
+              <ShoppingCart size={48} className="text-gray-300" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-600 mb-2">
+              Nenhum insumo encontrado
+            </h3>
+            <p className="text-gray-400 max-w-sm mx-auto mb-8 text-sm">
+              Não encontramos produtos no estoque com esse critério. Cadastre um
+              novo item para começar.
+            </p>
+            {permissions.canManageMachines && (
+              <button
+                onClick={handleNew}
+                className="bg-amiste-primary hover:bg-amiste-secondary text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all hover:-translate-y-1"
+              >
+                <Plus size={20} /> Cadastrar Insumo
+              </button>
+            )}
+          </div>
+        ) : (
+          // --- GRID DE INSUMOS ---
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {filteredSupplies.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => handleEdit(item)}
+                className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col cursor-pointer group hover:-translate-y-1"
+              >
+                <div className="h-48 bg-gray-50 relative flex items-center justify-center p-6">
+                  <div className="absolute inset-0 bg-amiste-primary/0 group-hover:bg-amiste-primary/5 transition-colors duration-300"></div>
+                  {item.photo_url ? (
+                    <img
+                      src={item.photo_url}
+                      className="h-full w-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="text-gray-300">
+                      <Package size={48} />
+                    </div>
+                  )}
+                  {permissions.canManageMachines && (
+                    <button
+                      onClick={(e) => handleDelete(item.id, e)}
+                      className="absolute top-3 right-3 p-2 bg-white rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-50 z-10"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
+                <div className="p-5 flex-1 flex flex-col">
+                  <h3 className="font-bold text-gray-800 text-lg leading-tight mb-1">
+                    {item.name}
+                  </h3>
+                  <div className="flex gap-2 mt-auto">
+                    <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
+                      <Tag size={12} /> {item.brand}
+                    </span>
+                    <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
+                      <Scale size={12} /> {item.size}
+                    </span>
                   </div>
-                )}
-                {permissions.canManageMachines && (
-                  <button
-                    onClick={(e) => handleDelete(item.id, e)}
-                    className="absolute top-3 right-3 p-2 bg-white rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-50"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </div>
-              <div className="p-5 flex-1 flex flex-col">
-                <h3 className="font-bold text-gray-800 text-lg leading-tight mb-1">
-                  {item.name}
-                </h3>
-                <div className="flex gap-2 mt-auto">
-                  <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
-                    <Tag size={12} /> {item.brand}
-                  </span>
-                  <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
-                    <Scale size={12} /> {item.size}
-                  </span>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* MODAL */}
         {showModal && (
@@ -330,13 +357,12 @@ export function Supplies() {
                   </div>
                 </div>
 
-                {/* SELEÇÃO DE IMAGEM (URL ou ARQUIVO) */}
+                {/* SELEÇÃO DE IMAGEM */}
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-3">
                     Imagem do Produto
                   </label>
 
-                  {/* Botões de Alternância */}
                   <div className="flex bg-white rounded-lg p-1 border border-gray-200 mb-3">
                     <button
                       type="button"
@@ -354,7 +380,6 @@ export function Supplies() {
                     </button>
                   </div>
 
-                  {/* Inputs */}
                   <div className="flex gap-3">
                     {imageMode === "url" ? (
                       <input
@@ -385,7 +410,6 @@ export function Supplies() {
                       </div>
                     )}
 
-                    {/* Preview Pequeno */}
                     {formData.photo_url && (
                       <div className="w-12 h-12 bg-white border border-gray-200 rounded-lg flex items-center justify-center shrink-0 p-1">
                         <img

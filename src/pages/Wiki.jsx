@@ -17,6 +17,7 @@ import {
   Save,
   X,
   Search,
+  BookOpen, // <--- Adicionei este ícone para o empty state
 } from "lucide-react";
 
 export function Wiki() {
@@ -147,7 +148,11 @@ export function Wiki() {
       case "Configuração":
         return { icon: Wrench, bg: "bg-purple-50", text: "text-purple-600" };
       default:
-        return { icon: FileText, bg: "bg-red-50", text: "text-amiste-primary" };
+        return {
+          icon: FileText,
+          bg: "bg-red-50",
+          text: "text-amiste-primary",
+        };
     }
   };
 
@@ -185,42 +190,58 @@ export function Wiki() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredMachines.map((machine) => (
-              <div
-                key={machine.id}
-                onClick={() => openMachineWiki(machine)}
-                className="group relative bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer hover:-translate-y-1"
-              >
-                <div className="h-48 bg-gray-50 p-6 flex items-center justify-center relative">
-                  <div className="absolute inset-0 bg-amiste-primary/0 group-hover:bg-amiste-primary/5 transition-colors duration-300"></div>
-                  <img
-                    src={machine.photo_url}
-                    alt={machine.name}
-                    className="h-full w-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500"
-                  />
-                </div>
+          {/* CONTEÚDO CONDICIONAL GRID */}
+          {loading ? (
+            <p className="text-gray-400 col-span-full text-center py-10">
+              Carregando catálogo...
+            </p>
+          ) : filteredMachines.length === 0 ? (
+            // --- EMPTY STATE (GRID) ---
+            <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in max-w-2xl mx-auto">
+              <div className="bg-gray-50 p-6 rounded-full mb-4">
+                <BookOpen size={48} className="text-gray-300" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-600 mb-2">
+                Nenhuma máquina encontrada
+              </h3>
+              <p className="text-gray-400 max-w-sm mx-auto text-sm">
+                Não encontramos equipamentos para exibir na Wiki. Cadastre
+                máquinas no catálogo para começar.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredMachines.map((machine) => (
+                <div
+                  key={machine.id}
+                  onClick={() => openMachineWiki(machine)}
+                  className="group relative bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer hover:-translate-y-1"
+                >
+                  <div className="h-48 bg-gray-50 p-6 flex items-center justify-center relative">
+                    <div className="absolute inset-0 bg-amiste-primary/0 group-hover:bg-amiste-primary/5 transition-colors duration-300"></div>
+                    <img
+                      src={machine.photo_url}
+                      alt={machine.name}
+                      className="h-full w-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500"
+                    />
+                  </div>
 
-                <div className="p-5">
-                  <h3 className="font-bold text-lg text-gray-800 leading-tight mb-1">
-                    {machine.name}
-                  </h3>
-                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-4">
-                    {machine.brand}
-                  </p>
+                  <div className="p-5">
+                    <h3 className="font-bold text-lg text-gray-800 leading-tight mb-1">
+                      {machine.name}
+                    </h3>
+                    <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-4">
+                      {machine.brand}
+                    </p>
 
-                  <div className="flex items-center text-amiste-primary text-sm font-bold gap-1 mt-auto group-hover:gap-2 transition-all">
-                    Acessar Soluções <ChevronRight size={16} />
+                    <div className="flex items-center text-amiste-primary text-sm font-bold gap-1 mt-auto group-hover:gap-2 transition-all">
+                      Acessar Soluções <ChevronRight size={16} />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-            {loading && (
-              <p className="text-gray-400 col-span-full text-center py-10">
-                Carregando catálogo...
-              </p>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -368,7 +389,8 @@ export function Wiki() {
             {/* LISTA DE SOLUÇÕES */}
             <div className="lg:col-span-3 space-y-4">
               {solutions.length === 0 ? (
-                <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-300">
+                // --- EMPTY STATE (SOLUÇÕES) ---
+                <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200">
                   <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Wrench size={32} className="text-gray-300" />
                   </div>

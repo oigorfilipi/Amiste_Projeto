@@ -19,6 +19,7 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  FileBarChart, // <--- Novo ícone para empty state
 } from "lucide-react";
 
 export function Portfolio() {
@@ -110,7 +111,6 @@ export function Portfolio() {
     const m = machines.find((x) => x.id.toString() === id);
     if (m) {
       setSelectedMachine(m);
-      // PUXA A DESCRIÇÃO DA MÁQUINA SE EXISTIR, SENÃO USA PADRÃO
       setDescription(
         m.description ||
           "Equipamento de alta performance, ideal para seu estabelecimento. Design moderno e extração perfeita.",
@@ -212,6 +212,8 @@ export function Portfolio() {
     setInstallments(v.installments);
     setDescription(v.description);
     setVideoUrl(v.video_url || "");
+    setObs(v.obs || "");
+    setStatus(v.status || "Aguardando");
     alert("Dados restaurados! Clique em Salvar para confirmar.");
     e.target.value = "";
   }
@@ -278,79 +280,102 @@ export function Portfolio() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {filteredPortfolios.map((p) => {
-              const statusStyle = getStatusStyle(p.status || "Aguardando");
-              return (
-                <div
-                  key={p.id}
-                  onClick={() => handleEditPortfolio(p)}
-                  className="group cursor-pointer flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden hover:-translate-y-1"
-                >
-                  <div
-                    className={`absolute top-2 left-2 z-10 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-sm ${statusStyle.bg} ${statusStyle.text}`}
-                  >
-                    <statusStyle.icon size={10} /> {statusStyle.label}
-                  </div>
-                  <div className="w-full aspect-[210/297] bg-white relative flex flex-col border-b border-gray-100">
-                    <div className="h-[15%] bg-white px-4 pt-4 flex justify-end"></div>
-                    <div className="flex-1 flex flex-col items-center justify-center p-4">
-                      {p.machine_data?.photo_url ? (
-                        <img
-                          src={p.machine_data.photo_url}
-                          className="w-20 h-20 object-contain mix-blend-multiply mb-2"
-                        />
-                      ) : (
-                        <Coffee size={24} className="text-gray-300" />
-                      )}
-                      <div className="text-[9px] font-bold text-gray-800 text-center leading-tight line-clamp-2">
-                        {p.machine_data?.name}
-                      </div>
-                    </div>
-                    <div className="h-[15%] bg-amiste-primary flex items-center justify-between px-3 text-white">
-                      <div className="text-[8px] font-bold truncate max-w-[60px]">
-                        {p.customer_name}
-                      </div>
-                      <div className="text-[8px] font-bold">
-                        {formatMoney(p.total_value)}
-                      </div>
-                    </div>
-                    <button
-                      onClick={(e) => handleDelete(p.id, e)}
-                      className="absolute top-2 right-2 bg-white text-red-500 p-1.5 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50 z-10"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                  <div className="p-4 bg-white">
-                    <h3
-                      className="font-bold text-gray-800 text-sm truncate"
-                      title={p.customer_name}
-                    >
-                      {p.customer_name}
-                    </h3>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded uppercase font-bold">
-                        {p.negotiation_type}
-                      </span>
-                      <span className="text-[10px] text-gray-400">
-                        {new Date(p.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-            {loading && (
-              <p className="col-span-full text-center py-10 text-gray-400">
-                Carregando propostas...
+          {/* CONDICIONAL DE CONTEÚDO */}
+          {loading ? (
+            <p className="text-center text-gray-400 py-10">
+              Carregando propostas...
+            </p>
+          ) : filteredPortfolios.length === 0 ? (
+            // --- EMPTY STATE ---
+            <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in mx-auto max-w-2xl mt-8">
+              <div className="bg-gray-50 p-6 rounded-full mb-4">
+                <FileBarChart size={48} className="text-gray-300" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-600 mb-2">
+                Nenhuma proposta encontrada
+              </h3>
+              <p className="text-gray-400 max-w-sm mx-auto mb-8 text-sm">
+                Não encontramos propostas para esse filtro. Crie um novo
+                orçamento para começar.
               </p>
-            )}
-          </div>
+              <button
+                onClick={handleNewPortfolio}
+                className="bg-amiste-primary hover:bg-amiste-secondary text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all hover:-translate-y-1"
+              >
+                <Plus size={20} /> Criar Nova Proposta
+              </button>
+            </div>
+          ) : (
+            // --- GRID DE PROPOSTAS ---
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {filteredPortfolios.map((p) => {
+                const statusStyle = getStatusStyle(p.status || "Aguardando");
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => handleEditPortfolio(p)}
+                    className="group cursor-pointer flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden hover:-translate-y-1"
+                  >
+                    <div
+                      className={`absolute top-2 left-2 z-10 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-sm ${statusStyle.bg} ${statusStyle.text}`}
+                    >
+                      <statusStyle.icon size={10} /> {statusStyle.label}
+                    </div>
+                    <div className="w-full aspect-[210/297] bg-white relative flex flex-col border-b border-gray-100">
+                      <div className="h-[15%] bg-white px-4 pt-4 flex justify-end"></div>
+                      <div className="flex-1 flex flex-col items-center justify-center p-4">
+                        {p.machine_data?.photo_url ? (
+                          <img
+                            src={p.machine_data.photo_url}
+                            className="w-20 h-20 object-contain mix-blend-multiply mb-2"
+                          />
+                        ) : (
+                          <Coffee size={24} className="text-gray-300" />
+                        )}
+                        <div className="text-[9px] font-bold text-gray-800 text-center leading-tight line-clamp-2">
+                          {p.machine_data?.name}
+                        </div>
+                      </div>
+                      <div className="h-[15%] bg-amiste-primary flex items-center justify-between px-3 text-white">
+                        <div className="text-[8px] font-bold truncate max-w-[60px]">
+                          {p.customer_name}
+                        </div>
+                        <div className="text-[8px] font-bold">
+                          {formatMoney(p.total_value)}
+                        </div>
+                      </div>
+                      <button
+                        onClick={(e) => handleDelete(p.id, e)}
+                        className="absolute top-2 right-2 bg-white text-red-500 p-1.5 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50 z-10"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                    <div className="p-4 bg-white">
+                      <h3
+                        className="font-bold text-gray-800 text-sm truncate"
+                        title={p.customer_name}
+                      >
+                        {p.customer_name}
+                      </h3>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded uppercase font-bold">
+                          {p.negotiation_type}
+                        </span>
+                        <span className="text-[10px] text-gray-400">
+                          {new Date(p.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
-      {/* --- MODO EDITOR --- */}
+      {/* --- MODO EDITOR (MANTIDO IGUAL) --- */}
       {view === "editor" && (
         <div className="flex flex-col h-screen overflow-hidden bg-gray-100">
           <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center z-20 shadow-sm">
@@ -392,8 +417,10 @@ export function Portfolio() {
           </div>
 
           <div className="flex flex-1 overflow-hidden">
+            {/* SIDEBAR DE EDIÇÃO */}
             <div className="w-96 bg-white border-r border-gray-200 flex flex-col z-10 overflow-y-auto">
               <div className="p-6 space-y-6">
+                {/* Status */}
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                   <label className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-1">
                     <AlertCircle size={14} /> Status da Negociação
@@ -640,7 +667,7 @@ export function Portfolio() {
                           {selectedMachine.brand} | {selectedMachine.model}
                         </p>
                         <div className="w-12 h-1 bg-gray-200 mb-6"></div>
-                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap break-words">
                           {description}
                         </p>
                         {videoUrl && (
@@ -652,7 +679,6 @@ export function Portfolio() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-x-12 gap-y-4 mb-8">
-                      {/* ADICIONADO ESGOTO AQUI EMBAIXO */}
                       {[
                         { l: "Tipo", v: selectedMachine.type },
                         { l: "Voltagem", v: selectedMachine.voltage },
@@ -690,7 +716,7 @@ export function Portfolio() {
                         <p className="text-[10px] font-bold text-gray-400 uppercase mb-2 flex items-center gap-1">
                           <AlertCircle size={10} /> Observações Importantes
                         </p>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap break-words leading-relaxed">
                           {obs}
                         </p>
                       </div>

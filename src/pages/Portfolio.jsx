@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../services/supabaseClient";
-import { PDFDownloadLink, PDFViewer } from "@react-pdf/renderer"; // <--- IMPORTANTE: PDFViewer
+import { PDFDownloadLink, PDFViewer } from "@react-pdf/renderer";
 import { PortfolioPDF } from "../components/PortfolioPDF";
 import {
   FileText,
@@ -20,6 +20,7 @@ import {
   XCircle,
   AlertCircle,
   FileBarChart,
+  Layers, // <--- Ícone
 } from "lucide-react";
 
 export function Portfolio() {
@@ -36,6 +37,8 @@ export function Portfolio() {
   const [machineImageBase64, setMachineImageBase64] = useState(null);
 
   const [selectedMachine, setSelectedMachine] = useState(null);
+  const [selectedModelIndex, setSelectedModelIndex] = useState(""); // <--- QUAL MODELO? (ÍNDICE)
+
   const [customerName, setCustomerName] = useState("");
   const [negotiationType, setNegotiationType] = useState("Venda");
   const [totalValue, setTotalValue] = useState(0);
@@ -53,16 +56,17 @@ export function Portfolio() {
     fetchPortfolios();
   }, []);
 
-  // Conversão de Imagem para Base64 (Para funcionar no PDF)
+  // Conversão de Imagem para Base64 (Com Fix de CORS via Proxy)
   useEffect(() => {
     async function convertImage() {
       if (selectedMachine?.photo_url) {
         try {
-          const response = await fetch(
-            `https://wsrv.nl/?url=${encodeURIComponent(selectedMachine.photo_url)}`,
-          );
+          const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(selectedMachine.photo_url)}`;
+
+          const response = await fetch(proxyUrl);
           const blob = await response.blob();
           const reader = new FileReader();
+
           reader.onloadend = () => {
             setMachineImageBase64(reader.result);
           };
@@ -105,6 +109,7 @@ export function Portfolio() {
     setEditingId(null);
     setVersions([]);
     setSelectedMachine(null);
+    setSelectedModelIndex("");
     setCustomerName("");
     setNegotiationType("Venda");
     setTotalValue(0);
@@ -122,6 +127,9 @@ export function Portfolio() {
     setEditingId(p.id);
     setVersions(p.versions || []);
     setSelectedMachine(p.machine_data);
+    // Tenta recuperar qual modelo foi escolhido (se salvo no machine_data, mas aqui simplificamos)
+    // No futuro, ideal salvar o model_index no banco do portfolio
+
     setCustomerName(p.customer_name);
     setNegotiationType(p.negotiation_type);
     setTotalValue(p.total_value);
@@ -138,23 +146,81 @@ export function Portfolio() {
     const m = machines.find((x) => x.id.toString() === id);
     if (m) {
       setSelectedMachine(m);
+      setSelectedModelIndex(""); // Reseta o modelo
       setDescription(
         m.description ||
           "Equipamento de alta performance, ideal para seu estabelecimento. Design moderno e extração perfeita.",
       );
-      setVideoUrl(m.video_url || ""); // <--- ESSA LINHA FAZ A MÁGICA
+      setVideoUrl(m.video_url || "");
     } else {
       setSelectedMachine(null);
     }
   }
 
+  // Função para montar os dados finais que vão para o PDF
+  // Ela mescla os dados da máquina PAI com os dados do MODELO FILHO
+  function getPreviewData() {
+    if (!selectedMachine) return null;
+
+    let machineData = { ...selectedMachine };
+
+    // Se tiver modelo selecionado, sobrescreve os dados
+    if (
+      selectedModelIndex !== "" &&
+      selectedMachine.models &&
+      selectedMachine.models[selectedModelIndex]
+    ) {
+      const model = selectedMachine.models[selectedModelIndex];
+
+      // Sobrescreve nome (adiciona o modelo) e specs
+      machineData.name = `${selectedMachine.name} - ${model.name}`;
+      machineData.voltage = model.voltage;
+      machineData.weight = model.weight;
+      machineData.dimensions = model.dimensions;
+
+      // Sobrescreve campos específicos se existirem no modelo
+      if (model.cups_capacity) machineData.cups_capacity = model.cups_capacity;
+      if (model.filter_type) machineData.filter_type = model.filter_type;
+      if (model.amperage) machineData.amperage = model.amperage;
+      if (model.water_system) machineData.water_system = model.water_system;
+    }
+
+    return {
+      machine_data: machineData,
+      machine_image_base64:
+        machineImageBase64 ||
+        (selectedMachine ? selectedMachine.photo_url : null),
+      customer_name: customerName,
+      negotiation_type: negotiationType,
+      total_value: parseFloat(totalValue),
+      installments: parseInt(installments),
+      installment_value: parseFloat(installmentValue),
+      description: description,
+      video_url: videoUrl,
+      obs: obs,
+    };
+  }
+
+  const previewData = getPreviewData();
+
   async function handleSave() {
     if (!selectedMachine || !customerName)
       return alert("Selecione a máquina e informe o cliente.");
 
+    // Se a máquina exige modelo, obriga a selecionar
+    if (
+      selectedMachine.models &&
+      selectedMachine.models.length > 0 &&
+      selectedModelIndex === ""
+    ) {
+      return alert(
+        "Esta máquina possui variações. Por favor, selecione o Modelo específico.",
+      );
+    }
+
     const currentData = {
       machine_id: selectedMachine.id,
-      machine_data: selectedMachine,
+      machine_data: previewData.machine_data, // Salva já com os dados mesclados
       customer_name: customerName,
       negotiation_type: negotiationType,
       total_value: totalValue,
@@ -192,6 +258,7 @@ export function Portfolio() {
     }
   }
 
+  // ... (handleDelete, formatMoney, filteredPortfolios, handleRestoreVersion, getStatusStyle IGUAIS) ...
   async function handleDelete(id, e) {
     e.stopPropagation();
     if (!confirm("Excluir esta proposta?")) return;
@@ -203,21 +270,6 @@ export function Portfolio() {
     val
       ? `R$ ${parseFloat(val).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
       : "R$ 0,00";
-
-  const previewData = {
-    machine_data: selectedMachine,
-    machine_image_base64:
-      machineImageBase64 ||
-      (selectedMachine ? selectedMachine.photo_url : null),
-    customer_name: customerName,
-    negotiation_type: negotiationType,
-    total_value: parseFloat(totalValue),
-    installments: parseInt(installments),
-    installment_value: parseFloat(installmentValue),
-    description: description,
-    video_url: videoUrl,
-    obs: obs,
-  };
 
   const filteredPortfolios = savedPortfolios.filter(
     (p) =>
@@ -277,6 +329,7 @@ export function Portfolio() {
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20">
+      {/* ... (TELA DE LISTAGEM IGUAL) ... */}
       {view === "list" && (
         <div className="max-w-7xl mx-auto p-6 md:p-8 animate-fade-in">
           <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
@@ -515,6 +568,32 @@ export function Portfolio() {
                       ))}
                     </select>
                   </div>
+
+                  {/* --- SELETOR DE MODELOS (SÓ APARECE SE TIVER VARIAÇÃO) --- */}
+                  {selectedMachine &&
+                    selectedMachine.models &&
+                    selectedMachine.models.length > 0 && (
+                      <div className="animate-fade-in bg-purple-50 p-3 rounded-xl border border-purple-200">
+                        <label className="block text-xs font-bold text-purple-800 uppercase mb-1 flex items-center gap-1">
+                          <Layers size={12} /> Selecione o Modelo
+                        </label>
+                        <select
+                          className="w-full p-2 border border-purple-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-purple-500 outline-none"
+                          value={selectedModelIndex}
+                          onChange={(e) =>
+                            setSelectedModelIndex(e.target.value)
+                          }
+                        >
+                          <option value="">-- Escolha a variação --</option>
+                          {selectedMachine.models.map((mod, idx) => (
+                            <option key={idx} value={idx}>
+                              {mod.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Cliente
@@ -526,6 +605,7 @@ export function Portfolio() {
                       placeholder="Nome da Empresa/Pessoa"
                     />
                   </div>
+                  {/* ... (Link de Vídeo, Valores, Textos, Obs - TUDO IGUAL) ... */}
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Link de Vídeo (Opcional)
@@ -633,13 +713,10 @@ export function Portfolio() {
               </div>
             </div>
 
-            {/* --- ÁREA DE PREVIEW COM PDFVIEWER (FINALMENTE! 🚀) --- */}
+            {/* --- ÁREA DE PREVIEW COM PDFVIEWER --- */}
             <div className="flex-1 bg-gray-200 overflow-hidden flex justify-center items-center">
-              {selectedMachine ? (
-                <PDFViewer
-                  showToolbar={false} // Remove a barra preta do navegador (opcional)
-                  className="w-full h-full" // Ocupa todo o espaço disponível
-                >
+              {previewData ? (
+                <PDFViewer showToolbar={false} className="w-full h-full">
                   <PortfolioPDF data={previewData} />
                 </PDFViewer>
               ) : (

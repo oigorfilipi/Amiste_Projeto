@@ -297,7 +297,6 @@ export function PortfolioPDF({ data }) {
           {/* HERO SECTION */}
           <View style={styles.heroSection}>
             <View style={styles.imageContainer}>
-              {/* LÓGICA ATUALIZADA: Se tiver Base64, usa ele. Se não, tenta a URL normal. */}
               {data.machine_image_base64 ? (
                 <Image src={data.machine_image_base64} style={styles.image} />
               ) : m.photo_url ? (
@@ -345,14 +344,14 @@ export function PortfolioPDF({ data }) {
               { l: "Ambiente", v: m.environment_recommendation },
               { l: "Peso", v: m.weight },
               { l: "Dimensões", v: m.dimensions || "-" },
-              // REMOVIDO DAQUI E COLOCADO NO CONCAT ABAIXO
             ]
-              // SÓ MOSTRA ABASTECIMENTO SE NÃO FOR COADO
+              // LOGICA CONDICIONAL: Se for Coado, NÃO MOSTRA Abastecimento
               .concat(
                 m.type !== "Coado"
                   ? [{ l: "Abastecimento", v: m.water_system }]
                   : [],
               )
+              // LOGICA CONDICIONAL: Tanque de água apenas se não for Coado
               .concat(
                 m.type !== "Coado" && m.water_system === "Reservatório"
                   ? [{ l: "Tanque Água", v: m.water_tank_size }]
@@ -406,8 +405,17 @@ export function PortfolioPDF({ data }) {
                     ]
                   : [],
               )
+              // NOVO: Campos para Coado
+              .concat(
+                m.type === "Coado"
+                  ? [
+                      { l: "Capacidade", v: m.cups_capacity },
+                      { l: "Filtro", v: m.filter_type },
+                    ]
+                  : [],
+              )
               .concat([
-                // SÓ MOSTRA ESGOTO SE NÃO FOR COADO
+                // LOGICA CONDICIONAL: Esgoto apenas se não for Coado
                 ...(m.type !== "Coado"
                   ? [{ l: "Esgoto", v: m.has_sewage ? "Sim" : "Não" }]
                   : []),

@@ -22,6 +22,8 @@ import {
   Coffee,
   Scale,
   MapPin,
+  Filter, // Ícone para o filtro
+  Clock, // Ícone para capacidade/tempo
 } from "lucide-react";
 
 const MODEL_OPTIONS = [
@@ -38,8 +40,9 @@ const BRAND_OPTIONS = [
   "Kalerm",
   "Spidem",
   "Impomac",
+  "Bunn", // Adicionei marcas comuns de coado
+  "Fetco",
 ];
-// ADICIONEI "Coado" AQUI
 const TYPE_OPTIONS = [
   "Multibebidas",
   "Café em Grãos",
@@ -93,6 +96,10 @@ export function Machines() {
   const [simultaneousDispenser, setSimultaneousDispenser] = useState(false);
   const [trayCount, setTrayCount] = useState("");
   const [selectionCount, setSelectionCount] = useState("");
+
+  // CAMPOS PARA COADO (NOVOS)
+  const [cupsCapacity, setCupsCapacity] = useState(""); // Ex: 100/hora
+  const [filterType, setFilterType] = useState(""); // Ex: Papel
 
   // CAMPOS TÉCNICOS ANTERIORES
   const [hasSewage, setHasSewage] = useState(false);
@@ -211,6 +218,10 @@ export function Machines() {
     setTrayCount(machine.tray_count || "");
     setSelectionCount(machine.selection_count || "");
 
+    // CARREGAR COADO
+    setCupsCapacity(machine.cups_capacity || "");
+    setFilterType(machine.filter_type || "");
+
     setShowModal(true);
   }
 
@@ -267,6 +278,9 @@ export function Machines() {
         simultaneous_dispenser: simultaneousDispenser,
         tray_count: trayCount,
         selection_count: selectionCount,
+        // SALVAR COADO
+        cups_capacity: cupsCapacity,
+        filter_type: filterType,
       };
 
       if (editingId) {
@@ -351,6 +365,9 @@ export function Machines() {
     setSimultaneousDispenser(false);
     setTrayCount("");
     setSelectionCount("");
+    // RESETAR COADO
+    setCupsCapacity("");
+    setFilterType("");
   }
 
   const filteredMachines = machines.filter(
@@ -864,6 +881,34 @@ export function Machines() {
                         Dispensador Simultâneo (2 cafés ao mesmo tempo)
                       </span>
                     </label>
+                  </div>
+                )}
+
+                {/* TIPO: COADO (NOVO) */}
+                {type === "Coado" && (
+                  <div className="animate-fade-in bg-orange-50 p-4 rounded-xl border border-orange-100 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-orange-800 uppercase mb-1 flex items-center gap-1">
+                        <Clock size={12} /> Capacidade (Xícaras)
+                      </label>
+                      <input
+                        className="w-full p-2 border border-orange-200 rounded-lg text-sm bg-white"
+                        placeholder="Ex: 100/hora"
+                        value={cupsCapacity}
+                        onChange={(e) => setCupsCapacity(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-orange-800 uppercase mb-1 flex items-center gap-1">
+                        <Filter size={12} /> Tipo de Filtro
+                      </label>
+                      <input
+                        className="w-full p-2 border border-orange-200 rounded-lg text-sm bg-white"
+                        placeholder="Ex: Papel, Metal..."
+                        value={filterType}
+                        onChange={(e) => setFilterType(e.target.value)}
+                      />
+                    </div>
                   </div>
                 )}
 

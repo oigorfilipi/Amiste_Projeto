@@ -31,13 +31,22 @@ const MODEL_OPTIONS = [
   "Insta 500",
   "Insta 42",
 ];
-const BRAND_OPTIONS = ["Saeco", "Gaggia", "Rheavendors", "Kalerm", "Spidem"];
+const BRAND_OPTIONS = [
+  "Saeco",
+  "Gaggia",
+  "Rheavendors",
+  "Kalerm",
+  "Spidem",
+  "Impomac",
+];
+// ADICIONEI "Coado" AQUI
 const TYPE_OPTIONS = [
   "Multibebidas",
   "Café em Grãos",
   "Profissional",
   "Vending",
   "Snacks",
+  "Coado",
 ];
 
 export function Machines() {
@@ -89,7 +98,7 @@ export function Machines() {
   const [hasSewage, setHasSewage] = useState(false);
   const [hasExtraReservoir, setHasExtraReservoir] = useState(true);
   const [reservoirCount, setReservoirCount] = useState(0);
-  const [extraReservoirCapacity, setExtraReservoirCapacity] = useState(""); // <--- NOVO CAMPO
+  const [extraReservoirCapacity, setExtraReservoirCapacity] = useState("");
 
   const [hasSteamer, setHasSteamer] = useState("Não");
   const [dimensions, setDimensions] = useState({ w: "", h: "", d: "" });
@@ -181,7 +190,7 @@ export function Machines() {
 
     setHasSewage(machine.has_sewage || false);
     setReservoirCount(machine.reservoir_count || 0);
-    setExtraReservoirCapacity(machine.extra_reservoir_capacity || ""); // <--- Carrega capacidade
+    setExtraReservoirCapacity(machine.extra_reservoir_capacity || "");
     setHasExtraReservoir((machine.reservoir_count || 0) > 0);
 
     if (machine.dimensions) {
@@ -191,7 +200,6 @@ export function Machines() {
       setDimensions({ w: "", h: "", d: "" });
     }
 
-    // NOVOS CAMPOS - CARREGAMENTO
     setWaterTankSize(machine.water_tank_size || "");
     setWeight(machine.weight || "");
     setEnvironmentRecommendation(machine.environment_recommendation || "");
@@ -244,12 +252,11 @@ export function Machines() {
         color,
         has_sewage: hasSewage,
         reservoir_count: finalReservoirCount,
-        extra_reservoir_capacity: finalExtraCapacity, // <--- Salva capacidade
+        extra_reservoir_capacity: finalExtraCapacity,
         has_steamer: hasSteamer,
         dimensions: dimString,
         patrimony,
         serial_number: serialNumber,
-        // NOVOS CAMPOS - PAYLOAD
         water_tank_size: waterTankSize,
         weight: weight,
         environment_recommendation: environmentRecommendation,
@@ -334,7 +341,6 @@ export function Machines() {
     setReservoirCount(0);
     setExtraReservoirCapacity("");
     setHasExtraReservoir(true);
-    // Reset Novos Campos
     setWaterTankSize("");
     setWeight("");
     setEnvironmentRecommendation("");
@@ -654,7 +660,6 @@ export function Machines() {
                   <Zap size={14} /> Especificações Técnicas
                 </h3>
 
-                {/* --- DETALHES ADICIONAIS GERAIS (NOVO) --- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-blue-50 p-4 rounded-xl border border-blue-100 mb-4">
                   <div>
                     <label className="block text-xs font-bold text-blue-800 uppercase mb-1 flex items-center gap-1">
@@ -682,61 +687,64 @@ export function Machines() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
-                      <Droplet size={12} className="inline" /> Abastecimento
-                    </label>
-                    <div className="flex gap-2">
-                      {["Reservatório", "Rede Hídrica"].map((opt) => (
+                {/* ABASTECIMENTO E ESGOTO (ESCONDE PARA COADO) */}
+                {type !== "Coado" && (
+                  <div className="grid grid-cols-2 gap-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                        <Droplet size={12} className="inline" /> Abastecimento
+                      </label>
+                      <div className="flex gap-2">
+                        {["Reservatório", "Rede Hídrica"].map((opt) => (
+                          <label
+                            key={opt}
+                            className={`cursor-pointer px-3 py-2 rounded-lg text-xs font-bold border transition-all ${waterSystem === opt ? "bg-blue-500 text-white border-blue-500" : "bg-white border-gray-200 text-gray-500"}`}
+                          >
+                            <input
+                              type="radio"
+                              className="hidden"
+                              checked={waterSystem === opt}
+                              onChange={() => setWaterSystem(opt)}
+                            />
+                            {opt === "Reservatório" ? "Tanque" : "Rede"}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                        Rede de Esgoto
+                      </label>
+                      <div className="flex gap-2">
                         <label
-                          key={opt}
-                          className={`cursor-pointer px-3 py-2 rounded-lg text-xs font-bold border transition-all ${waterSystem === opt ? "bg-blue-500 text-white border-blue-500" : "bg-white border-gray-200 text-gray-500"}`}
+                          className={`cursor-pointer px-3 py-2 rounded-lg text-xs font-bold border transition-all ${hasSewage ? "bg-green-500 text-white border-green-500" : "bg-white border-gray-200 text-gray-500"}`}
                         >
                           <input
                             type="radio"
                             className="hidden"
-                            checked={waterSystem === opt}
-                            onChange={() => setWaterSystem(opt)}
-                          />
-                          {opt === "Reservatório" ? "Tanque" : "Rede"}
+                            checked={hasSewage}
+                            onChange={() => setHasSewage(true)}
+                          />{" "}
+                          Sim
                         </label>
-                      ))}
+                        <label
+                          className={`cursor-pointer px-3 py-2 rounded-lg text-xs font-bold border transition-all ${!hasSewage ? "bg-gray-500 text-white border-gray-500" : "bg-white border-gray-200 text-gray-500"}`}
+                        >
+                          <input
+                            type="radio"
+                            className="hidden"
+                            checked={!hasSewage}
+                            onChange={() => setHasSewage(false)}
+                          />{" "}
+                          Não
+                        </label>
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
-                      Rede de Esgoto
-                    </label>
-                    <div className="flex gap-2">
-                      <label
-                        className={`cursor-pointer px-3 py-2 rounded-lg text-xs font-bold border transition-all ${hasSewage ? "bg-green-500 text-white border-green-500" : "bg-white border-gray-200 text-gray-500"}`}
-                      >
-                        <input
-                          type="radio"
-                          className="hidden"
-                          checked={hasSewage}
-                          onChange={() => setHasSewage(true)}
-                        />{" "}
-                        Sim
-                      </label>
-                      <label
-                        className={`cursor-pointer px-3 py-2 rounded-lg text-xs font-bold border transition-all ${!hasSewage ? "bg-gray-500 text-white border-gray-500" : "bg-white border-gray-200 text-gray-500"}`}
-                      >
-                        <input
-                          type="radio"
-                          className="hidden"
-                          checked={!hasSewage}
-                          onChange={() => setHasSewage(false)}
-                        />{" "}
-                        Não
-                      </label>
-                    </div>
-                  </div>
-                </div>
+                )}
 
-                {/* CAMPO CONDICIONAL: Tamanho do Reservatório */}
-                {waterSystem === "Reservatório" && (
+                {/* TANQUE DE ÁGUA (SÓ SE FOR RESERVATÓRIO E NÃO FOR COADO) */}
+                {type !== "Coado" && waterSystem === "Reservatório" && (
                   <div className="animate-fade-in bg-blue-50 p-4 rounded-xl border border-blue-100">
                     <label className="block text-xs font-bold text-blue-800 uppercase mb-1">
                       Tamanho do Tanque de Água

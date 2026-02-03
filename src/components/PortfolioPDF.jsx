@@ -19,7 +19,7 @@ Font.register({
 const styles = StyleSheet.create({
   page: {
     paddingTop: 30,
-    paddingBottom: 100,
+    paddingBottom: 120,
     paddingHorizontal: 30,
     fontFamily: "Helvetica",
     backgroundColor: "#F9FAFB",
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontFamily: "Helvetica-Bold",
     color: "#1F2937",
-    marginBottom: 8, // <--- AJUSTE 1: Aumentei de 2 para 8 (Espaço entre Nome e Modelo)
+    marginBottom: 8,
     lineHeight: 1,
   },
   subtitle: {
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: "#F3F4F6",
     paddingBottom: 2,
-    paddingRight: 15, // <--- AJUSTE 2: Adicionei espaçamento à direita para não colar na coluna vizinha
+    paddingRight: 15,
   },
   specLabel: {
     width: "40%",
@@ -345,10 +345,16 @@ export function PortfolioPDF({ data }) {
               { l: "Ambiente", v: m.environment_recommendation },
               { l: "Peso", v: m.weight },
               { l: "Dimensões", v: m.dimensions || "-" },
-              { l: "Abastecimento", v: m.water_system },
+              // REMOVIDO DAQUI E COLOCADO NO CONCAT ABAIXO
             ]
+              // SÓ MOSTRA ABASTECIMENTO SE NÃO FOR COADO
               .concat(
-                m.water_system === "Reservatório"
+                m.type !== "Coado"
+                  ? [{ l: "Abastecimento", v: m.water_system }]
+                  : [],
+              )
+              .concat(
+                m.type !== "Coado" && m.water_system === "Reservatório"
                   ? [{ l: "Tanque Água", v: m.water_tank_size }]
                   : [],
               )
@@ -401,10 +407,10 @@ export function PortfolioPDF({ data }) {
                   : [],
               )
               .concat([
-                {
-                  l: "Esgoto",
-                  v: m.has_sewage ? "Sim" : "Não",
-                },
+                // SÓ MOSTRA ESGOTO SE NÃO FOR COADO
+                ...(m.type !== "Coado"
+                  ? [{ l: "Esgoto", v: m.has_sewage ? "Sim" : "Não" }]
+                  : []),
                 { l: "Amperagem", v: m.amperage || "10A" },
               ])
               .map((item, i) =>
@@ -417,7 +423,7 @@ export function PortfolioPDF({ data }) {
               )}
           </View>
 
-          {/* OBSERVAÇÕES - Agora com quebra de página automática se necessário */}
+          {/* OBSERVAÇÕES */}
           {data.obs && (
             <View style={styles.obsBox} wrap={false}>
               <Text style={styles.obsTitle}>Observações Importantes</Text>

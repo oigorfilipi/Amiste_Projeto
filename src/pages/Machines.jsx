@@ -9,7 +9,7 @@ import {
   Save,
   X,
   Trash2,
-  Edit2, // <--- Usado para editar o modelo
+  Edit2,
   Zap,
   Droplet,
   Ruler,
@@ -29,10 +29,9 @@ import {
   Layers,
   ChevronDown,
   ChevronUp,
-  RotateCcw, // <--- Ícone para cancelar edição
+  RotateCcw,
 } from "lucide-react";
 
-// ... (CONSTANTES MODEL_OPTIONS, BRAND_OPTIONS, TYPE_OPTIONS mantêm iguais)
 const MODEL_OPTIONS = [
   "Iper Automática",
   "Kalerm 1602",
@@ -50,7 +49,7 @@ const BRAND_OPTIONS = [
   "Bunn",
   "Fetco",
   "Fiorenzato",
-  "Marchesoni",
+  "Macap",
 ];
 const TYPE_OPTIONS = [
   "Multibebidas",
@@ -92,11 +91,9 @@ export function Machines() {
   // --- LÓGICA DE MODELOS MÚLTIPLOS ---
   const [hasVariations, setHasVariations] = useState(false);
   const [modelsList, setModelsList] = useState([]);
-
-  // NOVO: Estado para saber qual índice da lista estamos editando (null = criando novo)
   const [editingModelIndex, setEditingModelIndex] = useState(null);
 
-  // Estado temporário do modelo
+  // Estado temporário do modelo (Variação)
   const [tempModel, setTempModel] = useState({
     name: "",
     photo_url: "",
@@ -105,7 +102,7 @@ export function Machines() {
     weight: "",
     dimensions: "",
     amperage: "",
-    water_system: "",
+    water_system: "", // <--- Aqui é propriedade do objeto, então snake_case no objeto é ok, mas no input usamos tempModel.water_system
     cups_capacity: "",
     filter_type: "",
     dregs_capacity: "",
@@ -117,9 +114,9 @@ export function Machines() {
     extra_reservoir_capacity: "",
   });
 
-  // --- TÉCNICOS (Usado se NÃO tiver variações OU como padrão do pai) ---
+  // --- TÉCNICOS (Estado do PAI / Padrão) ---
   const [voltage, setVoltage] = useState("220v");
-  const [waterSystem, setWaterSystem] = useState("Reservatório");
+  const [waterSystem, setWaterSystem] = useState("Reservatório"); // <--- AQUI É A VARIÁVEL DE ESTADO (CamelCase)
   const [amperage, setAmperage] = useState("10A");
   const [color, setColor] = useState("Preto");
   const [waterTankSize, setWaterTankSize] = useState("");
@@ -162,7 +159,6 @@ export function Machines() {
     }
   }
 
-  // ... (handleImageUpload e handlePatrimonyChange iguais) ...
   async function handleImageUpload(e) {
     try {
       setUploading(true);
@@ -187,9 +183,7 @@ export function Machines() {
   const handlePatrimonyChange = (e) =>
     setPatrimony(e.target.value.replace(/\D/g, ""));
 
-  // --- NOVAS FUNÇÕES DE GERENCIAMENTO DE MODELOS ---
-
-  // 1. Salvar (Criar ou Atualizar)
+  // --- FUNÇÕES DE MODELOS ---
   function handleSaveModel() {
     if (!tempModel.name)
       return alert("Dê um nome para o modelo (ex: 15 Litros)");
@@ -197,17 +191,14 @@ export function Machines() {
     const newList = [...modelsList];
 
     if (editingModelIndex !== null) {
-      // MODO EDIÇÃO: Atualiza o item existente
       newList[editingModelIndex] = { ...tempModel };
-      setEditingModelIndex(null); // Sai do modo edição
+      setEditingModelIndex(null);
     } else {
-      // MODO CRIAÇÃO: Adiciona novo
       newList.push({ ...tempModel });
     }
 
     setModelsList(newList);
 
-    // Limpa o formulário temporário
     setTempModel({
       name: "",
       photo_url: "",
@@ -229,13 +220,11 @@ export function Machines() {
     });
   }
 
-  // 2. Editar (Carrega dados no form)
   function handleEditModel(index) {
     setTempModel(modelsList[index]);
     setEditingModelIndex(index);
   }
 
-  // 3. Cancelar Edição
   function handleCancelEditModel() {
     setEditingModelIndex(null);
     setTempModel({
@@ -259,14 +248,11 @@ export function Machines() {
     });
   }
 
-  // 4. Remover
   function removeModel(index) {
     if (confirm("Remover este modelo da lista?")) {
       const newList = [...modelsList];
       newList.splice(index, 1);
       setModelsList(newList);
-
-      // Se estava editando esse, cancela a edição
       if (editingModelIndex === index) {
         handleCancelEditModel();
       }
@@ -285,13 +271,11 @@ export function Machines() {
     setPatrimony(machine.patrimony || "");
     setSerialNumber(machine.serial_number || "");
 
-    // Carregar Modelos
     const loadedModels = machine.models || [];
     setModelsList(loadedModels);
     setHasVariations(loadedModels.length > 0);
-    setEditingModelIndex(null); // Reseta edição de modelo
+    setEditingModelIndex(null);
 
-    // Dropdowns (mantém igual)
     if (MODEL_OPTIONS.includes(machine.model)) {
       setModel(machine.model);
       setCustomModel("");
@@ -314,7 +298,6 @@ export function Machines() {
       setCustomType(machine.type);
     }
 
-    // Carregar Dados Únicos (Pai)
     setVoltage(machine.voltage || "220v");
     setWaterSystem(machine.water_system || "Reservatório");
     setAmperage(machine.amperage || "10A");
@@ -363,7 +346,6 @@ export function Machines() {
       const finalModel = model === "Outro" ? customModel : model;
       const finalBrand = brand === "Outro" ? customBrand : brand;
       const finalType = type === "Outro" ? customType : type;
-
       const dimString = `${dimensions.w}x${dimensions.h}x${dimensions.d}`;
 
       const finalReservoirCount = hasExtraReservoir
@@ -390,13 +372,11 @@ export function Machines() {
         patrimony,
         serial_number: serialNumber,
         environment_recommendation: environmentRecommendation,
-
-        // Se tiver variação, salva a lista. Se não, salva vazio.
         models: hasVariations ? modelsList : [],
 
-        // Salva os dados do pai sempre (servem como default ou fallback)
+        // Dados do pai
         voltage,
-        water_system,
+        water_system: waterSystem, // Aqui usa a variável de estado waterSystem
         amperage,
         dimensions: dimString,
         weight,
@@ -435,7 +415,6 @@ export function Machines() {
     }
   }
 
-  // ... (handleDelete e handleOpenConfigs iguais) ...
   async function handleDelete(id, e) {
     e.stopPropagation();
     if (!permissions.canManageMachines) return alert("Sem permissão.");
@@ -477,7 +456,7 @@ export function Machines() {
     setCustomType("");
     setHasVariations(false);
     setModelsList([]);
-    setEditingModelIndex(null); // Reset
+    setEditingModelIndex(null);
     setVoltage("220v");
     setWaterSystem("Reservatório");
     setAmperage("10A");
@@ -513,7 +492,6 @@ export function Machines() {
 
   return (
     <div className="min-h-screen pb-20 animate-fade-in">
-      {/* ... (HEADER e CONTEÚDO IGUAIS - sem alterações) ... */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-display font-bold text-gray-800">
@@ -639,11 +617,9 @@ export function Machines() {
         </div>
       )}
 
-      {/* --- MODAL --- */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-            {/* Header Modal */}
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center z-10">
               <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                 {editingId ? (
@@ -662,14 +638,12 @@ export function Machines() {
             </div>
 
             <form onSubmit={handleSave} className="p-6 md:p-8 space-y-8">
-              {/* Identificação */}
+              {/* Identificação Padrão (Pai) */}
               <section className="space-y-4">
                 <h3 className="text-xs uppercase font-bold text-gray-400 tracking-wider mb-4 flex items-center gap-2">
                   <ImageIcon size={14} /> Identificação Principal
                 </h3>
-                {/* ... Campos de Identificação (Nome, Descrição, Foto Principal, Video Principal, Marca, Tipo) ... */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* ... (Mesmo código de identificação que já existia) ... */}
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Nome Comercial *
@@ -721,13 +695,20 @@ export function Machines() {
                           placeholder="https://..."
                         />
                       ) : (
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          disabled={uploading}
-                          className="w-full p-2 border border-gray-200 rounded-xl text-sm bg-white"
-                        />
+                        <div className="relative w-full">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            disabled={uploading}
+                            className="w-full p-2 border border-gray-200 rounded-xl text-sm bg-white"
+                          />
+                          {uploading && (
+                            <div className="absolute right-3 top-2.5 text-xs text-blue-600 font-bold animate-pulse">
+                              Enviando...
+                            </div>
+                          )}
+                        </div>
                       )}
                       {photoUrl && (
                         <div className="w-12 h-12 bg-white border rounded-lg p-1">
@@ -831,14 +812,13 @@ export function Machines() {
                 </label>
               </div>
 
-              {/* --- MODO MULTI-MODELOS --- */}
               {hasVariations ? (
+                // --- MODO MULTI-MODELOS ---
                 <section className="space-y-4 animate-fade-in">
                   <h3 className="text-xs uppercase font-bold text-gray-400 tracking-wider mb-4 flex items-center gap-2">
                     <Layers size={14} /> Gerenciar Modelos
                   </h3>
 
-                  {/* Lista de Modelos Existentes */}
                   {modelsList.length > 0 && (
                     <div className="space-y-2 mb-6">
                       {modelsList.map((m, idx) => (
@@ -847,7 +827,6 @@ export function Machines() {
                           className={`flex items-center justify-between p-3 border rounded-xl ${editingModelIndex === idx ? "bg-purple-50 border-purple-200 ring-1 ring-purple-200" : "bg-gray-50 border-gray-200"}`}
                         >
                           <div className="flex items-center gap-3">
-                            {/* Mostra mini foto se tiver */}
                             {m.photo_url && (
                               <img
                                 src={m.photo_url}
@@ -886,7 +865,6 @@ export function Machines() {
                     </div>
                   )}
 
-                  {/* Form para Adicionar/Editar Modelo */}
                   <div
                     className={`p-4 rounded-xl border transition-all ${editingModelIndex !== null ? "bg-purple-50 border-purple-200 ring-2 ring-purple-100" : "bg-gray-50 border-gray-200"}`}
                   >
@@ -910,7 +888,6 @@ export function Machines() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Básico do Modelo */}
                       <div className="md:col-span-2">
                         <label className="block text-[10px] text-gray-500 font-bold uppercase mb-1">
                           Nome do Modelo
@@ -925,7 +902,6 @@ export function Machines() {
                         />
                       </div>
 
-                      {/* Mídia Específica */}
                       <div>
                         <label className="block text-[10px] text-gray-500 font-bold uppercase mb-1">
                           Foto Específica (URL)
@@ -959,7 +935,6 @@ export function Machines() {
                         />
                       </div>
 
-                      {/* Specs Técnicas */}
                       <div className="h-px bg-gray-200 md:col-span-2 my-2"></div>
                       <p className="md:col-span-2 text-xs text-gray-400 italic">
                         Campos técnicos (Deixe vazio para herdar do Pai)
@@ -996,7 +971,31 @@ export function Machines() {
                         }
                       />
 
-                      {/* Campos Condicionais */}
+                      {/* CONDICIONAL: SE NÃO FOR COADO E NÃO FOR MOEDOR, MOSTRA ABASTECIMENTO */}
+                      {type !== "Coado" && type !== "Moedor" && (
+                        <div className="md:col-span-2">
+                          <label className="block text-[10px] text-gray-500 font-bold uppercase mb-1">
+                            Sistema de Abastecimento
+                          </label>
+                          <select
+                            className="w-full p-2 border rounded-lg text-sm bg-white"
+                            value={tempModel.water_system}
+                            onChange={(e) =>
+                              setTempModel({
+                                ...tempModel,
+                                water_system: e.target.value,
+                              })
+                            }
+                          >
+                            <option value="">
+                              Padrão do Pai ({waterSystem})
+                            </option>
+                            <option value="Reservatório">Somente Tanque</option>
+                            <option value="Rede Hídrica">Somente Rede</option>
+                          </select>
+                        </div>
+                      )}
+
                       {(type === "Coado" || type === "Moedor") && (
                         <input
                           className="w-full p-2 border rounded-lg text-sm"
@@ -1072,13 +1071,12 @@ export function Machines() {
                   </div>
                 </section>
               ) : (
-                // --- MODO ÚNICO (PADRÃO - Exibe todos os inputs normais) ---
+                // --- MODO ÚNICO ---
                 <section className="space-y-4 animate-fade-in">
                   <h3 className="text-xs uppercase font-bold text-gray-400 tracking-wider mb-4 flex items-center gap-2">
                     <Zap size={14} /> Especificações Técnicas (Padrão)
                   </h3>
-                  {/* ... (AQUI VAI AQUELE BLOCO GIGANTE DE INPUTS TÉCNICOS QUE JÁ TINHAMOS) ... */}
-                  {/* Vou omitir aqui para economizar espaço na resposta, mas você mantém o bloco 'else' do código anterior, com Weight, Voltage, etc */}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-blue-50 p-4 rounded-xl border border-blue-100 mb-4">
                     <div>
                       <label className="block text-xs font-bold text-blue-800 uppercase mb-1 flex items-center gap-1">
@@ -1097,7 +1095,7 @@ export function Machines() {
                       </label>
                       <input
                         className="w-full p-2 border border-blue-200 rounded-lg text-sm bg-white"
-                        placeholder="Ex: Escritórios..."
+                        placeholder="Ex: Escritórios, Padarias..."
                         value={environmentRecommendation}
                         onChange={(e) =>
                           setEnvironmentRecommendation(e.target.value)
@@ -1106,7 +1104,6 @@ export function Machines() {
                     </div>
                   </div>
 
-                  {/* ... ABASTECIMENTO ... */}
                   {type !== "Coado" && type !== "Moedor" && (
                     <div className="grid grid-cols-2 gap-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
                       <div>
@@ -1162,7 +1159,6 @@ export function Machines() {
                     </div>
                   )}
 
-                  {/* ... TANQUE ... */}
                   {type !== "Coado" &&
                     type !== "Moedor" &&
                     waterSystem === "Reservatório" && (
@@ -1179,7 +1175,6 @@ export function Machines() {
                       </div>
                     )}
 
-                  {/* ... TIPO PROFISSIONAL ... */}
                   {type === "Profissional" && (
                     <div className="animate-fade-in bg-purple-50 p-4 rounded-xl border border-purple-100 grid grid-cols-2 gap-4">
                       <div>
@@ -1209,7 +1204,6 @@ export function Machines() {
                     </div>
                   )}
 
-                  {/* ... TIPO MULTIBEBIDAS ... */}
                   {type === "Multibebidas" && (
                     <div className="animate-fade-in bg-indigo-50 p-4 rounded-xl border border-indigo-100 grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -1237,7 +1231,6 @@ export function Machines() {
                     </div>
                   )}
 
-                  {/* ... TIPO SNACKS ... */}
                   {(type === "Snacks" || type === "Vending") && (
                     <div className="animate-fade-in bg-pink-50 p-4 rounded-xl border border-pink-100 grid grid-cols-2 gap-4">
                       <div>
@@ -1267,7 +1260,6 @@ export function Machines() {
                     </div>
                   )}
 
-                  {/* ... TIPO GRÃOS ... */}
                   {type === "Café em Grãos" && (
                     <div className="animate-fade-in bg-amber-50 p-4 rounded-xl border border-amber-100 space-y-4">
                       <label className="flex items-center gap-3 cursor-pointer">
@@ -1297,7 +1289,6 @@ export function Machines() {
                     </div>
                   )}
 
-                  {/* ... TIPO COADO ... */}
                   {type === "Coado" && (
                     <div className="animate-fade-in bg-orange-50 p-4 rounded-xl border border-orange-100 grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -1325,7 +1316,6 @@ export function Machines() {
                     </div>
                   )}
 
-                  {/* ... RESERVATÓRIOS ... */}
                   <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
                     {type === "Moedor" ? (
                       <div className="animate-fade-in">
@@ -1401,7 +1391,6 @@ export function Machines() {
                     )}
                   </div>
 
-                  {/* ... VOLTAGEM, AMPERAGEM, DIMENSÕES ... */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
                       <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
@@ -1473,7 +1462,6 @@ export function Machines() {
                     </div>
                   </div>
 
-                  {/* ... SERIE E PATRIMONIO ... */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-bold text-gray-500 uppercase mb-1">

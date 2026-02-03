@@ -297,6 +297,7 @@ export function PortfolioPDF({ data }) {
           {/* HERO SECTION */}
           <View style={styles.heroSection}>
             <View style={styles.imageContainer}>
+              {/* LÓGICA ATUALIZADA: Se tiver Base64, usa ele. Se não, tenta a URL normal. */}
               {data.machine_image_base64 ? (
                 <Image src={data.machine_image_base64} style={styles.image} />
               ) : m.photo_url ? (
@@ -401,6 +402,11 @@ export function PortfolioPDF({ data }) {
                       {
                         l: "Simultâneo",
                         v: m.simultaneous_dispenser ? "Sim" : "Não",
+                      },
+                      // ADICIONEI O CAMPO DE BORRAS AQUI
+                      {
+                        l: "Cap. Borras",
+                        v: m.dregs_capacity,
                       },
                     ]
                   : [],

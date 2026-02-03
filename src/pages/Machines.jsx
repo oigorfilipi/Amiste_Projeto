@@ -22,8 +22,9 @@ import {
   Coffee,
   Scale,
   MapPin,
-  Filter, // Ícone para o filtro
-  Clock, // Ícone para capacidade/tempo
+  Filter,
+  Clock,
+  Trash, // <--- Novo ícone para Borras
 } from "lucide-react";
 
 const MODEL_OPTIONS = [
@@ -40,7 +41,7 @@ const BRAND_OPTIONS = [
   "Kalerm",
   "Spidem",
   "Impomac",
-  "Bunn", // Adicionei marcas comuns de coado
+  "Bunn",
   "Fetco",
 ];
 const TYPE_OPTIONS = [
@@ -94,12 +95,13 @@ export function Machines() {
   const [drinkCombinations, setDrinkCombinations] = useState("");
   const [doseAutonomy, setDoseAutonomy] = useState("");
   const [simultaneousDispenser, setSimultaneousDispenser] = useState(false);
+  const [dregsCapacity, setDregsCapacity] = useState(""); // <--- NOVO (Borras)
   const [trayCount, setTrayCount] = useState("");
   const [selectionCount, setSelectionCount] = useState("");
 
-  // CAMPOS PARA COADO (NOVOS)
-  const [cupsCapacity, setCupsCapacity] = useState(""); // Ex: 100/hora
-  const [filterType, setFilterType] = useState(""); // Ex: Papel
+  // CAMPOS PARA COADO
+  const [cupsCapacity, setCupsCapacity] = useState("");
+  const [filterType, setFilterType] = useState("");
 
   // CAMPOS TÉCNICOS ANTERIORES
   const [hasSewage, setHasSewage] = useState(false);
@@ -215,10 +217,10 @@ export function Machines() {
     setDrinkCombinations(machine.drink_combinations || "");
     setDoseAutonomy(machine.dose_autonomy || "");
     setSimultaneousDispenser(machine.simultaneous_dispenser || false);
+    setDregsCapacity(machine.dregs_capacity || ""); // <--- Carregar Borras
     setTrayCount(machine.tray_count || "");
     setSelectionCount(machine.selection_count || "");
 
-    // CARREGAR COADO
     setCupsCapacity(machine.cups_capacity || "");
     setFilterType(machine.filter_type || "");
 
@@ -276,9 +278,9 @@ export function Machines() {
         drink_combinations: drinkCombinations,
         dose_autonomy: doseAutonomy,
         simultaneous_dispenser: simultaneousDispenser,
+        dregs_capacity: dregsCapacity, // <--- Salvar Borras
         tray_count: trayCount,
         selection_count: selectionCount,
-        // SALVAR COADO
         cups_capacity: cupsCapacity,
         filter_type: filterType,
       };
@@ -363,9 +365,9 @@ export function Machines() {
     setDrinkCombinations("");
     setDoseAutonomy("");
     setSimultaneousDispenser(false);
+    setDregsCapacity(""); // <--- Resetar Borras
     setTrayCount("");
     setSelectionCount("");
-    // RESETAR COADO
     setCupsCapacity("");
     setFilterType("");
   }
@@ -867,7 +869,7 @@ export function Machines() {
 
                 {/* TIPO: CAFÉ EM GRÃOS */}
                 {type === "Café em Grãos" && (
-                  <div className="animate-fade-in bg-amber-50 p-4 rounded-xl border border-amber-100">
+                  <div className="animate-fade-in bg-amber-50 p-4 rounded-xl border border-amber-100 space-y-4">
                     <label className="flex items-center gap-3 cursor-pointer">
                       <input
                         type="checkbox"
@@ -881,6 +883,19 @@ export function Machines() {
                         Dispensador Simultâneo (2 cafés ao mesmo tempo)
                       </span>
                     </label>
+
+                    {/* NOVO: CAMPO DE CAPACIDADE DE BORRAS */}
+                    <div>
+                      <label className="block text-xs font-bold text-amber-800 uppercase mb-1 flex items-center gap-1">
+                        <Trash size={12} /> Capacidade de Borras
+                      </label>
+                      <input
+                        className="w-full p-2 border border-amber-200 rounded-lg text-sm bg-white"
+                        placeholder="Ex: 15 borras / 1kg"
+                        value={dregsCapacity}
+                        onChange={(e) => setDregsCapacity(e.target.value)}
+                      />
+                    </div>
                   </div>
                 )}
 

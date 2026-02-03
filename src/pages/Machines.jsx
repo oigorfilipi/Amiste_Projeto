@@ -102,7 +102,7 @@ export function Machines() {
     weight: "",
     dimensions: "",
     amperage: "",
-    water_system: "", // <--- Aqui é propriedade do objeto, então snake_case no objeto é ok, mas no input usamos tempModel.water_system
+    water_system: "",
     cups_capacity: "",
     filter_type: "",
     dregs_capacity: "",
@@ -116,7 +116,7 @@ export function Machines() {
 
   // --- TÉCNICOS (Estado do PAI / Padrão) ---
   const [voltage, setVoltage] = useState("220v");
-  const [waterSystem, setWaterSystem] = useState("Reservatório"); // <--- AQUI É A VARIÁVEL DE ESTADO (CamelCase)
+  const [waterSystem, setWaterSystem] = useState("Reservatório");
   const [amperage, setAmperage] = useState("10A");
   const [color, setColor] = useState("Preto");
   const [waterTankSize, setWaterTankSize] = useState("");
@@ -374,23 +374,24 @@ export function Machines() {
         environment_recommendation: environmentRecommendation,
         models: hasVariations ? modelsList : [],
 
-        // Dados do pai
-        voltage,
-        water_system: waterSystem, // Aqui usa a variável de estado waterSystem
-        amperage,
+        // --- CORREÇÃO AQUI: Mapeando nome_banco: variavelEstado ---
+        voltage: voltage,
+        water_system: waterSystem,
+        amperage: amperage,
         dimensions: dimString,
-        weight,
-        water_tank_size,
-        extraction_cups,
-        extraction_nozzles,
-        drink_combinations,
-        dose_autonomy,
-        simultaneous_dispenser,
-        dregs_capacity,
-        tray_count,
-        selection_count,
-        cups_capacity,
-        filter_type,
+        weight: weight,
+
+        water_tank_size: waterTankSize,
+        extraction_cups: extractionCups,
+        extraction_nozzles: extractionNozzles,
+        drink_combinations: drinkCombinations,
+        dose_autonomy: doseAutonomy,
+        simultaneous_dispenser: simultaneousDispenser,
+        dregs_capacity: dregsCapacity,
+        tray_count: trayCount,
+        selection_count: selectionCount,
+        cups_capacity: cupsCapacity,
+        filter_type: filterType,
       };
 
       if (editingId) {
@@ -415,6 +416,7 @@ export function Machines() {
     }
   }
 
+  // ... (handleDelete, handleOpenConfigs, resetForm e Render são iguais ao anterior, vou manter a estrutura)
   async function handleDelete(id, e) {
     e.stopPropagation();
     if (!permissions.canManageMachines) return alert("Sem permissão.");
@@ -492,6 +494,8 @@ export function Machines() {
 
   return (
     <div className="min-h-screen pb-20 animate-fade-in">
+      {/* ... (Todo o JSX de Renderização permanece igual ao que já estava funcionando) ... */}
+      {/* Vou colocar apenas o return para garantir que o arquivo esteja completo */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-display font-bold text-gray-800">
@@ -979,7 +983,7 @@ export function Machines() {
                           </label>
                           <select
                             className="w-full p-2 border rounded-lg text-sm bg-white"
-                            value={tempModel.water_system}
+                            value={tempModel.water_system || ""}
                             onChange={(e) =>
                               setTempModel({
                                 ...tempModel,
@@ -1004,7 +1008,7 @@ export function Machines() {
                               ? "Capacidade Cúpula"
                               : "Capacidade (Xícaras)"
                           }
-                          value={tempModel.cups_capacity}
+                          value={tempModel.cups_capacity || ""}
                           onChange={(e) =>
                             setTempModel({
                               ...tempModel,
@@ -1017,7 +1021,7 @@ export function Machines() {
                         <input
                           className="w-full p-2 border rounded-lg text-sm"
                           placeholder="Tipo de Filtro"
-                          value={tempModel.filter_type}
+                          value={tempModel.filter_type || ""}
                           onChange={(e) =>
                             setTempModel({
                               ...tempModel,
@@ -1030,7 +1034,7 @@ export function Machines() {
                         <input
                           className="w-full p-2 border rounded-lg text-sm"
                           placeholder="Capacidade Borras"
-                          value={tempModel.dregs_capacity}
+                          value={tempModel.dregs_capacity || ""}
                           onChange={(e) =>
                             setTempModel({
                               ...tempModel,
@@ -1043,7 +1047,7 @@ export function Machines() {
                         <input
                           className="w-full p-2 border rounded-lg text-sm"
                           placeholder="Tanque de Água (Litros)"
-                          value={tempModel.water_tank_size}
+                          value={tempModel.water_tank_size || ""}
                           onChange={(e) =>
                             setTempModel({
                               ...tempModel,

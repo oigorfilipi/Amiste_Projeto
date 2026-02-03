@@ -59,14 +59,26 @@ export function Portfolio() {
   // Conversão de Imagem para Base64 (Com Fix de CORS via Proxy)
   useEffect(() => {
     async function convertImage() {
-      if (selectedMachine?.photo_url) {
-        try {
-          const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(selectedMachine.photo_url)}`;
+      // Determina qual URL usar (Modelo ou Pai)
+      let urlToUse = selectedMachine?.photo_url;
 
+      // Se tem modelo selecionado e ele tem foto específica, usa a do modelo
+      if (
+        selectedMachine &&
+        selectedModelIndex !== "" &&
+        selectedMachine.models &&
+        selectedMachine.models[selectedModelIndex]
+      ) {
+        const model = selectedMachine.models[selectedModelIndex];
+        if (model.photo_url) urlToUse = model.photo_url;
+      }
+
+      if (urlToUse) {
+        try {
+          const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(urlToUse)}`;
           const response = await fetch(proxyUrl);
           const blob = await response.blob();
           const reader = new FileReader();
-
           reader.onloadend = () => {
             setMachineImageBase64(reader.result);
           };
@@ -80,7 +92,7 @@ export function Portfolio() {
       }
     }
     convertImage();
-  }, [selectedMachine]);
+  }, [selectedMachine, selectedModelIndex]);
 
   useEffect(() => {
     if (totalValue > 0 && installments > 0) {
@@ -164,7 +176,6 @@ export function Portfolio() {
 
     let machineData = { ...selectedMachine };
 
-    // Se tiver modelo selecionado, sobrescreve os dados
     if (
       selectedModelIndex !== "" &&
       selectedMachine.models &&
@@ -172,31 +183,39 @@ export function Portfolio() {
     ) {
       const model = selectedMachine.models[selectedModelIndex];
 
-      // Sobrescreve nome (adiciona o modelo) e specs
+      // Nome Composto
       machineData.name = `${selectedMachine.name} - ${model.name}`;
-      machineData.voltage = model.voltage;
-      machineData.weight = model.weight;
-      machineData.dimensions = model.dimensions;
 
-      // Sobrescreve campos específicos se existirem no modelo
-      if (model.cups_capacity) machineData.cups_capacity = model.cups_capacity;
-      if (model.filter_type) machineData.filter_type = model.filter_type;
+      // Sobrescreve apenas se o modelo tiver valor (Herança)
+      if (model.photo_url) machineData.photo_url = model.photo_url;
+      if (model.video_url) machineData.video_url = model.video_url;
+      if (model.voltage) machineData.voltage = model.voltage;
+      if (model.weight) machineData.weight = model.weight;
+      if (model.dimensions) machineData.dimensions = model.dimensions;
       if (model.amperage) machineData.amperage = model.amperage;
       if (model.water_system) machineData.water_system = model.water_system;
-    }
 
+      // Específicos
+      if (model.water_tank_size)
+        machineData.water_tank_size = model.water_tank_size;
+      if (model.cups_capacity) machineData.cups_capacity = model.cups_capacity;
+      if (model.filter_type) machineData.filter_type = model.filter_type;
+      if (model.dregs_capacity)
+        machineData.dregs_capacity = model.dregs_capacity;
+      if (model.extra_reservoir_capacity)
+        machineData.extra_reservoir_capacity = model.extra_reservoir_capacity;
+    }
     return {
       machine_data: machineData,
-      machine_image_base64:
-        machineImageBase64 ||
-        (selectedMachine ? selectedMachine.photo_url : null),
+      // Envia a imagem já convertida (que o useEffect acima cuidou de pegar a certa)
+      machine_image_base64: machineImageBase64,
       customer_name: customerName,
       negotiation_type: negotiationType,
       total_value: parseFloat(totalValue),
       installments: parseInt(installments),
       installment_value: parseFloat(installmentValue),
       description: description,
-      video_url: videoUrl,
+      video_url: machineData.video_url || videoUrl, // Usa a do modelo se tiver, ou a digitada
       obs: obs,
     };
   }

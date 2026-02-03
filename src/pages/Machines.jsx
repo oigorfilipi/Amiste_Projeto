@@ -24,7 +24,7 @@ import {
   MapPin,
   Filter,
   Clock,
-  Trash, // <--- Novo ícone para Borras
+  Trash,
 } from "lucide-react";
 
 const MODEL_OPTIONS = [
@@ -43,7 +43,11 @@ const BRAND_OPTIONS = [
   "Impomac",
   "Bunn",
   "Fetco",
+  "Fiorenzato", // Marca comum de moedor
+  "Macap", // Marca comum de moedor
 ];
+
+// ADICIONADO "Moedor"
 const TYPE_OPTIONS = [
   "Multibebidas",
   "Café em Grãos",
@@ -51,6 +55,7 @@ const TYPE_OPTIONS = [
   "Vending",
   "Snacks",
   "Coado",
+  "Moedor",
 ];
 
 export function Machines() {
@@ -95,7 +100,7 @@ export function Machines() {
   const [drinkCombinations, setDrinkCombinations] = useState("");
   const [doseAutonomy, setDoseAutonomy] = useState("");
   const [simultaneousDispenser, setSimultaneousDispenser] = useState(false);
-  const [dregsCapacity, setDregsCapacity] = useState(""); // <--- NOVO (Borras)
+  const [dregsCapacity, setDregsCapacity] = useState("");
   const [trayCount, setTrayCount] = useState("");
   const [selectionCount, setSelectionCount] = useState("");
 
@@ -168,7 +173,6 @@ export function Machines() {
     setPatrimony(machine.patrimony || "");
     setSerialNumber(machine.serial_number || "");
 
-    // Dropdowns
     if (MODEL_OPTIONS.includes(machine.model)) {
       setModel(machine.model);
       setCustomModel("");
@@ -217,10 +221,9 @@ export function Machines() {
     setDrinkCombinations(machine.drink_combinations || "");
     setDoseAutonomy(machine.dose_autonomy || "");
     setSimultaneousDispenser(machine.simultaneous_dispenser || false);
-    setDregsCapacity(machine.dregs_capacity || ""); // <--- Carregar Borras
+    setDregsCapacity(machine.dregs_capacity || "");
     setTrayCount(machine.tray_count || "");
     setSelectionCount(machine.selection_count || "");
-
     setCupsCapacity(machine.cups_capacity || "");
     setFilterType(machine.filter_type || "");
 
@@ -278,7 +281,7 @@ export function Machines() {
         drink_combinations: drinkCombinations,
         dose_autonomy: doseAutonomy,
         simultaneous_dispenser: simultaneousDispenser,
-        dregs_capacity: dregsCapacity, // <--- Salvar Borras
+        dregs_capacity: dregsCapacity,
         tray_count: trayCount,
         selection_count: selectionCount,
         cups_capacity: cupsCapacity,
@@ -365,7 +368,7 @@ export function Machines() {
     setDrinkCombinations("");
     setDoseAutonomy("");
     setSimultaneousDispenser(false);
-    setDregsCapacity(""); // <--- Resetar Borras
+    setDregsCapacity("");
     setTrayCount("");
     setSelectionCount("");
     setCupsCapacity("");
@@ -706,8 +709,8 @@ export function Machines() {
                   </div>
                 </div>
 
-                {/* ABASTECIMENTO E ESGOTO (ESCONDE PARA COADO) */}
-                {type !== "Coado" && (
+                {/* ABASTECIMENTO E ESGOTO (ESCONDE PARA COADO E MOEDOR) */}
+                {type !== "Coado" && type !== "Moedor" && (
                   <div className="grid grid-cols-2 gap-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
                     <div>
                       <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
@@ -762,20 +765,22 @@ export function Machines() {
                   </div>
                 )}
 
-                {/* TANQUE DE ÁGUA (SÓ SE FOR RESERVATÓRIO E NÃO FOR COADO) */}
-                {type !== "Coado" && waterSystem === "Reservatório" && (
-                  <div className="animate-fade-in bg-blue-50 p-4 rounded-xl border border-blue-100">
-                    <label className="block text-xs font-bold text-blue-800 uppercase mb-1">
-                      Tamanho do Tanque de Água
-                    </label>
-                    <input
-                      className="w-full p-2 border border-blue-200 rounded-lg text-sm bg-white"
-                      placeholder="Ex: 4 Litros"
-                      value={waterTankSize}
-                      onChange={(e) => setWaterTankSize(e.target.value)}
-                    />
-                  </div>
-                )}
+                {/* TANQUE DE ÁGUA (SÓ SE FOR RESERVATÓRIO E NÃO FOR COADO/MOEDOR) */}
+                {type !== "Coado" &&
+                  type !== "Moedor" &&
+                  waterSystem === "Reservatório" && (
+                    <div className="animate-fade-in bg-blue-50 p-4 rounded-xl border border-blue-100">
+                      <label className="block text-xs font-bold text-blue-800 uppercase mb-1">
+                        Tamanho do Tanque de Água
+                      </label>
+                      <input
+                        className="w-full p-2 border border-blue-200 rounded-lg text-sm bg-white"
+                        placeholder="Ex: 4 Litros"
+                        value={waterTankSize}
+                        onChange={(e) => setWaterTankSize(e.target.value)}
+                      />
+                    </div>
+                  )}
 
                 {/* --- CAMPOS ESPECÍFICOS POR TIPO --- */}
 
@@ -884,7 +889,7 @@ export function Machines() {
                       </span>
                     </label>
 
-                    {/* NOVO: CAMPO DE CAPACIDADE DE BORRAS */}
+                    {/* CAMPO DE CAPACIDADE DE BORRAS */}
                     <div>
                       <label className="block text-xs font-bold text-amber-800 uppercase mb-1 flex items-center gap-1">
                         <Trash size={12} /> Capacidade de Borras
@@ -899,7 +904,7 @@ export function Machines() {
                   </div>
                 )}
 
-                {/* TIPO: COADO (NOVO) */}
+                {/* TIPO: COADO */}
                 {type === "Coado" && (
                   <div className="animate-fade-in bg-orange-50 p-4 rounded-xl border border-orange-100 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -929,55 +934,79 @@ export function Machines() {
 
                 {/* RESERVATÓRIOS DE INSUMOS (SOLÚVEIS/GRÃOS) */}
                 <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="text-xs font-bold text-orange-800 uppercase flex items-center gap-1">
-                      <Database size={12} /> Reservatórios de Insumos
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                  {type === "Moedor" ? (
+                    // LAYOUT ESPECIAL PARA MOEDOR (SÓ CAPACIDADE)
+                    <div className="animate-fade-in">
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-xs font-bold text-orange-800 uppercase flex items-center gap-1">
+                          <Database size={12} /> Capacidade da Cúpula (Grãos)
+                        </label>
+                      </div>
                       <input
-                        type="checkbox"
-                        className="w-4 h-4 text-amiste-primary rounded"
-                        checked={!hasExtraReservoir}
+                        className="w-full p-2 border border-orange-200 rounded-lg text-sm"
+                        placeholder="Ex: 1.5kg"
+                        value={extraReservoirCapacity}
                         onChange={(e) =>
-                          setHasExtraReservoir(!e.target.checked)
+                          setExtraReservoirCapacity(e.target.value)
                         }
                       />
-                      <span className="text-xs text-orange-700 font-medium">
-                        Não possui reservatórios extras
-                      </span>
-                    </label>
-                  </div>
-
-                  {hasExtraReservoir && (
-                    <div className="animate-fade-in space-y-3">
-                      <div>
-                        <label className="block text-[10px] text-orange-600 font-bold mb-1">
-                          Quantidade de Reservatórios
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="10"
-                          className="w-full p-2 border border-orange-200 rounded-lg text-sm"
-                          placeholder="Quantidade (ex: 3)"
-                          value={reservoirCount}
-                          onChange={(e) => setReservoirCount(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] text-orange-600 font-bold mb-1">
-                          Capacidade por Reservatório
-                        </label>
-                        <input
-                          className="w-full p-2 border border-orange-200 rounded-lg text-sm"
-                          placeholder="Ex: 1kg ou 500g"
-                          value={extraReservoirCapacity}
-                          onChange={(e) =>
-                            setExtraReservoirCapacity(e.target.value)
-                          }
-                        />
-                      </div>
                     </div>
+                  ) : (
+                    // LAYOUT PADRÃO PARA OUTRAS MÁQUINAS
+                    <>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-xs font-bold text-orange-800 uppercase flex items-center gap-1">
+                          <Database size={12} /> Reservatórios de Insumos
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-amiste-primary rounded"
+                            checked={!hasExtraReservoir}
+                            onChange={(e) =>
+                              setHasExtraReservoir(!e.target.checked)
+                            }
+                          />
+                          <span className="text-xs text-orange-700 font-medium">
+                            Não possui reservatórios extras
+                          </span>
+                        </label>
+                      </div>
+
+                      {hasExtraReservoir && (
+                        <div className="animate-fade-in space-y-3">
+                          <div>
+                            <label className="block text-[10px] text-orange-600 font-bold mb-1">
+                              Quantidade de Reservatórios
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="10"
+                              className="w-full p-2 border border-orange-200 rounded-lg text-sm"
+                              placeholder="Quantidade (ex: 3)"
+                              value={reservoirCount}
+                              onChange={(e) =>
+                                setReservoirCount(e.target.value)
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-orange-600 font-bold mb-1">
+                              Capacidade por Reservatório
+                            </label>
+                            <input
+                              className="w-full p-2 border border-orange-200 rounded-lg text-sm"
+                              placeholder="Ex: 1kg ou 500g"
+                              value={extraReservoirCapacity}
+                              onChange={(e) =>
+                                setExtraReservoirCapacity(e.target.value)
+                              }
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
 

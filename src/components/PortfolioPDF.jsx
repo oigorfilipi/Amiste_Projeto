@@ -346,24 +346,38 @@ export function PortfolioPDF({ data }) {
               { l: "Peso", v: m.weight },
               { l: "Dimensões", v: m.dimensions || "-" },
             ]
-              // LOGICA CONDICIONAL: Se for Coado, NÃO MOSTRA Abastecimento
+              // LOGICA CONDICIONAL: Abastecimento (Esconde para Coado E Moedor)
               .concat(
-                m.type !== "Coado"
+                m.type !== "Coado" && m.type !== "Moedor"
                   ? [{ l: "Abastecimento", v: m.water_system }]
                   : [],
               )
-              // LOGICA CONDICIONAL: Tanque de água apenas se não for Coado
+              // LOGICA CONDICIONAL: Tanque de água (Esconde para Coado E Moedor)
               .concat(
-                m.type !== "Coado" && m.water_system === "Reservatório"
+                m.type !== "Coado" &&
+                  m.type !== "Moedor" &&
+                  m.water_system === "Reservatório"
                   ? [{ l: "Tanque Água", v: m.water_tank_size }]
                   : [],
               )
+              // LOGICA CONDICIONAL: Reservatórios (Esconde para Moedor - mostra Capacity direto no Moedor)
               .concat(
-                m.reservoir_count > 0
+                m.reservoir_count > 0 && m.type !== "Moedor"
                   ? [
                       { l: "Reservatórios", v: m.reservoir_count },
                       {
                         l: "Capacidade Extra",
+                        v: m.extra_reservoir_capacity,
+                      },
+                    ]
+                  : [],
+              )
+              // MOEDOR: Mostra Capacidade Cúpula
+              .concat(
+                m.type === "Moedor"
+                  ? [
+                      {
+                        l: "Capacidade Cúpula",
                         v: m.extra_reservoir_capacity,
                       },
                     ]
@@ -403,7 +417,6 @@ export function PortfolioPDF({ data }) {
                         l: "Simultâneo",
                         v: m.simultaneous_dispenser ? "Sim" : "Não",
                       },
-                      // ADICIONEI O CAMPO DE BORRAS AQUI
                       {
                         l: "Cap. Borras",
                         v: m.dregs_capacity,
@@ -411,7 +424,6 @@ export function PortfolioPDF({ data }) {
                     ]
                   : [],
               )
-              // NOVO: Campos para Coado
               .concat(
                 m.type === "Coado"
                   ? [
@@ -421,8 +433,8 @@ export function PortfolioPDF({ data }) {
                   : [],
               )
               .concat([
-                // LOGICA CONDICIONAL: Esgoto apenas se não for Coado
-                ...(m.type !== "Coado"
+                // LOGICA CONDICIONAL: Esgoto (Esconde para Coado E Moedor)
+                ...(m.type !== "Coado" && m.type !== "Moedor"
                   ? [{ l: "Esgoto", v: m.has_sewage ? "Sim" : "Não" }]
                   : []),
                 { l: "Amperagem", v: m.amperage || "10A" },

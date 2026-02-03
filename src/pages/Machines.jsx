@@ -47,6 +47,7 @@ const BRAND_OPTIONS = [
   "Fetco",
   "Fiorenzato",
   "Macap",
+  "Marchesoni",
 ];
 const TYPE_OPTIONS = [
   "Multibebidas",

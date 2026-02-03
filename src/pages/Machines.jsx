@@ -25,8 +25,10 @@ import {
   Filter,
   Clock,
   Trash,
+  Youtube, // <--- Importante: Ícone do Youtube
 } from "lucide-react";
 
+// ... (CONSTANTES MODEL_OPTIONS, BRAND_OPTIONS, TYPE_OPTIONS mantêm iguais) ...
 const MODEL_OPTIONS = [
   "Iper Automática",
   "Kalerm 1602",
@@ -43,11 +45,9 @@ const BRAND_OPTIONS = [
   "Impomac",
   "Bunn",
   "Fetco",
-  "Fiorenzato", // Marca comum de moedor
-  "Macap", // Marca comum de moedor
+  "Fiorenzato",
+  "Macap",
 ];
-
-// ADICIONADO "Moedor"
 const TYPE_OPTIONS = [
   "Multibebidas",
   "Café em Grãos",
@@ -80,6 +80,7 @@ export function Machines() {
   const [customType, setCustomType] = useState("");
   const [status, setStatus] = useState("Disponível");
   const [photoUrl, setPhotoUrl] = useState("");
+  const [videoUrl, setVideoUrl] = useState(""); // <--- NOVO ESTADO
   const [imageMode, setImageMode] = useState("url");
 
   // Técnicos Básicos
@@ -138,6 +139,7 @@ export function Machines() {
     }
   }
 
+  // ... (handleImageUpload mantém igual) ...
   async function handleImageUpload(e) {
     try {
       setUploading(true);
@@ -168,11 +170,13 @@ export function Machines() {
     setName(machine.name);
     setDescription(machine.description || "");
     setPhotoUrl(machine.photo_url || "");
+    setVideoUrl(machine.video_url || ""); // <--- CARREGAR VÍDEO
     setStatus(machine.status || "Disponível");
     setImageMode(machine.photo_url?.includes("supabase") ? "file" : "url");
     setPatrimony(machine.patrimony || "");
     setSerialNumber(machine.serial_number || "");
 
+    // ... (Lógica de Dropdowns mantém igual) ...
     if (MODEL_OPTIONS.includes(machine.model)) {
       setModel(machine.model);
       setCustomModel("");
@@ -258,6 +262,7 @@ export function Machines() {
         name,
         description,
         photo_url: photoUrl,
+        video_url: videoUrl, // <--- SALVAR VÍDEO
         model: finalModel,
         brand: finalBrand,
         type: finalType,
@@ -342,6 +347,7 @@ export function Machines() {
     setName("");
     setDescription("");
     setPhotoUrl("");
+    setVideoUrl(""); // <--- RESETAR VÍDEO
     setModel("");
     setCustomModel("");
     setBrand("");
@@ -619,6 +625,24 @@ export function Machines() {
                       )}
                     </div>
                   </div>
+
+                  {/* --- NOVO CAMPO: VÍDEO URL --- */}
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1 flex items-center gap-1">
+                      <Youtube size={14} /> Link de Vídeo (Opcional)
+                    </label>
+                    <input
+                      className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none"
+                      value={videoUrl}
+                      onChange={(e) => setVideoUrl(e.target.value)}
+                      placeholder="https://youtube.com/..."
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1">
+                      Este link será preenchido automaticamente quando você
+                      criar uma proposta com esta máquina.
+                    </p>
+                  </div>
+
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Marca *
@@ -674,10 +698,13 @@ export function Machines() {
                 </div>
               </section>
 
+              {/* ... RESTO DO CÓDIGO ... */}
               <div className="h-px bg-gray-100"></div>
 
               {/* Especificações Técnicas */}
               <section className="space-y-4">
+                {/* ... (Todo o resto do formulário que você já tem) ... */}
+                {/* Se quiser copiar tudo de novo eu mando, mas é só encaixar o campo de vídeo acima */}
                 <h3 className="text-xs uppercase font-bold text-gray-400 tracking-wider mb-4 flex items-center gap-2">
                   <Zap size={14} /> Especificações Técnicas
                 </h3>

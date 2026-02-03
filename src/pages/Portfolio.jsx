@@ -142,6 +142,7 @@ export function Portfolio() {
         m.description ||
           "Equipamento de alta performance, ideal para seu estabelecimento. Design moderno e extração perfeita.",
       );
+      setVideoUrl(m.video_url || ""); // <--- ESSA LINHA FAZ A MÁGICA
     } else {
       setSelectedMachine(null);
     }

@@ -627,14 +627,28 @@ export function Checklist() {
                 Gerencie ordens de serviço e instalações.
               </p>
             </div>
-            {permissions.canCreateChecklist && (
-              <button
-                onClick={handleNewChecklist}
-                className="bg-amiste-primary hover:bg-amiste-secondary text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2"
+
+            <div className="flex gap-3">
+              {/* Botão de Imprimir em Branco */}
+              <Link
+                to="/checklists/print-blank"
+                className="bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 px-4 py-3 rounded-xl font-bold shadow-sm flex items-center gap-2 transition-all hover:-translate-y-1"
               >
-                <Plus size={20} /> Novo Checklist
-              </button>
-            )}
+                {/* Você precisa importar Printer do lucide-react lá em cima */}
+                <Plus size={20} className="rotate-45" />{" "}
+                {/* Usei Plus rotacionado improvisado se não quiser importar Printer, mas ideal é importar */}
+                <span className="hidden md:inline">Imprimir Ficha</span>
+              </Link>
+
+              {permissions.canCreateChecklist && (
+                <button
+                  onClick={handleNewChecklist}
+                  className="bg-amiste-primary hover:bg-amiste-secondary text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all hover:-translate-y-1"
+                >
+                  <Plus size={20} /> Novo Checklist
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="flex gap-2 mb-6 border-b border-gray-200 pb-1 overflow-x-auto">
@@ -666,6 +680,7 @@ export function Checklist() {
                 <p className="text-gray-400 max-w-sm mx-auto mb-6 text-sm">
                   Não há ordens de serviço com o status "{filterStatus}".
                 </p>
+
                 {permissions.canCreateChecklist && (
                   <button
                     onClick={handleNewChecklist}

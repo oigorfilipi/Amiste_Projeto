@@ -21,6 +21,7 @@ import { Supplies } from "./pages/Supplies";
 import { Recipes } from "./pages/Recipes";
 import { SupplyPriceList } from "./pages/SupplyPriceList";
 import { MachineConfigs } from "./pages/MachineConfigs";
+import { PrintBlankChecklist } from "./pages/PrintBlankChecklist";
 
 // Contexto
 import { AuthProvider, AuthContext } from "./contexts/AuthContext";
@@ -108,6 +109,15 @@ export default function App() {
               element={
                 <ProtectedRoute permissionKey="canCreateChecklist">
                   <ChecklistDetails />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/checklists/print-blank"
+              element={
+                <ProtectedRoute permissionKey="canCreateChecklist">
+                  <PrintBlankChecklist />
                 </ProtectedRoute>
               }
             />

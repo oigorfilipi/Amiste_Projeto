@@ -10,17 +10,15 @@ import {
   DollarSign,
   ChevronLeft,
   Trash2,
-  History,
   Clock,
   Youtube,
-  ExternalLink,
   Calendar,
   Coffee,
   CheckCircle,
   XCircle,
   AlertCircle,
   FileBarChart,
-  Layers, // <--- Ícone
+  Layers,
 } from "lucide-react";
 
 export function Portfolio() {
@@ -37,7 +35,7 @@ export function Portfolio() {
   const [machineImageBase64, setMachineImageBase64] = useState(null);
 
   const [selectedMachine, setSelectedMachine] = useState(null);
-  const [selectedModelIndex, setSelectedModelIndex] = useState(""); // <--- QUAL MODELO? (ÍNDICE)
+  const [selectedModelIndex, setSelectedModelIndex] = useState("");
 
   const [customerName, setCustomerName] = useState("");
   const [negotiationType, setNegotiationType] = useState("Venda");
@@ -59,12 +57,17 @@ export function Portfolio() {
   // Conversão de Imagem para Base64 (Com Fix de CORS via Proxy)
   useEffect(() => {
     async function convertImage() {
+      // Se não tem máquina selecionada, limpa a imagem e retorna
+      if (!selectedMachine) {
+        setMachineImageBase64(null);
+        return;
+      }
+
       // Determina qual URL usar (Modelo ou Pai)
-      let urlToUse = selectedMachine?.photo_url;
+      let urlToUse = selectedMachine.photo_url;
 
       // Se tem modelo selecionado e ele tem foto específica, usa a do modelo
       if (
-        selectedMachine &&
         selectedModelIndex !== "" &&
         selectedMachine.models &&
         selectedMachine.models[selectedModelIndex]
@@ -139,8 +142,13 @@ export function Portfolio() {
     setEditingId(p.id);
     setVersions(p.versions || []);
     setSelectedMachine(p.machine_data);
-    // Tenta recuperar qual modelo foi escolhido (se salvo no machine_data, mas aqui simplificamos)
-    // No futuro, ideal salvar o model_index no banco do portfolio
+
+    // Tenta recuperar o índice do modelo se foi salvo anteriormente
+    // Se não tiver salvo, tenta adivinhar pelo nome ou deixa vazio
+    // Idealmente você salvaria 'machine_model_index' no banco, mas
+    // como estamos usando o snapshot 'machine_data', deixamos vazio para edição
+    // ou o usuário seleciona novamente se quiser mudar.
+    setSelectedModelIndex("");
 
     setCustomerName(p.customer_name);
     setNegotiationType(p.negotiation_type);
@@ -277,7 +285,6 @@ export function Portfolio() {
     }
   }
 
-  // ... (handleDelete, formatMoney, filteredPortfolios, handleRestoreVersion, getStatusStyle IGUAIS) ...
   async function handleDelete(id, e) {
     e.stopPropagation();
     if (!confirm("Excluir esta proposta?")) return;
@@ -295,30 +302,6 @@ export function Portfolio() {
       p.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.machine_data?.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
-
-  function handleRestoreVersion(e) {
-    const index = e.target.value;
-    if (index === "") return;
-    const v = versions[index];
-    if (
-      !confirm(
-        `Restaurar para a versão de ${new Date(v.saved_at).toLocaleString()}?`,
-      )
-    ) {
-      e.target.value = "";
-      return;
-    }
-    setCustomerName(v.customer_name);
-    setNegotiationType(v.negotiation_type);
-    setTotalValue(v.total_value);
-    setInstallments(v.installments);
-    setDescription(v.description);
-    setVideoUrl(v.video_url || "");
-    setObs(v.obs || "");
-    setStatus(v.status || "Aguardando");
-    alert("Dados restaurados! Clique em Salvar para confirmar.");
-    e.target.value = "";
-  }
 
   const getStatusStyle = (st) => {
     switch (st) {
@@ -624,7 +607,7 @@ export function Portfolio() {
                       placeholder="Nome da Empresa/Pessoa"
                     />
                   </div>
-                  {/* ... (Link de Vídeo, Valores, Textos, Obs - TUDO IGUAL) ... */}
+
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Link de Vídeo (Opcional)

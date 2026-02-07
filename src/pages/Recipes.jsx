@@ -67,7 +67,6 @@ export function Recipes() {
       yield: recipe.yield || "",
     });
     setShowForm(true);
-    // Pequeno timeout para garantir que o elemento existe antes de rolar
     setTimeout(() => {
       document
         .getElementById("recipe-form")
@@ -77,12 +76,15 @@ export function Recipes() {
 
   async function handleSave(e) {
     e.preventDefault();
+    if (!selectedSupply) return;
+
     try {
       const payload = {
         ...formData,
         supply_id: selectedSupply.id,
         user_id: user.id,
       };
+
       if (editingId) {
         await supabase.from("recipes").update(payload).eq("id", editingId);
         alert("Receita atualizada!");
@@ -92,7 +94,12 @@ export function Recipes() {
       }
       setShowForm(false);
       setEditingId(null);
-      setFormData({ name: "", instructions: "", ingredients: "", yield: "" });
+      setFormData({
+        name: "",
+        instructions: "",
+        ingredients: "",
+        yield: "",
+      });
       fetchRecipes(selectedSupply.id);
     } catch (err) {
       alert("Erro: " + err.message);
@@ -138,13 +145,11 @@ export function Recipes() {
             </div>
           </div>
 
-          {/* CONDICIONAL: LOADING ou EMPTY STATE ou GRID */}
           {loading ? (
             <p className="text-center text-gray-400 py-10">
               Carregando insumos...
             </p>
           ) : filteredSupplies.length === 0 ? (
-            // --- EMPTY STATE (Nenhum Insumo) ---
             <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in max-w-2xl mx-auto mt-8">
               <div className="bg-gray-50 p-6 rounded-full mb-4">
                 <Package size={48} className="text-gray-300" />
@@ -158,7 +163,6 @@ export function Recipes() {
               </p>
             </div>
           ) : (
-            // --- GRID DE INSUMOS ---
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {filteredSupplies.map((item) => (
                 <div
@@ -209,7 +213,11 @@ export function Recipes() {
             </div>
             <button
               onClick={() => setShowForm(!showForm)}
-              className={`px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md transition-all ${showForm ? "bg-gray-100 text-gray-600" : "bg-amiste-primary text-white"}`}
+              className={`px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md transition-all ${
+                showForm
+                  ? "bg-gray-100 text-gray-600"
+                  : "bg-amiste-primary text-white"
+              }`}
             >
               {showForm ? (
                 <>
@@ -308,7 +316,6 @@ export function Recipes() {
 
           <div className="grid grid-cols-1 gap-4">
             {recipes.length === 0 ? (
-              // --- EMPTY STATE (Nenhuma Receita neste Insumo) ---
               <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200">
                 <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <ChefHat size={32} className="text-gray-300" />

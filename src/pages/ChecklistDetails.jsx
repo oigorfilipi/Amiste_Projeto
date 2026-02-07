@@ -6,14 +6,15 @@ import {
   Printer,
   Calendar,
   User,
-  MapPin,
   Coffee,
   Wrench,
   DollarSign,
   FileText,
-  CheckCircle,
-  XCircle,
   AlertCircle,
+  Zap,
+  Scale,
+  Maximize,
+  Droplet,
 } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { ChecklistPDF } from "../components/ChecklistPDF";
@@ -41,19 +42,6 @@ export function ChecklistDetails() {
     fetchChecklist();
   }, [id]);
 
-  if (loading)
-    return (
-      <div className="p-8 text-center text-gray-500">
-        Carregando detalhes...
-      </div>
-    );
-  if (!data)
-    return (
-      <div className="p-8 text-center text-red-500">
-        Checklist não encontrado.
-      </div>
-    );
-
   const formatMoney = (val) => (val ? `R$ ${val.toFixed(2)}` : "R$ 0,00");
   const formatDate = (dateStr) =>
     dateStr ? new Date(dateStr).toLocaleDateString("pt-BR") : "-";
@@ -64,6 +52,33 @@ export function ChecklistDetails() {
     if (st === "Cancelado") return "bg-red-100 text-red-700";
     return "bg-amber-100 text-amber-700";
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-gray-400 bg-gray-50">
+        <Coffee size={48} className="mb-4 opacity-20 animate-bounce" />
+        <p className="font-bold">Carregando detalhes...</p>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-red-400 bg-gray-50">
+        <AlertCircle size={48} className="mb-4 opacity-50" />
+        <p className="font-bold">Checklist não encontrado.</p>
+        <Link
+          to="/checklists"
+          className="mt-4 text-sm font-bold text-amiste-primary hover:underline"
+        >
+          Voltar para lista
+        </Link>
+      </div>
+    );
+  }
+
+  // Atalho para dados da máquina (Snapshot salvo no checklist)
+  const mData = data.machine_data || {};
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20 animate-fade-in">
@@ -211,7 +226,7 @@ export function ChecklistDetails() {
               <div className="flex items-start gap-6 mb-8">
                 <div className="w-24 h-24 bg-gray-50 rounded-xl flex items-center justify-center p-2 border border-gray-100">
                   <img
-                    src={data.machine_data?.photo_url}
+                    src={mData.photo_url}
                     className="w-full h-full object-contain mix-blend-multiply"
                   />
                 </div>
@@ -220,10 +235,46 @@ export function ChecklistDetails() {
                     {data.machine_name}
                   </h3>
                   <p className="text-gray-500 text-sm mb-2">
-                    {data.machine_data?.brand} | {data.machine_data?.model}
+                    {mData.brand} | {mData.model}
                   </p>
                   <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold">
                     Total: {data.quantity} un
+                  </span>
+                </div>
+              </div>
+
+              {/* Specs Técnicas Resumidas (Importante para o Técnico) */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 bg-blue-50/50 p-4 rounded-xl border border-blue-50">
+                <div>
+                  <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-blue-400 mb-1">
+                    <Zap size={10} /> Voltagem
+                  </span>
+                  <span className="font-bold text-gray-700 text-sm">
+                    {mData.voltage || "-"}
+                  </span>
+                </div>
+                <div>
+                  <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-blue-400 mb-1">
+                    <Scale size={10} /> Peso
+                  </span>
+                  <span className="font-bold text-gray-700 text-sm">
+                    {mData.weight || "-"}
+                  </span>
+                </div>
+                <div>
+                  <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-blue-400 mb-1">
+                    <Maximize size={10} /> Dimensões
+                  </span>
+                  <span className="font-bold text-gray-700 text-sm">
+                    {mData.dimensions || "-"}
+                  </span>
+                </div>
+                <div>
+                  <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-blue-400 mb-1">
+                    <Droplet size={10} /> Água
+                  </span>
+                  <span className="font-bold text-gray-700 text-sm">
+                    {mData.water_system || "-"}
                   </span>
                 </div>
               </div>

@@ -5,12 +5,9 @@ import {
   FileText,
   ClipboardList,
   TrendingUp,
-  Calendar,
   Filter,
-  ArrowRight,
   Clock,
   CheckCircle,
-  AlertCircle,
 } from "lucide-react";
 
 export function Financial() {
@@ -52,7 +49,9 @@ export function Financial() {
       // 2. Checklists (Serviços)
       const { data: checklists } = await supabase
         .from("checklists")
-        .select("id, client_name, event_name, financials, created_at, status")
+        .select(
+          "id, client_name, event_name, financials, created_at, status, machine_name",
+        )
         .order("created_at", { ascending: false });
 
       // 3. Normalizar
@@ -62,7 +61,7 @@ export function Financial() {
         client: p.customer_name,
         value: p.total_value || 0,
         date: new Date(p.created_at),
-        status: p.status || "Aguardando", // 'Concluido', 'Aguardando', 'Cancelado'
+        status: p.status || "Aguardando",
         details: "Venda de Equipamento",
       }));
 
@@ -79,8 +78,8 @@ export function Financial() {
           client: c.client_name || c.event_name,
           value: total,
           date: new Date(c.created_at),
-          status: c.status || "Rascunho", // 'Finalizado', 'Rascunho', 'Cancelado'
-          details: "Serviço Técnico",
+          status: c.status || "Rascunho",
+          details: `Serviço: ${c.machine_name || "N/A"}`,
         };
       });
 
@@ -111,7 +110,7 @@ export function Financial() {
       return timeRange === "today" ? isSameDay : isSameMonth;
     });
 
-    // 2. Calcular Métricas (Separando Realizado de Projetado)
+    // 2. Calcular Métricas
     const newMetrics = {
       realizedSales: 0,
       realizedServices: 0,
@@ -139,7 +138,7 @@ export function Financial() {
 
     setMetrics(newMetrics);
 
-    // 3. Filtro de Tipo para a Lista (Mostra tudo, mas com status visual)
+    // 3. Filtro de Tipo para a Lista
     if (typeFilter === "realized") {
       timeFiltered = timeFiltered.filter(
         (t) => t.status === "Concluido" || t.status === "Finalizado",
@@ -153,11 +152,6 @@ export function Financial() {
 
   const formatMoney = (val) =>
     val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-
-  const getCardStyle = (active) =>
-    active
-      ? "ring-2 ring-offset-2 scale-[1.02] shadow-lg border-transparent"
-      : "hover:shadow-md hover:-translate-y-1 opacity-90 hover:opacity-100 border-gray-100";
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20 animate-fade-in">
@@ -196,6 +190,7 @@ export function Financial() {
 
         {loading ? (
           <div className="text-center py-20 text-gray-400">
+            <Clock size={48} className="mx-auto mb-4 opacity-20 animate-spin" />
             Carregando dados financeiros...
           </div>
         ) : (
@@ -281,11 +276,10 @@ export function Financial() {
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex flex-col md:flex-row justify-between items-center gap-4">
                 <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                  <TrendingUp size={20} className="text-amiste-primary" />{" "}
+                  <TrendingUp size={20} className="text-amiste-primary" />
                   Extrato de Movimentações
                 </h3>
 
-                {/* Filtros de Lista */}
                 <div className="flex gap-2">
                   {["all", "proposal", "service"].map((ft) => (
                     <button

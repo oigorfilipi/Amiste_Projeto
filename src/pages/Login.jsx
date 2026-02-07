@@ -1,5 +1,5 @@
 import { useState, useContext } from "react";
-import { Link } from "react-router-dom"; // Importante para linkar ao Cadastro
+import { Link } from "react-router-dom";
 import { AuthContext } from "../contexts/AuthContext";
 import { User, Lock, ArrowRight, Coffee, AlertCircle } from "lucide-react";
 
@@ -18,17 +18,21 @@ export function Login() {
 
     try {
       await signIn(email, password);
-      // Redirecionamento é automático pelo AuthContext
+      // Redirecionamento é automático pelo AuthContext após login com sucesso
     } catch (err) {
-      console.log(err);
+      console.error("Erro no login:", err);
+
+      // Tratamento de erros comuns do Supabase
+      const msg = err.message || "";
       if (
-        err.code === "auth/invalid-credential" ||
-        err.code === "auth/user-not-found" ||
-        err.code === "auth/wrong-password"
+        msg.includes("Invalid login credentials") ||
+        msg.includes("invalid_credentials")
       ) {
         setError("E-mail ou senha incorretos.");
+      } else if (msg.includes("Email not confirmed")) {
+        setError("E-mail não confirmado. Verifique sua caixa de entrada.");
       } else {
-        setError("Erro ao conectar. Verifique sua internet.");
+        setError("Erro ao conectar. Tente novamente.");
       }
       setLoading(false);
     }
@@ -86,6 +90,8 @@ export function Login() {
                 />
                 <input
                   type="email"
+                  name="email" // Importante para gerenciadores de senha
+                  autoComplete="email" // Ajuda o navegador a preencher
                   placeholder="seu@email.com"
                   className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-amiste-primary focus:ring-2 focus:ring-amiste-primary/20 transition-all text-gray-700 bg-gray-50 focus:bg-white"
                   value={email}
@@ -107,6 +113,8 @@ export function Login() {
                 />
                 <input
                   type="password"
+                  name="password" // Importante para gerenciadores de senha
+                  autoComplete="current-password" // Ajuda o navegador a preencher
                   placeholder="••••••••"
                   className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-amiste-primary focus:ring-2 focus:ring-amiste-primary/20 transition-all text-gray-700 bg-gray-50 focus:bg-white"
                   value={password}

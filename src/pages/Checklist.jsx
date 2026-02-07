@@ -15,12 +15,83 @@ import {
   MapPin,
   FileText,
   Package,
-  Droplet,
-  Zap,
   ArrowLeft,
   XCircle,
   ClipboardList,
+  Layers,
+  Zap,
+  Droplet,
+  Scale,
+  Maximize,
 } from "lucide-react";
+
+// --- CONSTANTES DE DADOS INICIAIS (Para evitar erros de reset) ---
+
+const INITIAL_TOOLS = {
+  caixaFerramentas: false,
+  luvas: false,
+  transformador: false,
+  extensao: false,
+  pano: false,
+  balde: false,
+  adaptador: false,
+  conexoes: false,
+  filtro: false,
+  mangueiras: false,
+  tampoes: false,
+  galao: false,
+  mangueiraEsgoto: false,
+};
+
+const INITIAL_SUPPLIES = {
+  solubles: {
+    "Café Gourmet (Solúvel)": { active: false, qty: "" },
+    Chocolate: { active: false, qty: "" },
+    Cappuccino: { active: false, qty: "" },
+    "Cappuccino Zero": { active: false, qty: "" },
+    "Chocolate Zero": { active: false, qty: "" },
+    "Latte Zero": { active: false, qty: "" },
+  },
+  grains: {
+    "Café Gourmet": { active: false, qty: "" },
+    "Café Premium": { active: false, qty: "" },
+    "Café Superior": { active: false, qty: "" },
+    "Alta Mogiana": { active: false, qty: "" },
+    "Região Vulcânica": { active: false, qty: "" },
+    "Cerrado Mineiro": { active: false, qty: "" },
+    "Pioneiro do Paraná": { active: false, qty: "" },
+  },
+  frappes: {
+    Original: { active: false, qty: "" },
+    Chocolate: { active: false, qty: "" },
+    Iogurte: { active: false, qty: "" },
+    Baunilha: { active: false, qty: "" },
+  },
+  syrups: {
+    "Vora - Maçã Verde": { active: false, qty: "" },
+    "Vora - Maracujá": { active: false, qty: "" },
+    "Vora - Morango": { active: false, qty: "" },
+    "Vora - Cranberry": { active: false, qty: "" },
+    "Vora - Blue Lemonade": { active: false, qty: "" },
+    "Vora - Pink Lemonade": { active: false, qty: "" },
+    "Vora - Limão Siciliano": { active: false, qty: "" },
+    "Vora - Caramelo": { active: false, qty: "" },
+    "Vora - Caramelo Salgado": { active: false, qty: "" },
+    "Vora - Melancia": { active: false, qty: "" },
+    "Vora - Baunilha": { active: false, qty: "" },
+    "DaVinci - Coco": { active: false, qty: "" },
+    "DaVinci - Kiwi": { active: false, qty: "" },
+    "DaVinci - Maracujá Vermelho": { active: false, qty: "" },
+    "DaVinci - Jabuticaba": { active: false, qty: "" },
+    "DaVinci - Morango": { active: false, qty: "" },
+    "DaVinci - Melancia": { active: false, qty: "" },
+    "Fabri - Maracujá": { active: false, qty: "" },
+    "Fabri - Maça Verde": { active: false, qty: "" },
+    "Fabri - Morango": { active: false, qty: "" },
+    "Fabri - Limão": { active: false, qty: "" },
+    "Fabri - Banana": { active: false, qty: "" },
+  },
+};
 
 // --- COMPONENTES VISUAIS REUTILIZÁVEIS ---
 
@@ -109,6 +180,8 @@ export function Checklist() {
   const [quantity, setQuantity] = useState(1);
   const [selectedMachineId, setSelectedMachineId] = useState("");
   const [selectedMachineData, setSelectedMachineData] = useState(null);
+  const [selectedModelIndex, setSelectedModelIndex] = useState("");
+
   const [machineItems, setMachineItems] = useState([
     { voltage: "220v", patrimony: "", serial: "" },
   ]);
@@ -118,22 +191,8 @@ export function Checklist() {
   const [paymentSystem, setPaymentSystem] = useState("Não");
   const [steamWand, setSteamWand] = useState("Não");
 
-  // Ferramentas (Estado unificado para facilitar envio)
-  const [tools, setTools] = useState({
-    caixaFerramentas: false,
-    luvas: false,
-    transformador: false,
-    extensao: false,
-    pano: false,
-    balde: false,
-    adaptador: false,
-    conexoes: false,
-    filtro: false,
-    mangueiras: false,
-    tampoes: false,
-    galao: false,
-    mangueiraEsgoto: false,
-  });
+  // Ferramentas
+  const [tools, setTools] = useState(INITIAL_TOOLS);
   const [gallonQty, setGallonQty] = useState("");
 
   const [configStatus, setConfigStatus] = useState("Não");
@@ -147,57 +206,9 @@ export function Checklist() {
   const [customAccessories, setCustomAccessories] = useState([]);
   const [noAccessories, setNoAccessories] = useState(false);
 
-  // --- INSUMOS COMPLETOS (RESTAURADOS) ---
+  // --- INSUMOS ---
   const [noSupplies, setNoSupplies] = useState(false);
-  const [suppliesData, setSuppliesData] = useState({
-    solubles: {
-      "Café Gourmet (Solúvel)": { active: false, qty: "" },
-      Chocolate: { active: false, qty: "" },
-      Cappuccino: { active: false, qty: "" },
-      "Cappuccino Zero": { active: false, qty: "" },
-      "Chocolate Zero": { active: false, qty: "" },
-      "Latte Zero": { active: false, qty: "" },
-    },
-    grains: {
-      "Café Gourmet": { active: false, qty: "" },
-      "Café Premium": { active: false, qty: "" },
-      "Café Superior": { active: false, qty: "" },
-      "Alta Mogiana": { active: false, qty: "" },
-      "Região Vulcânica": { active: false, qty: "" },
-      "Cerrado Mineiro": { active: false, qty: "" },
-      "Pioneiro do Paraná": { active: false, qty: "" },
-    },
-    frappes: {
-      Original: { active: false, qty: "" },
-      Chocolate: { active: false, qty: "" },
-      Iogurte: { active: false, qty: "" },
-      Baunilha: { active: false, qty: "" },
-    },
-    syrups: {
-      "Vora - Maçã Verde": { active: false, qty: "" },
-      "Vora - Maracujá": { active: false, qty: "" },
-      "Vora - Morango": { active: false, qty: "" },
-      "Vora - Cranberry": { active: false, qty: "" },
-      "Vora - Blue Lemonade": { active: false, qty: "" },
-      "Vora - Pink Lemonade": { active: false, qty: "" },
-      "Vora - Limão Siciliano": { active: false, qty: "" },
-      "Vora - Caramelo": { active: false, qty: "" },
-      "Vora - Caramelo Salgado": { active: false, qty: "" },
-      "Vora - Melancia": { active: false, qty: "" },
-      "Vora - Baunilha": { active: false, qty: "" },
-      "DaVinci - Coco": { active: false, qty: "" },
-      "DaVinci - Kiwi": { active: false, qty: "" },
-      "DaVinci - Maracujá Vermelho": { active: false, qty: "" },
-      "DaVinci - Jabuticaba": { active: false, qty: "" },
-      "DaVinci - Morango": { active: false, qty: "" },
-      "DaVinci - Melancia": { active: false, qty: "" },
-      "Fabri - Maracujá": { active: false, qty: "" },
-      "Fabri - Maça Verde": { active: false, qty: "" },
-      "Fabri - Morango": { active: false, qty: "" },
-      "Fabri - Limão": { active: false, qty: "" },
-      "Fabri - Banana": { active: false, qty: "" },
-    },
-  });
+  const [suppliesData, setSuppliesData] = useState(INITIAL_SUPPLIES);
   const [customSupplies, setCustomSupplies] = useState([]);
 
   const [localSocket, setLocalSocket] = useState("");
@@ -255,19 +266,20 @@ export function Checklist() {
     if (data) setChecklistsHistory(data);
   }
 
-  // --- 1. SELEÇÃO DE MÁQUINA (ATUALIZADA COM ESGOTO) ---
   function handleMachineSelect(e) {
     const id = e.target.value;
     setSelectedMachineId(id);
+    setSelectedModelIndex("");
+
     if (id) {
       const machine = machinesList.find((m) => m.id.toString() === id);
       setSelectedMachineData(machine);
+
       if (machine) {
         setWaterInstall(
           machine.water_system === "Rede Hídrica" ? "Sim" : "Não",
         );
         setSteamWand(machine.has_steamer === "Sim" ? "Sim" : "Não");
-        // ADICIONADO: Puxar info de esgoto
         setSewageInstall(machine.has_sewage === true ? "Sim" : "Não");
       }
     } else {
@@ -275,7 +287,27 @@ export function Checklist() {
     }
   }
 
-  // ... (handleQuantityChange, updateMachineItem, toggleItem, updateItemValue, toggleSupply, updateSupplyQty mantidos iguais) ...
+  function handleModelSelect(e) {
+    const idx = e.target.value;
+    setSelectedModelIndex(idx);
+
+    if (
+      idx !== "" &&
+      selectedMachineData &&
+      selectedMachineData.models &&
+      selectedMachineData.models[idx]
+    ) {
+      const model = selectedMachineData.models[idx];
+      if (model.water_system) {
+        setWaterInstall(model.water_system === "Rede Hídrica" ? "Sim" : "Não");
+      }
+    } else if (selectedMachineData) {
+      setWaterInstall(
+        selectedMachineData.water_system === "Rede Hídrica" ? "Sim" : "Não",
+      );
+    }
+  }
+
   function handleQuantityChange(val) {
     const newQty = parseInt(val) || 1;
     setQuantity(newQty);
@@ -327,13 +359,21 @@ export function Checklist() {
   };
 
   async function handleSave(status = "Finalizado") {
-    // ... validação e save mantidos iguais ...
     if (status === "Finalizado" && !contractNum)
       return alert("Preencha o Nº Contrato.");
     if (!clientName && !eventName) return alert("Preencha o Cliente/Evento.");
 
+    if (selectedMachineData?.models?.length > 0 && selectedModelIndex === "") {
+      return alert("Por favor, selecione o modelo/variação da máquina.");
+    }
+
     setSaving(true);
     try {
+      let finalMachineName = selectedMachineData?.name;
+      if (selectedModelIndex !== "" && selectedMachineData?.models) {
+        finalMachineName += ` - ${selectedMachineData.models[selectedModelIndex].name}`;
+      }
+
       const payload = {
         user_id: user.id,
         status,
@@ -344,7 +384,8 @@ export function Checklist() {
         install_date: installDate || null,
         pickup_date: pickupDate || null,
         machine_id: selectedMachineId,
-        machine_name: selectedMachineData?.name,
+        machine_name: finalMachineName,
+        machine_model_index: selectedModelIndex,
         quantity,
         machine_data: selectedMachineData,
         machine_units: machineItems,
@@ -433,7 +474,6 @@ export function Checklist() {
   function handleEdit(checklist) {
     if (!permissions.canEditChecklist) return alert("Sem permissão.");
     setEditingId(checklist.id);
-    // ... Preenchimento dos dados ...
     setInstallType(checklist.install_type || "Cliente");
     setClientName(checklist.client_name || "");
     setEventName(checklist.event_name || "");
@@ -445,6 +485,9 @@ export function Checklist() {
       checklist.machine_id ? checklist.machine_id.toString() : "",
     );
     setSelectedMachineData(checklist.machine_data || null);
+
+    setSelectedModelIndex(checklist.machine_model_index || "");
+
     setMachineItems(
       checklist.machine_units || [
         { voltage: "220v", patrimony: "", serial: "" },
@@ -457,10 +500,13 @@ export function Checklist() {
 
     if (checklist.tools_list) {
       const { gallonQty: gQty, ...tList } = checklist.tools_list;
-      setTools(tList);
+      // Merge com INITIAL_TOOLS para garantir que chaves novas apareçam
+      setTools({ ...INITIAL_TOOLS, ...tList });
       setGallonQty(gQty || "");
+    } else {
+      setTools(INITIAL_TOOLS);
     }
-    // ... Resto dos preenchimentos (mantidos para economizar espaço visual, mas devem estar aqui) ...
+
     if (checklist.preparations) {
       setConfigStatus(checklist.preparations.configStatus || "Não");
       setConfigDate(checklist.preparations.configDate || "");
@@ -477,10 +523,19 @@ export function Checklist() {
       setNoAccessories(checklist.accessories_list.noAccessories || false);
     }
     if (checklist.supplies_list) {
-      setSuppliesData((prev) => ({
-        ...prev,
-        ...checklist.supplies_list.standard,
-      }));
+      // Merge profundo simplificado
+      setSuppliesData((prev) => {
+        const loaded = checklist.supplies_list.standard || {};
+        const newData = { ...INITIAL_SUPPLIES };
+
+        // Percorre as categorias
+        Object.keys(newData).forEach((cat) => {
+          if (loaded[cat]) {
+            newData[cat] = { ...newData[cat], ...loaded[cat] };
+          }
+        });
+        return newData;
+      });
       setCustomSupplies(checklist.supplies_list.custom || []);
       setNoSupplies(checklist.supplies_list.noSupplies || false);
     }
@@ -515,26 +570,17 @@ export function Checklist() {
     setQuantity(1);
     setSelectedMachineId("");
     setSelectedMachineData(null);
+    setSelectedModelIndex("");
     setMachineItems([{ voltage: "220v", patrimony: "", serial: "" }]);
     setWaterInstall("Não");
     setSewageInstall("Não");
     setPaymentSystem("Não");
     setSteamWand("Não");
-    setTools({
-      caixaFerramentas: false,
-      luvas: false,
-      transformador: false,
-      extensao: false,
-      pano: false,
-      balde: false,
-      adaptador: false,
-      conexoes: false,
-      filtro: false,
-      mangueiras: false,
-      tampoes: false,
-      galao: false,
-      mangueiraEsgoto: false,
-    });
+
+    // RESET SEGURO COM CONSTANTES
+    setTools(INITIAL_TOOLS);
+    setSuppliesData(INITIAL_SUPPLIES);
+
     setGallonQty("");
     setConfigStatus("Não");
     setConfigDate("");
@@ -606,12 +652,10 @@ export function Checklist() {
             ))}
           </div>
 
-          {/* LISTA DE CHECKLISTS OU EMPTY STATE */}
           <div className="grid grid-cols-1 gap-4">
             {checklistsHistory.filter(
               (c) => filterStatus === "Todos" || c.status === filterStatus,
             ).length === 0 ? (
-              // --- EMPTY STATE ---
               <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in">
                 <div className="bg-gray-50 p-6 rounded-full mb-4">
                   <ClipboardList size={48} className="text-gray-300" />
@@ -632,7 +676,6 @@ export function Checklist() {
                 )}
               </div>
             ) : (
-              // --- LISTA EXISTENTE ---
               checklistsHistory
                 .filter(
                   (c) => filterStatus === "Todos" || c.status === filterStatus,
@@ -715,6 +758,7 @@ export function Checklist() {
         </div>
       )}
 
+      {/* --- FORMULÁRIO --- */}
       {view === "form" && (
         <div className="max-w-5xl mx-auto p-4 md:p-8 animate-fade-in">
           <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md px-6 py-4 -mx-4 md:-mx-8 mb-8 border-b border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
@@ -877,6 +921,29 @@ export function Checklist() {
                 </div>
               </div>
 
+              {/* SELETOR DE VARIAÇÃO DE MODELO (NOVO) */}
+              {selectedMachineData &&
+                selectedMachineData.models &&
+                selectedMachineData.models.length > 0 && (
+                  <div className="bg-purple-50 p-4 rounded-xl border border-purple-100 mb-6 animate-fade-in">
+                    <label className="block text-xs font-bold text-purple-800 uppercase mb-1 flex items-center gap-1">
+                      <Layers size={12} /> Selecione a Versão/Modelo
+                    </label>
+                    <select
+                      className="w-full p-2 border border-purple-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-purple-500 outline-none"
+                      value={selectedModelIndex}
+                      onChange={handleModelSelect}
+                    >
+                      <option value="">-- Padrão (Sem variação) --</option>
+                      {selectedMachineData.models.map((mod, idx) => (
+                        <option key={idx} value={idx}>
+                          {mod.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
               <div className="space-y-3">
                 {machineItems.map((item, idx) => (
                   <div
@@ -947,7 +1014,6 @@ export function Checklist() {
 
             <FormSection title="Preparação e Testes" icon={Wrench}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                {/* Configuração e Testes (Mantido Igual) */}
                 <div className="bg-gray-50 p-5 rounded-xl border border-gray-100">
                   <div className="flex justify-between items-center mb-3">
                     <span className="font-bold text-gray-700">
@@ -988,12 +1054,10 @@ export function Checklist() {
                 </div>
               </div>
 
-              {/* --- 2. FERRAMENTAS (LÓGICA CORRIGIDA) --- */}
               <h4 className="font-bold text-gray-400 text-xs uppercase mb-3 flex items-center gap-2">
                 <Wrench size={16} /> Ferramentas Necessárias
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-                {/* Comuns - Sempre visíveis */}
                 {[
                   "caixaFerramentas",
                   "luvas",
@@ -1010,8 +1074,6 @@ export function Checklist() {
                     onChange={(val) => setTools({ ...tools, [key]: val })}
                   />
                 ))}
-
-                {/* Se Rede Hídrica = SIM */}
                 {waterInstall === "Sim" &&
                   ["conexoes", "filtro", "mangueiras", "tampoes"].map((key) => (
                     <ToggleCard
@@ -1021,8 +1083,6 @@ export function Checklist() {
                       onChange={(val) => setTools({ ...tools, [key]: val })}
                     />
                   ))}
-
-                {/* Se Rede Hídrica = NÃO */}
                 {waterInstall === "Não" && (
                   <div className="col-span-2 md:col-span-1">
                     <ToggleCard
@@ -1041,8 +1101,6 @@ export function Checklist() {
                     )}
                   </div>
                 )}
-
-                {/* Se Esgoto = SIM */}
                 {sewageInstall === "Sim" && (
                   <ToggleCard
                     label="Mangueira Esgoto"
@@ -1102,7 +1160,6 @@ export function Checklist() {
               </div>
             </FormSection>
 
-            {/* SEÇÃO 4: INSUMOS (MANTIDO) */}
             <FormSection title="Insumos e Acessórios" icon={Package}>
               <div className="flex gap-4 overflow-x-auto pb-4 mb-6 scrollbar-thin">
                 {Object.entries(suppliesData).map(([cat, items]) => (
@@ -1191,10 +1248,8 @@ export function Checklist() {
               </div>
             </FormSection>
 
-            {/* SEÇÃO 5: LOCAL DE INSTALAÇÃO (COM AVISOS) */}
             <FormSection title="Local de Instalação" icon={MapPin}>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {/* Tomada */}
                 <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <span className="block text-xs font-bold text-gray-500 uppercase mb-2">
                     <Zap size={12} className="inline" /> Tomada
@@ -1212,8 +1267,6 @@ export function Checklist() {
                       </div>
                     )}
                 </div>
-
-                {/* Água (Com Aviso) */}
                 <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <span className="block text-xs font-bold text-gray-500 uppercase mb-2">
                     <Droplet size={12} className="inline" /> Água
@@ -1229,8 +1282,6 @@ export function Checklist() {
                     </div>
                   )}
                 </div>
-
-                {/* Esgoto (Com Aviso) */}
                 <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <span className="block text-xs font-bold text-gray-500 uppercase mb-2">
                     Esgoto
@@ -1246,7 +1297,6 @@ export function Checklist() {
                     </div>
                   )}
                 </div>
-
                 <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                   <span className="block text-xs font-bold text-gray-500 uppercase mb-2">
                     Treinamento
@@ -1262,7 +1312,6 @@ export function Checklist() {
               </div>
             </FormSection>
 
-            {/* SEÇÃO 6: FINALIZAÇÃO (MANTIDO IGUAL AO ANTERIOR) */}
             <FormSection title="Finalização" icon={FileText}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
@@ -1287,7 +1336,6 @@ export function Checklist() {
                   ></textarea>
                 </div>
               </div>
-              {/* Painel Financeiro */}
               <div className="bg-gray-900 text-white p-6 rounded-2xl shadow-lg">
                 <div className="flex justify-between items-end mb-6 border-b border-gray-700 pb-4">
                   <span className="text-gray-400 font-bold uppercase text-xs tracking-wider">

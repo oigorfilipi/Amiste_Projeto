@@ -11,13 +11,12 @@ import {
   FileText,
   Coffee,
   UserPlus,
-  Users,
+  Users, // Ícone usado no título da seção de equipe? Não, foi usado Shield. Vou manter importado caso queira trocar.
   DollarSign,
   Trash2,
   Edit2,
   Shield,
-  Package, // <--- Ícone de Insumos
-  ChefHat, // <--- Ícone de Receitas (caso precise no futuro)
+  Package,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -97,9 +96,6 @@ export function DefaultLayout() {
       visible: permissions.canCreateChecklist,
     },
     { path: "/wiki", icon: Wrench, label: "Manutenção", visible: true },
-
-    // Receitas foi removido daqui e colocado dentro de Insumos
-
     {
       path: "/portfolio",
       icon: FileText,
@@ -112,8 +108,6 @@ export function DefaultLayout() {
       label: "Máquinas",
       visible: permissions.canManageMachines,
     },
-
-    // Insumos (Visível apenas se tiver permissão)
     {
       path: "/supplies",
       icon: Package,

@@ -1,24 +1,20 @@
 import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Plus,
   Search,
-  Upload,
   Save,
   X,
   Trash2,
   Edit2,
   Zap,
   Droplet,
-  Ruler,
   Image as ImageIcon,
-  Link as LinkIcon,
   Barcode,
   Settings,
   Database,
-  FileText,
   Coffee,
   Scale,
   MapPin,
@@ -27,8 +23,6 @@ import {
   Trash,
   Youtube,
   Layers,
-  ChevronDown,
-  ChevronUp,
   RotateCcw,
 } from "lucide-react";
 
@@ -341,6 +335,13 @@ export function Machines() {
 
   async function handleSave(e) {
     e.preventDefault();
+
+    if (hasVariations && modelsList.length === 0) {
+      return alert(
+        "Você marcou 'Múltiplos Modelos', mas não adicionou nenhum modelo na lista.",
+      );
+    }
+
     setLoading(true);
     try {
       const finalModel = model === "Outro" ? customModel : model;
@@ -374,7 +375,7 @@ export function Machines() {
         environment_recommendation: environmentRecommendation,
         models: hasVariations ? modelsList : [],
 
-        // --- CORREÇÃO AQUI: Mapeando nome_banco: variavelEstado ---
+        // --- MAPEAMENTO MANUAL PARA EVITAR ERROS DE DEFINIÇÃO ---
         voltage: voltage,
         water_system: waterSystem,
         amperage: amperage,
@@ -416,7 +417,6 @@ export function Machines() {
     }
   }
 
-  // ... (handleDelete, handleOpenConfigs, resetForm e Render são iguais ao anterior, vou manter a estrutura)
   async function handleDelete(id, e) {
     e.stopPropagation();
     if (!permissions.canManageMachines) return alert("Sem permissão.");
@@ -494,8 +494,7 @@ export function Machines() {
 
   return (
     <div className="min-h-screen pb-20 animate-fade-in">
-      {/* ... (Todo o JSX de Renderização permanece igual ao que já estava funcionando) ... */}
-      {/* Vou colocar apenas o return para garantir que o arquivo esteja completo */}
+      {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-display font-bold text-gray-800">
@@ -527,6 +526,7 @@ export function Machines() {
         </div>
       </div>
 
+      {/* GRID DE MÁQUINAS */}
       {loading ? (
         <p className="text-center text-gray-400 py-10">
           Carregando catálogo...
@@ -621,6 +621,7 @@ export function Machines() {
         </div>
       )}
 
+      {/* MODAL */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -642,7 +643,7 @@ export function Machines() {
             </div>
 
             <form onSubmit={handleSave} className="p-6 md:p-8 space-y-8">
-              {/* Identificação Padrão (Pai) */}
+              {/* Identificação */}
               <section className="space-y-4">
                 <h3 className="text-xs uppercase font-bold text-gray-400 tracking-wider mb-4 flex items-center gap-2">
                   <ImageIcon size={14} /> Identificação Principal
@@ -975,7 +976,6 @@ export function Machines() {
                         }
                       />
 
-                      {/* CONDICIONAL: SE NÃO FOR COADO E NÃO FOR MOEDOR, MOSTRA ABASTECIMENTO */}
                       {type !== "Coado" && type !== "Moedor" && (
                         <div className="md:col-span-2">
                           <label className="block text-[10px] text-gray-500 font-bold uppercase mb-1">

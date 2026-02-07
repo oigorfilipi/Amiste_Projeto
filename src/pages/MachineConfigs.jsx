@@ -12,6 +12,7 @@ import {
   X,
   Database,
   Coffee,
+  Layers, // Novo ícone
 } from "lucide-react";
 
 export function MachineConfigs() {
@@ -20,12 +21,17 @@ export function MachineConfigs() {
   const navigate = useNavigate();
 
   // Dados da máquina vindo da tela anterior
-  const machine = location.state?.machine;
+  const machineData = location.state?.machine;
 
   const [configs, setConfigs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
+  // Controle de Modelo/Variação
+  const [selectedModelIndex, setSelectedModelIndex] = useState("");
+  // Estado derivado para saber quantos reservatórios usar
+  const [currentReservoirCount, setCurrentReservoirCount] = useState(0);
 
   // Form
   const [name, setName] = useState("");
@@ -33,19 +39,49 @@ export function MachineConfigs() {
   const [productMap, setProductMap] = useState({});
 
   useEffect(() => {
-    if (!machine) {
-      navigate("/machines"); // Se acessar direto sem máquina, volta
+    if (!machineData) {
+      navigate("/machines");
       return;
     }
     fetchConfigs();
-  }, [machine]);
+
+    // Inicializa a contagem de reservatórios com o valor do pai
+    setCurrentReservoirCount(machineData.reservoir_count || 0);
+  }, [machineData]);
+
+  // Efeito para atualizar a contagem quando troca o modelo
+  useEffect(() => {
+    if (
+      selectedModelIndex !== "" &&
+      machineData.models &&
+      machineData.models[selectedModelIndex]
+    ) {
+      // Se escolheu um modelo, usa a contagem dele (se tiver), senão usa a do pai
+      const model = machineData.models[selectedModelIndex];
+      // Nota: O reservoir_count no modelo pode não existir se foi criado antes da atualização
+      // Mas assumindo que a lógica de save do Machine.jsx está certa, deve estar lá.
+      // Se não tiver no modelo, assume o do pai.
+      // Como o reservoir_count não estava explícito no form de variação do Machine.jsx (estava implícito na lógica de "não mostrar se for moedor"),
+      // vamos assumir que se não tiver no modelo, usa o do pai.
+      // Mas espere! No Machine.jsx nós salvamos reservoir_count no payload geral se não tiver variação.
+      // Se tiver variação, o reservoir_count fica dentro do objeto do modelo?
+      // Vamos garantir: O ideal é que o modelo tenha sua própria contagem se ela diferir.
+      // Por simplificação: vamos usar a lógica de que se o modelo tem a propriedade definida, usa ela.
+      setCurrentReservoirCount(
+        model.reservoir_count || machineData.reservoir_count || 0,
+      );
+    } else {
+      // Se não tem modelo selecionado (ou é o pai), usa o do pai
+      setCurrentReservoirCount(machineData.reservoir_count || 0);
+    }
+  }, [selectedModelIndex, machineData]);
 
   async function fetchConfigs() {
     try {
       const { data, error } = await supabase
         .from("machine_configs")
         .select("*")
-        .eq("machine_id", machine.id)
+        .eq("machine_id", machineData.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -57,7 +93,6 @@ export function MachineConfigs() {
     }
   }
 
-  // Atualiza o produto de um reservatório específico
   function handleProductChange(index, value) {
     setProductMap((prev) => ({
       ...prev,
@@ -67,7 +102,13 @@ export function MachineConfigs() {
 
   function handleNew() {
     setEditingId(null);
-    setName("");
+    // Sugere um nome com base no modelo selecionado
+    let initialName = "";
+    if (selectedModelIndex !== "" && machineData.models) {
+      initialName = `${machineData.models[selectedModelIndex].name} - `;
+    }
+
+    setName(initialName);
     setDescription("");
     setProductMap({});
     setShowModal(true);
@@ -85,11 +126,13 @@ export function MachineConfigs() {
     e.preventDefault();
     try {
       const payload = {
-        machine_id: machine.id,
+        machine_id: machineData.id,
         user_id: user.id,
         name,
         description,
         product_map: productMap,
+        // Opcional: Salvar qual modelo essa config se refere (se quiser filtrar depois)
+        // model_index: selectedModelIndex
       };
 
       if (editingId) {
@@ -115,18 +158,18 @@ export function MachineConfigs() {
     fetchConfigs();
   }
 
-  // Gera array de 1 até N para os inputs
+  // Gera array baseado na contagem ATUAL (que pode vir do modelo)
   const reservoirs = Array.from(
-    { length: machine?.reservoir_count || 0 },
+    { length: parseInt(currentReservoirCount) || 0 },
     (_, i) => i + 1,
   );
 
-  if (!machine) return null;
+  if (!machineData) return null;
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20 animate-fade-in">
       <div className="max-w-5xl mx-auto p-6 md:p-8">
-        {/* HEADER COM DETALHES DA MÁQUINA */}
+        {/* HEADER */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-4">
             <button
@@ -138,9 +181,9 @@ export function MachineConfigs() {
 
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100">
-                {machine.photo_url ? (
+                {machineData.photo_url ? (
                   <img
-                    src={machine.photo_url}
+                    src={machineData.photo_url}
                     className="w-full h-full object-contain"
                   />
                 ) : (
@@ -149,7 +192,7 @@ export function MachineConfigs() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">
-                  {machine.name}
+                  {machineData.name}
                 </h1>
                 <p className="text-sm text-gray-500">
                   Gerenciando Configurações de Bebidas
@@ -158,24 +201,45 @@ export function MachineConfigs() {
             </div>
           </div>
 
-          <div className="flex gap-4">
-            <div className="text-right hidden md:block">
-              <p className="text-xs font-bold text-gray-400 uppercase">
-                Capacidade
-              </p>
-              <p className="font-bold text-amiste-primary">
-                {machine.reservoir_count > 0
-                  ? `${machine.reservoir_count} Reservatórios`
-                  : "Sem Reservatórios"}
-              </p>
+          <div className="flex flex-col items-end gap-2">
+            {/* SELETOR DE MODELO (Se houver) */}
+            {machineData.models && machineData.models.length > 0 && (
+              <div className="flex items-center gap-2 bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-100">
+                <Layers size={14} className="text-purple-600" />
+                <select
+                  className="bg-transparent text-sm font-bold text-purple-800 outline-none cursor-pointer"
+                  value={selectedModelIndex}
+                  onChange={(e) => setSelectedModelIndex(e.target.value)}
+                >
+                  <option value="">Padrão / Pai</option>
+                  {machineData.models.map((m, idx) => (
+                    <option key={idx} value={idx}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="flex gap-4 items-center">
+              <div className="text-right hidden md:block">
+                <p className="text-xs font-bold text-gray-400 uppercase">
+                  Capacidade Atual
+                </p>
+                <p className="font-bold text-amiste-primary">
+                  {currentReservoirCount > 0
+                    ? `${currentReservoirCount} Reservatórios`
+                    : "Sem Reservatórios"}
+                </p>
+              </div>
+              <button
+                onClick={handleNew}
+                disabled={currentReservoirCount === 0}
+                className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-2.5 rounded-xl font-bold shadow-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Plus size={20} /> Nova Configuração
+              </button>
             </div>
-            <button
-              onClick={handleNew}
-              disabled={machine.reservoir_count === 0}
-              className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-2.5 rounded-xl font-bold shadow-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Plus size={20} /> Nova Configuração
-            </button>
           </div>
         </div>
 
@@ -215,24 +279,28 @@ export function MachineConfigs() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                  {reservoirs.map((i) => (
-                    <div
-                      key={i}
-                      className="bg-gray-50 p-3 rounded-xl border border-gray-100"
-                    >
-                      <span className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
-                        Reservatório {i}
-                      </span>
-                      <span className="font-bold text-gray-700 break-words">
-                        {config.product_map?.[i] || "-"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                {/* Exibe os produtos apenas se houver reservatórios configurados */}
+                {Object.keys(config.product_map || {}).length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    {/* Aqui iteramos sobre o MAP salvo, pois a config pode ter sido criada
+                        para um modelo com mais/menos reservatórios do que o selecionado agora */}
+                    {Object.entries(config.product_map).map(([key, value]) => (
+                      <div
+                        key={key}
+                        className="bg-gray-50 p-3 rounded-xl border border-gray-100"
+                      >
+                        <span className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
+                          Reservatório {key}
+                        </span>
+                        <span className="font-bold text-gray-700 break-words">
+                          {value || "-"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {config.description && (
-                  // AQUI ESTÁ A CORREÇÃO: whitespace-pre-wrap e break-words
                   <div className="bg-blue-50 p-4 rounded-xl text-sm text-blue-800 leading-relaxed whitespace-pre-wrap break-words">
                     {config.description}
                   </div>
@@ -273,23 +341,31 @@ export function MachineConfigs() {
                   <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
                     <Database size={16} /> Mapeamento de Reservatórios
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {reservoirs.map((i) => (
-                      <div key={i}>
-                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1">
-                          Produto {i}
-                        </label>
-                        <input
-                          className="w-full p-2 border border-gray-200 rounded-lg text-sm bg-white"
-                          value={productMap[i] || ""}
-                          onChange={(e) =>
-                            handleProductChange(i, e.target.value)
-                          }
-                          placeholder={`Conteúdo do reservatório ${i}`}
-                        />
-                      </div>
-                    ))}
-                  </div>
+
+                  {reservoirs.length === 0 ? (
+                    <p className="text-sm text-red-500 italic">
+                      Esta variação/máquina não possui reservatórios
+                      configurados.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {reservoirs.map((i) => (
+                        <div key={i}>
+                          <label className="block text-xs font-bold text-gray-400 uppercase mb-1">
+                            Produto {i}
+                          </label>
+                          <input
+                            className="w-full p-2 border border-gray-200 rounded-lg text-sm bg-white"
+                            value={productMap[i] || ""}
+                            onChange={(e) =>
+                              handleProductChange(i, e.target.value)
+                            }
+                            placeholder={`Conteúdo do reservatório ${i}`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -306,7 +382,11 @@ export function MachineConfigs() {
 
                 <button
                   type="submit"
-                  className="w-full py-3 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2"
+                  disabled={
+                    reservoirs.length === 0 &&
+                    Object.keys(productMap).length === 0
+                  }
+                  className="w-full py-3 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Save size={20} /> Salvar Configuração
                 </button>

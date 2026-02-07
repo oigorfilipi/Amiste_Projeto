@@ -1,5 +1,6 @@
 import { useContext } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Coffee } from "lucide-react"; // Import para o loading
 
 // Layout e Páginas
 import { DefaultLayout } from "./layouts/DefaultLayout";
@@ -27,13 +28,18 @@ import { AuthProvider, AuthContext } from "./contexts/AuthContext";
 // 1. Verifica se está logado
 const Private = ({ children }) => {
   const { signed, loadingAuth } = useContext(AuthContext);
-  if (loadingAuth)
+
+  if (loadingAuth) {
     return (
-      <div className="h-screen flex items-center justify-center">
-        A carregar...
+      <div className="h-screen flex flex-col items-center justify-center bg-gray-50 text-gray-400">
+        <Coffee size={48} className="mb-4 animate-bounce opacity-20" />
+        <span className="font-bold text-sm">Carregando sistema...</span>
       </div>
     );
+  }
+
   if (!signed) return <Navigate to="/" />;
+
   return children;
 };
 
@@ -45,12 +51,12 @@ function LoginLogic() {
 }
 
 // 3. Wrapper de Permissão (Protege rotas específicas)
-function ProtectedRouteRouteWrapper({ children, permissionKey }) {
+function ProtectedRoute({ children, permissionKey }) {
   const { permissions, loadingAuth } = useContext(AuthContext);
 
   if (loadingAuth) return null; // Espera carregar permissões
 
-  // Se permissionKey for passado, verifica. Se não, libera (caso de uso futuro).
+  // Se permissionKey for passado e o usuário não tiver a permissão, redireciona
   if (permissionKey && !permissions[permissionKey]) {
     return <Navigate to="/home" replace />;
   }
@@ -91,27 +97,27 @@ export default function App() {
             <Route
               path="/checklists"
               element={
-                <ProtectedRouteRouteWrapper permissionKey="canCreateChecklist">
+                <ProtectedRoute permissionKey="canCreateChecklist">
                   <Checklist />
-                </ProtectedRouteRouteWrapper>
+                </ProtectedRoute>
               }
             />
 
             <Route
               path="/checklists/:id"
               element={
-                <ProtectedRouteRouteWrapper permissionKey="canCreateChecklist">
+                <ProtectedRoute permissionKey="canCreateChecklist">
                   <ChecklistDetails />
-                </ProtectedRouteRouteWrapper>
+                </ProtectedRoute>
               }
             />
 
             <Route
               path="/portfolio"
               element={
-                <ProtectedRouteRouteWrapper permissionKey="canManagePortfolio">
+                <ProtectedRoute permissionKey="canManagePortfolio">
                   <Portfolio />
-                </ProtectedRouteRouteWrapper>
+                </ProtectedRoute>
               }
             />
 
@@ -119,9 +125,9 @@ export default function App() {
             <Route
               path="/machines"
               element={
-                <ProtectedRouteRouteWrapper permissionKey="canManageMachines">
+                <ProtectedRoute permissionKey="canManageMachines">
                   <Machines />
-                </ProtectedRouteRouteWrapper>
+                </ProtectedRoute>
               }
             />
 
@@ -129,9 +135,9 @@ export default function App() {
             <Route
               path="/machine-configs"
               element={
-                <ProtectedRouteRouteWrapper permissionKey="canConfigureMachines">
+                <ProtectedRoute permissionKey="canConfigureMachines">
                   <MachineConfigs />
-                </ProtectedRouteRouteWrapper>
+                </ProtectedRoute>
               }
             />
 
@@ -139,18 +145,18 @@ export default function App() {
             <Route
               path="/supplies"
               element={
-                <ProtectedRouteRouteWrapper permissionKey="canManageSupplies">
+                <ProtectedRoute permissionKey="canManageSupplies">
                   <Supplies />
-                </ProtectedRouteRouteWrapper>
+                </ProtectedRoute>
               }
             />
 
             <Route
               path="/financial"
               element={
-                <ProtectedRouteRouteWrapper permissionKey="canViewFinancials">
+                <ProtectedRoute permissionKey="canViewFinancials">
                   <Financial />
-                </ProtectedRouteRouteWrapper>
+                </ProtectedRoute>
               }
             />
           </Route>

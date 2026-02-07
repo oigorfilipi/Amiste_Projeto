@@ -297,7 +297,7 @@ export function PortfolioPDF({ data }) {
           {/* HERO SECTION */}
           <View style={styles.heroSection}>
             <View style={styles.imageContainer}>
-              {/* LÓGICA ATUALIZADA: Se tiver Base64, usa ele. Se não, tenta a URL normal. */}
+              {/* Prioriza imagem Base64, depois URL, depois Texto */}
               {data.machine_image_base64 ? (
                 <Image src={data.machine_image_base64} style={styles.image} />
               ) : m.photo_url ? (
@@ -352,7 +352,7 @@ export function PortfolioPDF({ data }) {
                   ? [{ l: "Abastecimento", v: m.water_system }]
                   : [],
               )
-              // LOGICA CONDICIONAL: Tanque de água (Esconde para Coado E Moedor)
+              // LOGICA CONDICIONAL: Tanque de água
               .concat(
                 m.type !== "Coado" &&
                   m.type !== "Moedor" &&
@@ -360,7 +360,7 @@ export function PortfolioPDF({ data }) {
                   ? [{ l: "Tanque Água", v: m.water_tank_size }]
                   : [],
               )
-              // LOGICA CONDICIONAL: Reservatórios (Esconde para Moedor - mostra Capacity direto no Moedor)
+              // LOGICA CONDICIONAL: Reservatórios
               .concat(
                 m.reservoir_count > 0 && m.type !== "Moedor"
                   ? [
@@ -433,7 +433,7 @@ export function PortfolioPDF({ data }) {
                   : [],
               )
               .concat([
-                // LOGICA CONDICIONAL: Esgoto (Esconde para Coado E Moedor)
+                // LOGICA CONDICIONAL: Esgoto
                 ...(m.type !== "Coado" && m.type !== "Moedor"
                   ? [{ l: "Esgoto", v: m.has_sewage ? "Sim" : "Não" }]
                   : []),

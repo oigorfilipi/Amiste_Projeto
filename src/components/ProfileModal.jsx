@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../services/supabaseClient";
-import { X, Save, Shield, User, Mail, Lock, Key } from "lucide-react";
+import { X, Save, Shield, User, Lock, Key } from "lucide-react";
 
 export function ProfileModal({
   isOpen,
@@ -48,11 +48,7 @@ export function ProfileModal({
 
       const { error } = await supabase
         .from("profiles")
-        .update({
-          full_name: formData.full_name,
-          nickname: formData.nickname,
-          role: formData.role, // <--- TEM QUE TER ESSA LINHA
-        })
+        .update(updates) // Usa o objeto updates filtrado
         .eq("id", profileToEdit.id);
 
       if (error) throw error;
@@ -192,6 +188,7 @@ export function ProfileModal({
               <input
                 type="password"
                 placeholder="••••••"
+                autoComplete="new-password"
                 className="w-full pl-10 p-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all bg-gray-50 focus:bg-white"
                 value={formData.password}
                 onChange={(e) =>

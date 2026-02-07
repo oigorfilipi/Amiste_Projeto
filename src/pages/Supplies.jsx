@@ -15,7 +15,7 @@ import {
   ChefHat,
   Upload,
   Link as LinkIcon,
-  ShoppingCart, // <--- Adicionei este ícone para o empty state
+  ShoppingCart,
 } from "lucide-react";
 
 const BRAND_OPTIONS = [

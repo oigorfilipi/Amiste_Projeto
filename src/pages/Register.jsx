@@ -11,11 +11,13 @@ import {
   ShieldCheck,
   Briefcase,
   ArrowRight,
+  AlertCircle,
 } from "lucide-react";
 
 export function Register() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(""); // Estado para mensagem de erro
 
   // Campos do Formulário
   const [email, setEmail] = useState("");
@@ -23,7 +25,6 @@ export function Register() {
   const [fullName, setFullName] = useState("");
   const [nickname, setNickname] = useState("");
   const [cpf, setCpf] = useState("");
-  const [gender, setGender] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [role, setRole] = useState("Comercial");
   const [isHuman, setIsHuman] = useState(false);
@@ -48,9 +49,13 @@ export function Register() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    setErrorMsg("");
+
     if (!isHuman) return alert("Por favor, confirme que você não é um robô.");
     if (cpf.length < 14) return alert("CPF inválido.");
     if (birthDate.length < 10) return alert("Data de nascimento inválida.");
+    if (password.length < 6)
+      return alert("A senha deve ter no mínimo 6 caracteres.");
 
     setLoading(true);
 
@@ -61,9 +66,11 @@ export function Register() {
         finalNickname = parts.slice(0, 2).join(" ");
       }
 
+      // Converte DD/MM/AAAA para YYYY-MM-DD
       const [d, m, y] = birthDate.split("/");
       const isoDate = `${y}-${m}-${d}`;
 
+      // 1. Cria usuário no Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -71,24 +78,35 @@ export function Register() {
 
       if (authError) throw authError;
 
+      // 2. Cria perfil na tabela profiles
       if (authData.user) {
         const { error: profileError } = await supabase.from("profiles").insert({
           id: authData.user.id,
           full_name: fullName,
           nickname: finalNickname,
           cpf: cpf,
-          gender: gender || "Prefiro não informar",
           birth_date: isoDate,
           role: role,
         });
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          // Se falhar ao criar perfil, idealmente deveríamos apagar o user do Auth (rollback manual),
+          // mas por simplicidade vamos apenas avisar.
+          console.error("Erro ao criar perfil:", profileError);
+          throw new Error(
+            "Usuário criado, mas erro ao salvar perfil. Contate o suporte.",
+          );
+        }
 
         alert("Cadastro realizado com sucesso!");
         navigate("/");
       }
     } catch (error) {
-      alert("Erro ao cadastrar: " + error.message);
+      console.error(error);
+      let msg = error.message;
+      if (msg.includes("already registered")) msg = "E-mail já está em uso.";
+      if (msg.includes("weak password")) msg = "A senha é muito fraca.";
+      setErrorMsg(msg);
     } finally {
       setLoading(false);
     }
@@ -139,6 +157,14 @@ export function Register() {
             </p>
           </div>
 
+          {/* Mensagem de Erro Geral */}
+          {errorMsg && (
+            <div className="mb-6 flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg text-sm font-medium border border-red-100 animate-pulse">
+              <AlertCircle size={16} />
+              {errorMsg}
+            </div>
+          )}
+
           <form onSubmit={handleRegister} className="space-y-8">
             {/* SEÇÃO 1: PESSOAL */}
             <div className="space-y-4">
@@ -159,6 +185,8 @@ export function Register() {
                     <input
                       required
                       type="text"
+                      name="fullName"
+                      autoComplete="name"
                       className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
                       placeholder="Nome completo"
                       value={fullName}
@@ -255,6 +283,8 @@ export function Register() {
                     <input
                       required
                       type="email"
+                      name="email"
+                      autoComplete="email"
                       className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
                       placeholder="seu@email.com"
                       value={email}
@@ -275,6 +305,8 @@ export function Register() {
                     <input
                       required
                       type="password"
+                      name="password"
+                      autoComplete="new-password" // Sugere que é uma nova senha
                       className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
                       placeholder="Mínimo 6 caracteres"
                       value={password}

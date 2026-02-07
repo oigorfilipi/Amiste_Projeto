@@ -106,6 +106,31 @@ const styles = StyleSheet.create({
     color: "#111",
   },
 
+  // Specs Técnicas (Novo)
+  specsRow: {
+    flexDirection: "row",
+    backgroundColor: "#EFF6FF", // Azul bem claro
+    padding: 6,
+    borderRadius: 4,
+    marginBottom: 10,
+    gap: 15,
+  },
+  specItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  specLabel: {
+    fontSize: 7,
+    color: "#60A5FA", // Azul
+    fontFamily: "Helvetica-Bold",
+    textTransform: "uppercase",
+  },
+  specValue: {
+    fontSize: 8,
+    color: "#1E3A8A", // Azul escuro
+  },
+
   // Cards de Status (Sim/Não)
   statusRow: {
     flexDirection: "row",
@@ -272,6 +297,9 @@ export function ChecklistPDF({ data }) {
       </Document>
     );
 
+  // Dados da máquina
+  const mData = data.machine_data || {};
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -338,6 +366,26 @@ export function ChecklistPDF({ data }) {
               <View style={styles.col2}>
                 <Text style={styles.label}>Modelo da Máquina</Text>
                 <Text style={styles.value}>{data.machine_name}</Text>
+              </View>
+            </View>
+
+            {/* SPECS TÉCNICAS (NOVO) */}
+            <View style={styles.specsRow}>
+              <View style={styles.specItem}>
+                <Text style={styles.specLabel}>Voltagem:</Text>
+                <Text style={styles.specValue}>{mData.voltage || "-"}</Text>
+              </View>
+              <View style={styles.specItem}>
+                <Text style={styles.specLabel}>Peso:</Text>
+                <Text style={styles.specValue}>{mData.weight || "-"}</Text>
+              </View>
+              <View style={styles.specItem}>
+                <Text style={styles.specLabel}>Dimensões:</Text>
+                <Text style={styles.specValue}>{mData.dimensions || "-"}</Text>
+              </View>
+              <View style={styles.specItem}>
+                <Text style={styles.specLabel}>Potência:</Text>
+                <Text style={styles.specValue}>{mData.amperage || "-"}</Text>
               </View>
             </View>
 

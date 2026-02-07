@@ -219,7 +219,7 @@ export function History() {
                   key={log.id}
                   className="group bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-amiste-primary/30 transition-all flex flex-col md:flex-row gap-4 items-start md:items-center relative overflow-hidden"
                 >
-                  {/* Linha colorida lateral (opcional, estilo Jira) */}
+                  {/* Linha colorida lateral */}
                   <div
                     className={`absolute left-0 top-0 bottom-0 w-1 ${style.bg.replace("bg-", "bg-").replace("50", "500")}`}
                   ></div>

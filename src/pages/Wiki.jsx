@@ -10,14 +10,14 @@ import {
   Droplet,
   Settings,
   FileText,
-  ChevronRight,
   ChevronDown,
   ChevronUp,
   Edit2,
   Save,
   X,
   Search,
-  BookOpen, // <--- Adicionei este ícone para o empty state
+  ChevronRight,
+  BookOpen,
 } from "lucide-react";
 
 export function Wiki() {
@@ -78,8 +78,11 @@ export function Wiki() {
     setDescription(sol.description);
     setShowForm(true);
     // Scroll suave até o formulário
-    const formElement = document.getElementById("wiki-form");
-    if (formElement) formElement.scrollIntoView({ behavior: "smooth" });
+    setTimeout(() => {
+      document
+        .getElementById("wiki-form")
+        ?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
   }
 
   // 4. Salvar
@@ -161,10 +164,10 @@ export function Wiki() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50/50 pb-20">
+    <div className="min-h-screen bg-gray-50/50 pb-20 animate-fade-in">
       {/* --- MODO 1: GRID DE MÁQUINAS --- */}
       {view === "grid" && (
-        <div className="max-w-7xl mx-auto p-6 md:p-8 animate-fade-in">
+        <div className="max-w-7xl mx-auto p-6 md:p-8">
           <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
             <div>
               <h1 className="text-3xl font-display font-bold text-gray-800">
@@ -219,11 +222,17 @@ export function Wiki() {
                 >
                   <div className="h-48 bg-gray-50 p-6 flex items-center justify-center relative">
                     <div className="absolute inset-0 bg-amiste-primary/0 group-hover:bg-amiste-primary/5 transition-colors duration-300"></div>
-                    <img
-                      src={machine.photo_url}
-                      alt={machine.name}
-                      className="h-full w-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500"
-                    />
+                    {machine.photo_url ? (
+                      <img
+                        src={machine.photo_url}
+                        alt={machine.name}
+                        className="h-full w-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="text-gray-300">
+                        <Settings size={48} />
+                      </div>
+                    )}
                   </div>
 
                   <div className="p-5">
@@ -245,10 +254,10 @@ export function Wiki() {
         </div>
       )}
 
-      {/* --- MODO 2: DETALHES (Estilo Checklist Form) --- */}
+      {/* --- MODO 2: DETALHES --- */}
       {view === "details" && selectedMachine && (
         <div className="max-w-5xl mx-auto p-4 md:p-8 animate-fade-in">
-          {/* Header Fixo (Glassmorphism) */}
+          {/* Header Fixo */}
           <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md px-6 py-4 -mx-4 md:-mx-8 mb-8 border-b border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 transition-all">
             <div className="flex items-center gap-4">
               <button
@@ -303,7 +312,7 @@ export function Wiki() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* FORMULÁRIO (Card Flutuante) */}
+            {/* FORMULÁRIO */}
             {showForm && (
               <div
                 id="wiki-form"
@@ -389,7 +398,7 @@ export function Wiki() {
             {/* LISTA DE SOLUÇÕES */}
             <div className="lg:col-span-3 space-y-4">
               {solutions.length === 0 ? (
-                // --- EMPTY STATE (SOLUÇÕES) ---
+                // --- EMPTY STATE ---
                 <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200">
                   <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Wrench size={32} className="text-gray-300" />

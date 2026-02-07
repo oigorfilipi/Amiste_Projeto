@@ -6,13 +6,12 @@ import {
   History,
   Tag,
   LogOut,
-  User,
   Eye,
   XCircle,
   Settings,
   ChevronDown,
   Package,
-  ChefHat, // <--- Importei ChefHat para Receitas
+  ChefHat,
 } from "lucide-react";
 import clsx from "clsx";
 

@@ -10,7 +10,8 @@ import {
   Check,
   X,
   DollarSign,
-  ShoppingCart, // <--- Novo ícone para empty state
+  ShoppingCart,
+  Layers, // Ícone para identificar variação
 } from "lucide-react";
 
 export function PriceList() {
@@ -20,6 +21,7 @@ export function PriceList() {
   const [loading, setLoading] = useState(true);
 
   // Estados para edição rápida
+  // editingId agora pode ser "ID_MAQUINA" ou "ID_MAQUINA-INDEX_MODELO"
   const [editingId, setEditingId] = useState(null);
   const [editPrice, setEditPrice] = useState("");
 
@@ -37,34 +39,91 @@ export function PriceList() {
     setLoading(false);
   }
 
-  async function handleUpdatePrice(id) {
+  async function handleUpdatePrice(machineId, modelIndex = null) {
     const finalPrice = editPrice === "" ? 0 : parseFloat(editPrice);
+
     try {
-      const { error } = await supabase
-        .from("machines")
-        .update({ price: finalPrice })
-        .eq("id", id);
+      if (modelIndex === null) {
+        // Atualiza preço da máquina PAI
+        const { error } = await supabase
+          .from("machines")
+          .update({ price: finalPrice })
+          .eq("id", machineId);
+        if (error) throw error;
 
-      if (error) throw error;
+        // Atualiza estado local
+        setMachines(
+          machines.map((m) =>
+            m.id === machineId ? { ...m, price: finalPrice } : m,
+          ),
+        );
+      } else {
+        // Atualiza preço do MODELO FILHO (dentro do JSONB)
+        const machineToUpdate = machines.find((m) => m.id === machineId);
+        if (!machineToUpdate) return;
 
-      setMachines(
-        machines.map((m) => (m.id === id ? { ...m, price: finalPrice } : m)),
-      );
+        const newModels = [...machineToUpdate.models];
+        // Adiciona a propriedade price ao modelo específico
+        newModels[modelIndex] = { ...newModels[modelIndex], price: finalPrice };
+
+        const { error } = await supabase
+          .from("machines")
+          .update({ models: newModels })
+          .eq("id", machineId);
+        if (error) throw error;
+
+        // Atualiza estado local
+        setMachines(
+          machines.map((m) =>
+            m.id === machineId ? { ...m, models: newModels } : m,
+          ),
+        );
+      }
+
       setEditingId(null);
     } catch (error) {
-      alert("Erro: " + error.message);
+      alert("Erro ao atualizar preço: " + error.message);
     }
   }
 
-  function startEditing(machine) {
-    setEditingId(machine.id);
-    setEditPrice(machine.price === 0 ? "" : machine.price);
+  function startEditing(idUnico, currentPrice) {
+    setEditingId(idUnico);
+    setEditPrice(
+      currentPrice === undefined || currentPrice === 0 ? "" : currentPrice,
+    );
   }
 
-  const filteredMachines = machines.filter(
-    (m) =>
-      m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.brand?.toLowerCase().includes(searchTerm.toLowerCase()),
+  // Achata a lista: Cria uma linha para o pai e linhas para os filhos
+  const flattenedList = [];
+  machines.forEach((m) => {
+    // Adiciona o Pai
+    flattenedList.push({
+      ...m,
+      uniqueId: m.id.toString(),
+      isModel: false,
+      displayName: m.name,
+      displayPrice: m.price,
+    });
+
+    // Se tiver modelos, adiciona os Filhos
+    if (m.models && m.models.length > 0) {
+      m.models.forEach((mod, idx) => {
+        flattenedList.push({
+          ...m, // Herda dados do pai (foto, marca) para exibição
+          uniqueId: `${m.id}-${idx}`, // ID composto
+          isModel: true,
+          modelIndex: idx,
+          displayName: `${m.name} - ${mod.name}`,
+          displayPrice: mod.price, // Preço específico do modelo
+        });
+      });
+    }
+  });
+
+  const filteredItems = flattenedList.filter(
+    (item) =>
+      item.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.brand?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const formatMoney = (val) =>
@@ -97,14 +156,12 @@ export function PriceList() {
           </div>
         </div>
 
-        {/* CONDICIONAL: LOADING ou EMPTY STATE ou GRID */}
         {loading ? (
           <div className="text-center py-20 text-gray-400">
             <Tag size={48} className="mx-auto mb-4 opacity-20" />
             <p>Carregando catálogo...</p>
           </div>
-        ) : filteredMachines.length === 0 ? (
-          // --- EMPTY STATE (NENHUMA MÁQUINA ENCONTRADA) ---
+        ) : filteredItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in max-w-2xl mx-auto mt-8">
             <div className="bg-gray-50 p-6 rounded-full mb-4">
               <ShoppingCart size={48} className="text-gray-300" />
@@ -118,28 +175,39 @@ export function PriceList() {
             </p>
           </div>
         ) : (
-          // --- GRID DE PREÇOS ---
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredMachines.map((machine) => (
+            {filteredItems.map((item) => (
               <div
-                key={machine.id}
-                className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col group hover:-translate-y-1 relative"
+                key={item.uniqueId}
+                className={`bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col group hover:-translate-y-1 relative ${item.isModel ? "border-purple-100 ring-1 ring-purple-50" : "border-gray-100"}`}
               >
                 {/* Imagem */}
-                <div className="h-56 bg-gray-50 p-6 flex items-center justify-center relative">
+                <div className="h-48 bg-gray-50 p-6 flex items-center justify-center relative">
                   <div className="absolute inset-0 bg-amiste-primary/0 group-hover:bg-amiste-primary/5 transition-colors duration-300"></div>
-                  {machine.photo_url ? (
+                  {/* Se for modelo, mostra badge */}
+                  {item.isModel && (
+                    <div className="absolute top-3 left-3 bg-purple-100 text-purple-700 px-2 py-1 rounded text-[10px] font-bold uppercase flex items-center gap-1 shadow-sm z-10">
+                      <Layers size={10} /> Variação
+                    </div>
+                  )}
+
+                  {/* Tenta mostrar foto específica do modelo se tiver, senão usa a do pai */}
+                  {item.isModel && item.models[item.modelIndex].photo_url ? (
                     <img
-                      src={machine.photo_url}
+                      src={item.models[item.modelIndex].photo_url}
+                      className="h-full w-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : item.photo_url ? (
+                    <img
+                      src={item.photo_url}
                       className="h-full w-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500"
                     />
                   ) : (
                     <Coffee size={48} className="text-gray-300" />
                   )}
 
-                  {/* Badge Marca */}
                   <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-bold text-gray-600 border border-gray-200 uppercase tracking-wide shadow-sm">
-                    {machine.brand}
+                    {item.brand}
                   </div>
                 </div>
 
@@ -147,12 +215,14 @@ export function PriceList() {
                 <div className="p-5 flex-1 flex flex-col">
                   <h3
                     className="font-bold text-gray-800 text-lg leading-tight mb-1 truncate"
-                    title={machine.name}
+                    title={item.displayName}
                   >
-                    {machine.name}
+                    {item.displayName}
                   </h3>
                   <p className="text-xs text-gray-500 mb-6 font-medium">
-                    {machine.model || "Modelo Padrão"} • {machine.voltage}
+                    {item.isModel
+                      ? `Modelo: ${item.models[item.modelIndex].name}`
+                      : `${item.model || "Modelo Padrão"}`}
                   </p>
 
                   <div className="mt-auto pt-4 border-t border-gray-100">
@@ -162,7 +232,7 @@ export function PriceList() {
                           <DollarSign size={10} /> Preço de Venda
                         </p>
 
-                        {editingId === machine.id ? (
+                        {editingId === item.uniqueId ? (
                           // MODO EDIÇÃO
                           <div className="flex items-center gap-2 animate-fade-in bg-gray-50 p-1 rounded-lg border border-amiste-primary/30">
                             <span className="text-xs font-bold text-gray-500 ml-1">
@@ -177,11 +247,19 @@ export function PriceList() {
                               onChange={(e) => setEditPrice(e.target.value)}
                               onKeyDown={(e) =>
                                 e.key === "Enter" &&
-                                handleUpdatePrice(machine.id)
+                                handleUpdatePrice(
+                                  item.id,
+                                  item.isModel ? item.modelIndex : null,
+                                )
                               }
                             />
                             <button
-                              onClick={() => handleUpdatePrice(machine.id)}
+                              onClick={() =>
+                                handleUpdatePrice(
+                                  item.id,
+                                  item.isModel ? item.modelIndex : null,
+                                )
+                              }
                               className="p-1.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors shadow-sm"
                             >
                               <Check size={14} />
@@ -196,23 +274,25 @@ export function PriceList() {
                         ) : (
                           // MODO VISUALIZAÇÃO
                           <div>
-                            {machine.price > 0 ? (
+                            {item.displayPrice > 0 ? (
                               <div className="text-2xl font-bold text-amiste-primary tracking-tight">
-                                {formatMoney(machine.price)}
+                                {formatMoney(item.displayPrice)}
                               </div>
                             ) : (
                               <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-700 text-xs px-3 py-1.5 rounded-lg font-bold border border-amber-100">
-                                <AlertCircle size={14} /> Consultar Estoque
+                                <AlertCircle size={14} /> Consultar
                               </div>
                             )}
                           </div>
                         )}
                       </div>
 
-                      {/* Botão de Editar (Só se tiver permissão e não estiver editando) */}
-                      {canEditPrice && editingId !== machine.id && (
+                      {/* Botão de Editar */}
+                      {canEditPrice && editingId !== item.uniqueId && (
                         <button
-                          onClick={() => startEditing(machine)}
+                          onClick={() =>
+                            startEditing(item.uniqueId, item.displayPrice)
+                          }
                           className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-all ml-2"
                           title="Editar Preço"
                         >

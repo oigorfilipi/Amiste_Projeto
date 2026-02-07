@@ -7,12 +7,10 @@ import {
   Wrench,
   FileText,
   Coffee,
-  Calendar,
   DollarSign,
-  Tag,
   ArrowRight,
   Clock,
-  Package, // <--- Importei o ícone Package
+  Package,
 } from "lucide-react";
 
 export function Home() {
@@ -26,6 +24,7 @@ export function Home() {
 
   async function fetchDashboardData() {
     try {
+      // Só busca dados se tiver permissão de ver checklist ou financeiro
       if (permissions.canCreateChecklist || permissions.canViewFinancials) {
         const { data: checklists } = await supabase
           .from("checklists")
@@ -42,7 +41,7 @@ export function Home() {
   }
 
   function MenuCard({ to, icon: Icon, title, desc, colorClass, permission }) {
-    // Se a permissão for undefined ou false, não mostra o card
+    // Se a permissão for undefined ou false, não renderiza o card
     if (!permission) return null;
 
     const colorStyles = {
@@ -52,7 +51,7 @@ export function Home() {
       blue: "bg-blue-50 text-blue-600 group-hover:bg-blue-100",
       pink: "bg-pink-50 text-pink-600 group-hover:bg-pink-100",
       purple: "bg-purple-50 text-purple-600 group-hover:bg-purple-100",
-      teal: "bg-teal-50 text-teal-600 group-hover:bg-teal-100", // Adicionei teal caso precise
+      teal: "bg-teal-50 text-teal-600 group-hover:bg-teal-100",
     };
 
     const style = colorStyles[colorClass] || colorStyles.red;
@@ -138,7 +137,6 @@ export function Home() {
           permission={permissions.canManagePortfolio}
         />
 
-        {/* NOVO CARD: INSUMOS (Usando a cor Pink que era da tabela) */}
         <MenuCard
           to="/supplies"
           icon={Package}
@@ -147,8 +145,6 @@ export function Home() {
           colorClass="pink"
           permission={permissions.canManageSupplies}
         />
-
-        {/* CARD TABELA DE PREÇOS REMOVIDO DAQUI */}
 
         <MenuCard
           to="/wiki"

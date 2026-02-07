@@ -3,13 +3,12 @@ import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
 import {
   Search,
-  Tag,
   Package,
   Edit2,
   Check,
   X,
   DollarSign,
-  ShoppingCart, // <--- Novo ícone para empty state
+  ShoppingCart,
 } from "lucide-react";
 
 export function SupplyPriceList() {
@@ -37,10 +36,13 @@ export function SupplyPriceList() {
   async function handleUpdatePrice(id) {
     const finalPrice = editPrice === "" ? 0 : parseFloat(editPrice);
     try {
-      await supabase
+      const { error } = await supabase
         .from("supplies")
         .update({ price: finalPrice })
         .eq("id", id);
+
+      if (error) throw error;
+
       setSupplies(
         supplies.map((s) => (s.id === id ? { ...s, price: finalPrice } : s)),
       );
@@ -112,6 +114,7 @@ export function SupplyPriceList() {
                 className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all group hover:-translate-y-1"
               >
                 <div className="h-40 bg-gray-50 p-4 flex items-center justify-center relative">
+                  <div className="absolute inset-0 bg-amiste-primary/0 group-hover:bg-amiste-primary/5 transition-colors duration-300"></div>
                   {item.photo_url ? (
                     <img
                       src={item.photo_url}

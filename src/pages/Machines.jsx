@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast"; // <--- Importante: Toast aqui
 import { MachinesList } from "../components/Machines/MachinesList";
 import { MachineForm } from "../components/Machines/MachineForm";
 import {
@@ -11,7 +12,7 @@ import {
 } from "../components/Machines/MachinesUI";
 
 export function Machines() {
-  const { permissions = {} } = useContext(AuthContext); // Adicionado default {}
+  const { permissions = {} } = useContext(AuthContext);
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -121,9 +122,9 @@ export function Machines() {
       if (uploadError) throw uploadError;
       const { data } = supabase.storage.from("images").getPublicUrl(fileName);
       setPhotoUrl(data.publicUrl);
-      alert("Imagem enviada!");
+      toast.success("Imagem enviada com sucesso!");
     } catch (error) {
-      alert("Erro: " + error.message);
+      toast.error("Erro ao enviar imagem: " + error.message);
     } finally {
       setUploading(false);
     }
@@ -135,7 +136,7 @@ export function Machines() {
   // --- FUNÇÕES DE MODELOS ---
   function handleSaveModel() {
     if (!tempModel.name)
-      return alert("Dê um nome para o modelo (ex: 15 Litros)");
+      return toast.error("Por favor, dê um nome para o modelo (ex: 15 Litros)");
 
     const newList = [...modelsList];
 
@@ -209,7 +210,8 @@ export function Machines() {
   }
 
   function handleEdit(machine) {
-    if (!permissions.canManageMachines) return alert("Sem permissão.");
+    if (!permissions.canManageMachines)
+      return toast.error("Você não tem permissão para editar máquinas.");
     setEditingId(machine.id);
     setName(machine.name);
     setDescription(machine.description || "");
@@ -282,7 +284,8 @@ export function Machines() {
   }
 
   function handleNew() {
-    if (!permissions.canManageMachines) return alert("Sem permissão.");
+    if (!permissions.canManageMachines)
+      return toast.error("Você não tem permissão para criar máquinas.");
     resetForm();
     setImageMode("url");
     setShowModal(true);
@@ -292,7 +295,7 @@ export function Machines() {
     e.preventDefault();
 
     if (hasVariations && modelsList.length === 0) {
-      return alert(
+      return toast.error(
         "Você marcou 'Múltiplos Modelos', mas não adicionou nenhum modelo na lista.",
       );
     }
@@ -355,17 +358,17 @@ export function Machines() {
           .update(payload)
           .eq("id", editingId);
         if (error) throw error;
-        alert("Atualizado!");
+        toast.success("Máquina atualizada com sucesso!");
       } else {
         const { error } = await supabase.from("machines").insert(payload);
         if (error) throw error;
-        alert("Criado!");
+        toast.success("Nova máquina cadastrada com sucesso!");
       }
       setShowModal(false);
       resetForm();
       fetchMachines();
     } catch (err) {
-      alert("Erro: " + err.message);
+      toast.error("Erro ao salvar: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -373,7 +376,8 @@ export function Machines() {
 
   async function handleDelete(id, e) {
     e.stopPropagation();
-    if (!permissions.canManageMachines) return alert("Sem permissão.");
+    if (!permissions.canManageMachines)
+      return toast.error("Você não tem permissão para excluir.");
     if (!confirm("Tem certeza que deseja excluir esta máquina?")) return;
 
     try {
@@ -386,10 +390,10 @@ export function Machines() {
         }
         throw error;
       }
-      alert("Máquina excluída com sucesso.");
+      toast.success("Máquina excluída com sucesso.");
       fetchMachines();
     } catch (err) {
-      alert("Erro ao excluir: " + err.message);
+      toast.error("Erro ao excluir: " + err.message);
     }
   }
 
@@ -447,7 +451,6 @@ export function Machines() {
   );
 
   // --- PROPS PARA O FORMULÁRIO ---
-  // Reúne todos os states e handlers para passar limpo pro filho
   const formProps = {
     showModal,
     setShowModal,

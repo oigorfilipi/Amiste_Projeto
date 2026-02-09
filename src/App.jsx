@@ -1,17 +1,18 @@
 import { useContext } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Coffee } from "lucide-react"; // Import para o loading
+import { Toaster } from "react-hot-toast"; // <--- 1. IMPORTAR O TOASTER
+import { Coffee } from "lucide-react";
 
 // Layout e Páginas
 import { DefaultLayout } from "./layouts/DefaultLayout";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { Home } from "./pages/Home";
-import { Checklist } from "./pages/Checklist";
+import { Checklist } from "./pages/Checklist"; // O arquivo principal da página Checklist
 import { ChecklistDetails } from "./pages/ChecklistDetails";
 import { Wiki } from "./pages/Wiki";
 import { Portfolio } from "./pages/Portfolio";
-import { Machines } from "./pages/Machines";
+import { Machines } from "./pages/Machines"; // O arquivo principal da página Machines
 import { History } from "./pages/History";
 import { Financial } from "./pages/Financial";
 import { PriceList } from "./pages/PriceList";
@@ -32,49 +33,89 @@ const Private = ({ children }) => {
 
   if (loadingAuth) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-gray-50 text-gray-400">
-        <Coffee size={48} className="mb-4 animate-bounce opacity-20" />
-        <span className="font-bold text-sm">Carregando sistema...</span>
+      <div className="h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-4 animate-pulse">
+          <div className="bg-amiste-primary p-4 rounded-full">
+            <Coffee size={40} className="text-white animate-bounce" />
+          </div>
+          <p className="text-gray-400 font-bold text-sm">
+            Carregando Sistema...
+          </p>
+        </div>
       </div>
     );
   }
 
-  if (!signed) return <Navigate to="/" />;
-
-  return children;
+  return signed ? children : <Navigate to="/" />;
 };
 
-// 2. Lógica de Login (Se já logado, vai pra home)
-function LoginLogic() {
-  const { signed } = useContext(AuthContext);
-  if (signed) return <Navigate to="/home" />;
-  return <Login />;
-}
-
-// 3. Wrapper de Permissão (Protege rotas específicas)
-function ProtectedRoute({ children, permissionKey }) {
+// 2. Rota Protegida por Permissão (RBAC)
+const ProtectedRoute = ({ children, permissionKey }) => {
   const { permissions, loadingAuth } = useContext(AuthContext);
 
-  if (loadingAuth) return null; // Espera carregar permissões
+  if (loadingAuth) return null; // Ou um spinner
 
-  // Se permissionKey for passado e o usuário não tiver a permissão, redireciona
-  if (permissionKey && !permissions[permissionKey]) {
+  // Se não tiver a permissão, redireciona para Home
+  if (!permissions || !permissions[permissionKey]) {
     return <Navigate to="/home" replace />;
   }
 
   return children;
-}
+};
 
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        {/* --- 2. CONFIGURAÇÃO GLOBAL DAS NOTIFICAÇÕES --- */}
+        <Toaster
+          position="top-right"
+          reverseOrder={false}
+          toastOptions={{
+            // Configurações padrão
+            duration: 4000,
+            style: {
+              background: "#333",
+              color: "#fff",
+              borderRadius: "12px",
+              fontSize: "14px",
+              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+            },
+            // Estilo para Sucesso
+            success: {
+              style: {
+                background: "#DEF7EC", // Verde bem clarinho
+                color: "#03543F", // Verde escuro
+                border: "1px solid #84E1BC",
+                fontWeight: "600",
+              },
+              iconTheme: {
+                primary: "#0E9F6E",
+                secondary: "#EAFBF4",
+              },
+            },
+            // Estilo para Erro
+            error: {
+              style: {
+                background: "#FDE8E8", // Vermelho bem clarinho
+                color: "#9B1C1C", // Vermelho escuro
+                border: "1px solid #F8B4B4",
+                fontWeight: "600",
+              },
+              iconTheme: {
+                primary: "#F05252",
+                secondary: "#FBD5D5",
+              },
+            },
+          }}
+        />
+
         <Routes>
           {/* Rotas Públicas */}
-          <Route path="/" element={<LoginLogic />} />
+          <Route path="/" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* Rotas Protegidas (Layout Padrão) */}
+          {/* Rotas Privadas com Layout */}
           <Route
             element={
               <Private>
@@ -82,19 +123,21 @@ export default function App() {
               </Private>
             }
           >
-            {/* Home é liberada pra todos logados */}
             <Route path="/home" element={<Home />} />
-
-            {/* Tabelas de Preço (Liberadas leitura geral) */}
+            <Route path="/checklists/:id" element={<ChecklistDetails />} />
+            <Route
+              path="/checklists/print-blank"
+              element={<PrintBlankChecklist />}
+            />
+            <Route path="/wiki" element={<Wiki />} />
+            <Route path="/history" element={<History />} />
             <Route path="/prices" element={<PriceList />} />
             <Route path="/supply-prices" element={<SupplyPriceList />} />
-
-            {/* Wiki e Receitas (Liberadas leitura geral) */}
-            <Route path="/wiki" element={<Wiki />} />
             <Route path="/recipes" element={<Recipes />} />
-            <Route path="/history" element={<History />} />
 
-            {/* Rotas BLINDADAS por Cargo */}
+            {/* Rotas com Permissões Específicas */}
+
+            {/* CHECKLISTS (Técnico/Comercial/Dono/DEV) */}
             <Route
               path="/checklists"
               element={
@@ -104,24 +147,7 @@ export default function App() {
               }
             />
 
-            <Route
-              path="/checklists/:id"
-              element={
-                <ProtectedRoute permissionKey="canCreateChecklist">
-                  <ChecklistDetails />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/checklists/print-blank"
-              element={
-                <ProtectedRoute permissionKey="canCreateChecklist">
-                  <PrintBlankChecklist />
-                </ProtectedRoute>
-              }
-            />
-
+            {/* PORTFÓLIO (Comercial/Vendas/Dono/DEV) */}
             <Route
               path="/portfolio"
               element={
@@ -161,6 +187,7 @@ export default function App() {
               }
             />
 
+            {/* FINANCEIRO (Só quem pode ver financeiro) */}
             <Route
               path="/financial"
               element={
@@ -171,7 +198,7 @@ export default function App() {
             />
           </Route>
 
-          {/* Rota 404 - Redireciona para login/home */}
+          {/* Rota 404 - Redireciona para login */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

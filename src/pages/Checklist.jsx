@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
+import toast from "react-hot-toast"; // <--- Importante: Toast aqui
 import { ChecklistList } from "../components/Checklist/ChecklistList";
 import { ChecklistForm } from "../components/Checklist/ChecklistForm";
 import {
@@ -9,7 +10,7 @@ import {
 } from "../components/Checklist/ChecklistUI";
 
 export function Checklist() {
-  const { user, permissions = {} } = useContext(AuthContext); // Adicionamos " = {}"
+  const { user, permissions = {} } = useContext(AuthContext);
 
   // --- CONTROLE DE TELA ---
   const [view, setView] = useState("list");
@@ -189,11 +190,12 @@ export function Checklist() {
 
   async function handleSave(status = "Finalizado") {
     if (status === "Finalizado" && !contractNum)
-      return alert("Preencha o Nº Contrato.");
-    if (!clientName && !eventName) return alert("Preencha o Cliente/Evento.");
+      return toast.error("Por favor, preencha o Nº Contrato.");
+    if (!clientName && !eventName)
+      return toast.error("Por favor, preencha o Nome do Cliente ou Evento.");
 
     if (selectedMachineData?.models?.length > 0 && selectedModelIndex === "") {
-      return alert("Por favor, selecione o modelo/variação da máquina.");
+      return toast.error("Por favor, selecione o modelo/variação da máquina.");
     }
 
     setSaving(true);
@@ -260,27 +262,37 @@ export function Checklist() {
           .update(payload)
           .eq("id", editingId);
         if (error) throw error;
-        alert("Atualizado com sucesso!");
+        toast.success("Checklist atualizado com sucesso!");
       } else {
         const { error } = await supabase.from("checklists").insert(payload);
         if (error) throw error;
-        alert(status === "Rascunho" ? "Rascunho criado!" : "Checklist criado!");
+        toast.success(
+          status === "Rascunho"
+            ? "Rascunho salvo!"
+            : "Checklist criado com sucesso!",
+        );
       }
       fetchChecklists();
       setView("list");
       setEditingId(null);
     } catch (error) {
-      alert("Erro: " + error.message);
+      toast.error("Erro ao salvar: " + error.message);
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete(id) {
-    if (!permissions.canDeleteChecklist) return alert("Sem permissão.");
-    if (!confirm("Excluir checklist permanentemente?")) return;
-    await supabase.from("checklists").delete().eq("id", id);
-    fetchChecklists();
+    if (!permissions.canDeleteChecklist)
+      return toast.error("Você não tem permissão para excluir checklists.");
+    if (!confirm("Tem certeza que deseja excluir este checklist?")) return;
+    try {
+      await supabase.from("checklists").delete().eq("id", id);
+      toast.success("Checklist excluído.");
+      fetchChecklists();
+    } catch (error) {
+      toast.error("Erro ao excluir.");
+    }
   }
 
   async function handleCancelChecklist() {
@@ -292,16 +304,17 @@ export function Checklist() {
         .update({ status: "Cancelado" })
         .eq("id", editingId);
       if (error) throw error;
-      alert("Checklist cancelado.");
+      toast.success("Serviço cancelado.");
       fetchChecklists();
       setView("list");
     } catch (err) {
-      alert("Erro: " + err.message);
+      toast.error("Erro ao cancelar: " + err.message);
     }
   }
 
   function handleEdit(checklist) {
-    if (!permissions.canEditChecklist) return alert("Sem permissão.");
+    if (!permissions.canEditChecklist)
+      return toast.error("Você não tem permissão para editar.");
     setEditingId(checklist.id);
     setInstallType(checklist.install_type || "Cliente");
     setClientName(checklist.client_name || "");
@@ -384,7 +397,8 @@ export function Checklist() {
   }
 
   function handleNewChecklist() {
-    if (!permissions.canCreateChecklist) return alert("Sem permissão.");
+    if (!permissions.canCreateChecklist)
+      return toast.error("Você não tem permissão para criar checklists.");
     setEditingId(null);
     setInstallType("Cliente");
     setClientName("");
@@ -515,7 +529,7 @@ export function Checklist() {
     <div className="min-h-screen bg-gray-50/50 pb-20">
       {view === "list" && (
         <ChecklistList
-          permissions={permissions || {}} // Garante que nunca seja null
+          permissions={permissions || {}}
           checklistsHistory={checklistsHistory}
           filterStatus={filterStatus}
           setFilterStatus={setFilterStatus}

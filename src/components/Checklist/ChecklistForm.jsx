@@ -22,7 +22,7 @@ import {
 } from "./ChecklistUI";
 
 export function ChecklistForm(props) {
-  // Desestruturando as props para uso no JSX
+  // Desestruturando as props para facilitar o uso no JSX
   const {
     editingId,
     setView,

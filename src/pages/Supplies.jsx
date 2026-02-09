@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast"; // <--- Import do Toast
 import {
   Plus,
   Search,
@@ -62,6 +63,7 @@ export function Supplies() {
       setSupplies(data || []);
     } catch (err) {
       console.error(err);
+      toast.error("Erro ao carregar insumos.");
     } finally {
       setLoading(false);
     }
@@ -86,16 +88,17 @@ export function Supplies() {
       const { data } = supabase.storage.from("images").getPublicUrl(filePath);
 
       setFormData((prev) => ({ ...prev, photo_url: data.publicUrl }));
-      alert("Imagem enviada com sucesso!");
+      toast.success("Imagem enviada com sucesso!");
     } catch (error) {
-      alert("Erro no upload: " + error.message);
+      toast.error("Erro no upload: " + error.message);
     } finally {
       setUploading(false);
     }
   }
 
   function handleEdit(item) {
-    if (!permissions.canManageMachines) return alert("Sem permissão.");
+    if (!permissions.canManageMachines)
+      return toast.error("Sem permissão para editar.");
     setEditingId(item.id);
     setFormData({
       name: item.name,
@@ -109,7 +112,8 @@ export function Supplies() {
   }
 
   function handleNew() {
-    if (!permissions.canManageMachines) return alert("Sem permissão.");
+    if (!permissions.canManageMachines)
+      return toast.error("Sem permissão para criar.");
     setEditingId(null);
     setFormData({
       name: "",
@@ -132,16 +136,16 @@ export function Supplies() {
           .update(formData)
           .eq("id", editingId);
         if (error) throw error;
-        alert("Insumo atualizado!");
+        toast.success("Insumo atualizado com sucesso!");
       } else {
         const { error } = await supabase.from("supplies").insert(formData);
         if (error) throw error;
-        alert("Insumo cadastrado!");
+        toast.success("Insumo cadastrado com sucesso!");
       }
       setShowModal(false);
       fetchSupplies();
     } catch (err) {
-      alert("Erro: " + err.message);
+      toast.error("Erro ao salvar: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -149,10 +153,18 @@ export function Supplies() {
 
   async function handleDelete(id, e) {
     e.stopPropagation();
-    if (!permissions.canManageMachines) return;
+    if (!permissions.canManageMachines)
+      return toast.error("Sem permissão para excluir.");
     if (!confirm("Excluir este insumo?")) return;
-    await supabase.from("supplies").delete().eq("id", id);
-    fetchSupplies();
+
+    try {
+      const { error } = await supabase.from("supplies").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("Insumo excluído.");
+      fetchSupplies();
+    } catch (err) {
+      toast.error("Erro ao excluir: " + err.message);
+    }
   }
 
   const filteredSupplies = supplies.filter(

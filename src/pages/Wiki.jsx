@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
+import toast from "react-hot-toast"; // <--- Import do Toast
 import {
   Wrench,
   Plus,
@@ -47,9 +48,19 @@ export function Wiki() {
   }, []);
 
   async function fetchMachines() {
-    const { data } = await supabase.from("machines").select("*").order("name");
-    if (data) setMachines(data);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from("machines")
+        .select("*")
+        .order("name");
+      if (error) throw error;
+      if (data) setMachines(data);
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao carregar máquinas.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   // 2. Carregar Soluções
@@ -61,13 +72,19 @@ export function Wiki() {
   }
 
   async function fetchSolutions(machineId) {
-    const { data } = await supabase
-      .from("wiki_solutions")
-      .select("*")
-      .eq("machine_id", machineId)
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("wiki_solutions")
+        .select("*")
+        .eq("machine_id", machineId)
+        .order("created_at", { ascending: false });
 
-    if (data) setSolutions(data);
+      if (error) throw error;
+      if (data) setSolutions(data);
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao carregar soluções.");
+    }
   }
 
   // 3. Preparar Edição
@@ -89,7 +106,7 @@ export function Wiki() {
   async function handleSaveSolution(e) {
     e.preventDefault();
     if (!problem || !description)
-      return alert("Preencha o problema e a solução!");
+      return toast.error("Preencha o problema e a solução!");
 
     try {
       const payload = {
@@ -107,11 +124,11 @@ export function Wiki() {
           .update(payload)
           .eq("id", editingId);
         if (error) throw error;
-        alert("Solução atualizada!");
+        toast.success("Solução atualizada com sucesso!");
       } else {
         const { error } = await supabase.from("wiki_solutions").insert(payload);
         if (error) throw error;
-        alert("Nova solução registrada!");
+        toast.success("Nova solução registrada!");
       }
 
       setProblem("");
@@ -120,7 +137,7 @@ export function Wiki() {
       setEditingId(null);
       fetchSolutions(selectedMachine.id);
     } catch (error) {
-      alert("Erro ao salvar: " + error.message);
+      toast.error("Erro ao salvar: " + error.message);
     }
   }
 
@@ -128,8 +145,18 @@ export function Wiki() {
   async function handleDelete(id, e) {
     e.stopPropagation();
     if (!confirm("Excluir esta solução permanentemente?")) return;
-    await supabase.from("wiki_solutions").delete().eq("id", id);
-    fetchSolutions(selectedMachine.id);
+
+    try {
+      const { error } = await supabase
+        .from("wiki_solutions")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+      toast.success("Solução excluída.");
+      fetchSolutions(selectedMachine.id);
+    } catch (error) {
+      toast.error("Erro ao excluir: " + error.message);
+    }
   }
 
   function handleCancel() {

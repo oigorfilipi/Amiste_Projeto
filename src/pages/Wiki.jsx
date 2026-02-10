@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
-import toast from "react-hot-toast"; // <--- Import do Toast
+import toast from "react-hot-toast";
 import {
   Wrench,
   Plus,
@@ -194,13 +194,13 @@ export function Wiki() {
     <div className="min-h-screen bg-gray-50/50 pb-20 animate-fade-in">
       {/* --- MODO 1: GRID DE MÁQUINAS --- */}
       {view === "grid" && (
-        <div className="max-w-7xl mx-auto p-6 md:p-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6">
           <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
             <div>
-              <h1 className="text-3xl font-display font-bold text-gray-800">
+              <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-800">
                 Wiki Técnica
               </h1>
-              <p className="text-gray-500 mt-1">
+              <p className="text-gray-500 mt-1 text-sm md:text-base">
                 Base de conhecimento e soluções de problemas.
               </p>
             </div>
@@ -240,14 +240,14 @@ export function Wiki() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {filteredMachines.map((machine) => (
                 <div
                   key={machine.id}
                   onClick={() => openMachineWiki(machine)}
-                  className="group relative bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer hover:-translate-y-1"
+                  className="group relative bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer active:scale-[0.98] hover:-translate-y-1"
                 >
-                  <div className="h-48 bg-gray-50 p-6 flex items-center justify-center relative">
+                  <div className="h-40 md:h-48 bg-gray-50 p-6 flex items-center justify-center relative">
                     <div className="absolute inset-0 bg-amiste-primary/0 group-hover:bg-amiste-primary/5 transition-colors duration-300"></div>
                     {machine.photo_url ? (
                       <img
@@ -262,8 +262,8 @@ export function Wiki() {
                     )}
                   </div>
 
-                  <div className="p-5">
-                    <h3 className="font-bold text-lg text-gray-800 leading-tight mb-1">
+                  <div className="p-4 md:p-5">
+                    <h3 className="font-bold text-lg text-gray-800 leading-tight mb-1 truncate">
                       {machine.name}
                     </h3>
                     <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-4">
@@ -283,31 +283,31 @@ export function Wiki() {
 
       {/* --- MODO 2: DETALHES --- */}
       {view === "details" && selectedMachine && (
-        <div className="max-w-5xl mx-auto p-4 md:p-8 animate-fade-in">
+        <div className="max-w-5xl mx-auto px-4 md:px-8 pt-4 animate-fade-in">
           {/* Header Fixo */}
-          <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md px-6 py-4 -mx-4 md:-mx-8 mb-8 border-b border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 transition-all">
-            <div className="flex items-center gap-4">
+          <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md px-4 py-3 -mx-4 md:-mx-8 mb-6 border-b border-gray-100 shadow-sm flex justify-between items-center gap-2 transition-all">
+            <div className="flex items-center gap-3 overflow-hidden">
               <button
                 onClick={() => {
                   setView("grid");
                   setShowForm(false);
                 }}
-                className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors shrink-0"
               >
                 <ArrowLeft size={24} />
               </button>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center p-1">
+              <div className="flex items-center gap-3 overflow-hidden">
+                <div className="w-10 h-10 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center p-1 shrink-0">
                   <img
                     src={selectedMachine.photo_url}
                     className="w-full h-full object-contain mix-blend-multiply"
                   />
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-800 leading-none">
+                <div className="truncate">
+                  <h2 className="text-lg md:text-xl font-bold text-gray-800 leading-none truncate">
                     {selectedMachine.name}
                   </h2>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 mt-0.5">
                     Gerenciando Soluções
                   </p>
                 </div>
@@ -324,26 +324,32 @@ export function Wiki() {
                   setDescription("");
                 }
               }}
-              className={`px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md transition-all hover:-translate-y-0.5 ${showForm ? "bg-gray-100 text-gray-600 hover:bg-gray-200" : "bg-amiste-primary text-white hover:bg-amiste-secondary"}`}
+              className={`p-2 md:px-5 md:py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md transition-all hover:-translate-y-0.5 shrink-0 ${
+                showForm
+                  ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  : "bg-amiste-primary text-white hover:bg-amiste-secondary"
+              }`}
             >
               {showForm ? (
                 <>
-                  <X size={18} /> Cancelar
+                  <X size={20} />{" "}
+                  <span className="hidden md:inline">Cancelar</span>
                 </>
               ) : (
                 <>
-                  <Plus size={18} /> Nova Solução
+                  <Plus size={20} />{" "}
+                  <span className="hidden md:inline">Nova Solução</span>
                 </>
               )}
             </button>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* FORMULÁRIO */}
             {showForm && (
               <div
                 id="wiki-form"
-                className="lg:col-span-3 bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-amiste-primary/30 ring-4 ring-amiste-primary/5 mb-2 animate-slide-down relative overflow-hidden"
+                className="lg:col-span-3 bg-white p-5 md:p-8 rounded-2xl shadow-lg border border-amiste-primary/30 ring-4 ring-amiste-primary/5 mb-2 animate-slide-down relative overflow-hidden"
               >
                 <div className="absolute top-0 left-0 w-1 h-full bg-amiste-primary"></div>
 
@@ -414,8 +420,7 @@ export function Wiki() {
                       type="submit"
                       className="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-md hover:shadow-lg transition-all"
                     >
-                      <Save size={18} />{" "}
-                      {editingId ? "Atualizar" : "Salvar Wiki"}
+                      <Save size={18} /> {editingId ? "Atualizar" : "Salvar"}
                     </button>
                   </div>
                 </form>
@@ -427,7 +432,7 @@ export function Wiki() {
               {solutions.length === 0 ? (
                 // --- EMPTY STATE ---
                 <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200">
-                  <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="bg-gray-50 w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Wrench size={32} className="text-gray-300" />
                   </div>
                   <p className="text-gray-600 font-bold text-lg">
@@ -457,27 +462,27 @@ export function Wiki() {
                         onClick={() =>
                           setExpandedId(isExpanded ? null : sol.id)
                         }
-                        className="p-5 flex items-start md:items-center justify-between cursor-pointer bg-white hover:bg-gray-50/50 transition-colors gap-4"
+                        className="p-4 md:p-5 flex items-start md:items-center justify-between cursor-pointer bg-white hover:bg-gray-50/50 transition-colors gap-3"
                       >
-                        <div className="flex items-start md:items-center gap-4">
+                        <div className="flex items-start md:items-center gap-3 md:gap-4">
                           <div
-                            className={`p-3 rounded-xl ${style.bg} ${style.text} shrink-0`}
+                            className={`p-2 md:p-3 rounded-xl ${style.bg} ${style.text} shrink-0`}
                           >
-                            <Icon size={20} />
+                            <Icon size={18} />
                           </div>
                           <div>
-                            <h3 className="font-bold text-gray-800 text-lg leading-tight">
+                            <h3 className="font-bold text-gray-800 text-base md:text-lg leading-tight">
                               {sol.problem_title}
                             </h3>
                             <span
-                              className={`inline-block mt-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${style.bg} ${style.text} opacity-80`}
+                              className={`inline-block mt-1 text-[9px] md:text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${style.bg} ${style.text} opacity-80`}
                             >
                               {sol.category}
                             </span>
                           </div>
                         </div>
                         <div
-                          className={`p-2 rounded-full transition-colors ${isExpanded ? "bg-gray-100 text-gray-600" : "text-gray-400"}`}
+                          className={`p-2 rounded-full transition-colors shrink-0 ${isExpanded ? "bg-gray-100 text-gray-600" : "text-gray-400"}`}
                         >
                           {isExpanded ? (
                             <ChevronUp size={20} />
@@ -489,29 +494,29 @@ export function Wiki() {
 
                       {/* Conteúdo Expandido */}
                       {isExpanded && (
-                        <div className="border-t border-gray-100 bg-gray-50/30 p-6 md:p-8 animate-fade-in">
-                          <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap leading-relaxed mb-8">
+                        <div className="border-t border-gray-100 bg-gray-50/30 p-5 md:p-8 animate-fade-in">
+                          <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap leading-relaxed mb-6">
                             {sol.description}
                           </div>
 
-                          <div className="flex justify-between items-end border-t border-gray-200 pt-4">
+                          <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-t border-gray-200 pt-4 gap-4">
                             <p className="text-xs text-gray-400 font-medium">
                               Atualizado em{" "}
                               {new Date(sol.created_at).toLocaleDateString()}
                             </p>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 w-full md:w-auto">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleEdit(sol);
                                 }}
-                                className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 text-blue-600 hover:bg-blue-50 hover:border-blue-200 rounded-lg text-xs font-bold transition-all shadow-sm"
+                                className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-white border border-gray-200 text-blue-600 hover:bg-blue-50 hover:border-blue-200 rounded-lg text-xs font-bold transition-all shadow-sm"
                               >
                                 <Edit2 size={14} /> Editar
                               </button>
                               <button
                                 onClick={(e) => handleDelete(sol.id, e)}
-                                className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 text-red-500 hover:bg-red-50 hover:border-red-200 rounded-lg text-xs font-bold transition-all shadow-sm"
+                                className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-white border border-gray-200 text-red-500 hover:bg-red-50 hover:border-red-200 rounded-lg text-xs font-bold transition-all shadow-sm"
                               >
                                 <Trash2 size={14} /> Excluir
                               </button>

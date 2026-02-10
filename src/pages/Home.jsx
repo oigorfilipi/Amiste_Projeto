@@ -2,7 +2,7 @@ import { useEffect, useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
-import toast from "react-hot-toast"; // <--- Import do Toast
+import toast from "react-hot-toast";
 import {
   ClipboardList,
   Wrench,
@@ -12,6 +12,8 @@ import {
   ArrowRight,
   Clock,
   Package,
+  Calendar,
+  ChevronRight,
 } from "lucide-react";
 
 export function Home() {
@@ -25,7 +27,6 @@ export function Home() {
 
   async function fetchDashboardData() {
     try {
-      // Só busca dados se tiver permissão de ver checklist ou financeiro
       if (permissions.canCreateChecklist || permissions.canViewFinancials) {
         const { data: checklists, error } = await supabase
           .from("checklists")
@@ -45,7 +46,6 @@ export function Home() {
   }
 
   function MenuCard({ to, icon: Icon, title, desc, colorClass, permission }) {
-    // Se a permissão for undefined ou false, não renderiza o card
     if (!permission) return null;
 
     const colorStyles = {
@@ -78,7 +78,6 @@ export function Home() {
           <p className="text-sm text-gray-500 leading-relaxed mt-1">{desc}</p>
         </div>
 
-        {/* Indicador de "Ir" (Seta) que aparece no hover */}
         <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0 text-gray-300">
           <ArrowRight size={24} />
         </div>
@@ -91,20 +90,37 @@ export function Home() {
     userProfile?.full_name?.split(" ")[0] ||
     "Visitante";
 
+  // Helper para formatar status
+  const getStatusBadge = (status) => {
+    const isFinished = status === "Finalizado";
+    return (
+      <span
+        className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border ${
+          isFinished
+            ? "bg-green-50 text-green-600 border-green-100"
+            : "bg-amber-50 text-amber-600 border-amber-100"
+        }`}
+      >
+        {status}
+      </span>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50/50 animate-fade-in pb-20">
       {/* HEADER BOAS VINDAS */}
-      <div className="max-w-7xl mx-auto mb-10">
-        <h1 className="text-3xl font-display font-bold text-gray-800">
+      {/* Ajuste de Padding: px-4 no mobile, px-8 no desktop */}
+      <div className="max-w-7xl mx-auto mb-8 px-4 md:px-8 pt-4">
+        <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-800">
           Olá, {firstName}!
         </h1>
-        <p className="text-gray-500 mt-1">
+        <p className="text-gray-500 mt-1 text-sm md:text-base">
           Bem-vindo ao painel de controle Amiste.
         </p>
       </div>
 
       {/* --- GRID DE ATALHOS --- */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 mb-10">
         <MenuCard
           to="/checklists"
           icon={ClipboardList}
@@ -160,10 +176,10 @@ export function Home() {
         />
       </div>
 
-      {/* --- TABELA RECENTES --- */}
+      {/* --- ATIVIDADES RECENTES --- */}
       {(permissions.canCreateChecklist || permissions.canViewFinancials) && (
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-end mb-4 px-2">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
+          <div className="flex justify-between items-end mb-4">
             <h2 className="font-bold text-gray-700 text-lg flex items-center gap-2">
               <Clock size={20} className="text-gray-400" /> Atividades Recentes
             </h2>
@@ -171,84 +187,108 @@ export function Home() {
               to="/checklists"
               className="text-sm font-bold text-amiste-primary hover:text-red-700 transition-colors"
             >
-              Ver histórico completo
+              Ver tudo
             </Link>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-gray-50/50 border-b border-gray-100 text-gray-400 font-bold uppercase text-[10px] tracking-wider">
-                  <tr>
-                    <th className="p-5 pl-6">Cliente / Evento</th>
-                    <th className="p-5">Equipamento</th>
-                    <th className="p-5">Data</th>
-                    <th className="p-5">Status</th>
-                    <th className="p-5 text-right pr-6">Ação</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {loading ? (
-                    <tr>
-                      <td colSpan="5" className="p-8 text-center text-gray-400">
-                        Carregando...
-                      </td>
-                    </tr>
-                  ) : recentChecklists.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan="5"
-                        className="p-8 text-center text-gray-400 italic"
-                      >
-                        Nenhuma instalação recente encontrada.
-                      </td>
-                    </tr>
-                  ) : (
-                    recentChecklists.map((item) => (
-                      <tr
-                        key={item.id}
-                        className="hover:bg-gray-50 transition-colors group"
-                      >
-                        <td className="p-5 pl-6 font-bold text-gray-700">
-                          {item.client_name || item.event_name}
-                        </td>
-                        <td className="p-5 text-gray-600 flex items-center gap-2">
-                          <Coffee size={14} className="text-gray-300" />
-                          {item.machine_name || "N/A"}
-                        </td>
-                        <td className="p-5 text-gray-500">
-                          {item.install_date
-                            ? new Date(item.install_date).toLocaleDateString(
-                                "pt-BR",
-                              )
-                            : "-"}
-                        </td>
-                        <td className="p-5">
-                          <span
-                            className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border ${
-                              item.status === "Finalizado"
-                                ? "bg-green-50 text-green-600 border-green-100"
-                                : "bg-amber-50 text-amber-600 border-amber-100"
-                            }`}
-                          >
-                            {item.status}
-                          </span>
-                        </td>
-                        <td className="p-5 pr-6 text-right">
-                          <Link
-                            to={`/checklists/${item.id}`}
-                            className="inline-flex items-center gap-1 text-xs font-bold text-gray-400 hover:text-amiste-primary transition-colors bg-gray-50 hover:bg-red-50 px-3 py-1.5 rounded-lg"
-                          >
-                            Detalhes <ArrowRight size={12} />
-                          </Link>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+          {loading ? (
+            <div className="bg-white rounded-2xl p-8 text-center text-gray-400 border border-gray-100">
+              Carregando...
             </div>
-          </div>
+          ) : recentChecklists.length === 0 ? (
+            <div className="bg-white rounded-2xl p-8 text-center text-gray-400 border border-gray-100 italic">
+              Nenhuma instalação recente encontrada.
+            </div>
+          ) : (
+            <>
+              {/* VERSÃO MOBILE: CARDS (Visível apenas em telas pequenas) */}
+              <div className="md:hidden space-y-3">
+                {recentChecklists.map((item) => (
+                  <Link
+                    key={item.id}
+                    to={`/checklists/${item.id}`}
+                    className="block bg-white p-4 rounded-xl border border-gray-100 shadow-sm active:scale-[0.98] transition-transform"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h3 className="font-bold text-gray-800 text-sm">
+                          {item.client_name || item.event_name}
+                        </h3>
+                        <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                          <Coffee size={12} />
+                          {item.machine_name || "N/A"}
+                        </div>
+                      </div>
+                      {getStatusBadge(item.status)}
+                    </div>
+
+                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-50">
+                      <div className="flex items-center gap-1 text-xs text-gray-400">
+                        <Calendar size={12} />
+                        {item.install_date
+                          ? new Date(item.install_date).toLocaleDateString(
+                              "pt-BR",
+                            )
+                          : "-"}
+                      </div>
+                      <div className="text-amiste-primary text-xs font-bold flex items-center gap-1">
+                        Detalhes <ChevronRight size={14} />
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+
+              {/* VERSÃO DESKTOP: TABELA (Visível apenas em telas médias pra cima) */}
+              <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-gray-50/50 border-b border-gray-100 text-gray-400 font-bold uppercase text-[10px] tracking-wider">
+                      <tr>
+                        <th className="p-5 pl-6">Cliente / Evento</th>
+                        <th className="p-5">Equipamento</th>
+                        <th className="p-5">Data</th>
+                        <th className="p-5">Status</th>
+                        <th className="p-5 text-right pr-6">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {recentChecklists.map((item) => (
+                        <tr
+                          key={item.id}
+                          className="hover:bg-gray-50 transition-colors group"
+                        >
+                          <td className="p-5 pl-6 font-bold text-gray-700">
+                            {item.client_name || item.event_name}
+                          </td>
+                          <td className="p-5 text-gray-600 flex items-center gap-2">
+                            <Coffee size={14} className="text-gray-300" />
+                            {item.machine_name || "N/A"}
+                          </td>
+                          <td className="p-5 text-gray-500">
+                            {item.install_date
+                              ? new Date(item.install_date).toLocaleDateString(
+                                  "pt-BR",
+                                )
+                              : "-"}
+                          </td>
+                          <td className="p-5">{getStatusBadge(item.status)}</td>
+                          <td className="p-5 pr-6 text-right">
+                            <Link
+                              to={`/checklists/${item.id}`}
+                              className="inline-flex items-center gap-1 text-xs font-bold text-gray-400 hover:text-amiste-primary transition-colors bg-gray-50 hover:bg-red-50 px-3 py-1.5 rounded-lg"
+                            >
+                              Detalhes <ArrowRight size={12} />
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

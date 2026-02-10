@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
+import toast from "react-hot-toast"; // <--- Import do Toast
 import {
   ArrowLeft,
   Printer,
@@ -26,18 +27,21 @@ export function ChecklistDetails() {
 
   useEffect(() => {
     async function fetchChecklist() {
-      const { data: checklist, error } = await supabase
-        .from("checklists")
-        .select("*")
-        .eq("id", id)
-        .single();
+      try {
+        const { data: checklist, error } = await supabase
+          .from("checklists")
+          .select("*")
+          .eq("id", id)
+          .single();
 
-      if (error) {
-        console.error("Erro:", error);
-      } else {
+        if (error) throw error;
         setData(checklist);
+      } catch (error) {
+        console.error("Erro:", error);
+        toast.error("Erro ao carregar detalhes do checklist.");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     fetchChecklist();
   }, [id]);

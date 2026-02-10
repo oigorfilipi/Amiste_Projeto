@@ -71,8 +71,20 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9FAFB",
   },
 
+  // Linhas de Observação
+  obsLine: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+    height: 24,
+    marginBottom: 4,
+  },
+
   // Checkboxes Manuais
-  checkboxRow: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
   square: {
     width: 10,
     height: 10,
@@ -97,7 +109,12 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderColor: "#E5E7EB",
   },
-  col: { flex: 1, paddingLeft: 4, borderRightWidth: 1, borderColor: "#E5E7EB" },
+  col: {
+    flex: 1,
+    paddingLeft: 4,
+    borderRightWidth: 1,
+    borderColor: "#E5E7EB",
+  },
 
   footer: {
     position: "absolute",
@@ -323,32 +340,9 @@ export function BlankChecklistPDF({ type, machineData, quantity }) {
         {/* 5. OBSERVAÇÕES */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>5. Observações Gerais</Text>
-          <View
-            style={styles.inputBox}
-            style={{
-              borderBottomWidth: 1,
-              borderBottomColor: "#ccc",
-              height: 20,
-              marginBottom: 5,
-            }}
-          />
-          <View
-            style={styles.inputBox}
-            style={{
-              borderBottomWidth: 1,
-              borderBottomColor: "#ccc",
-              height: 20,
-              marginBottom: 5,
-            }}
-          />
-          <View
-            style={styles.inputBox}
-            style={{
-              borderBottomWidth: 1,
-              borderBottomColor: "#ccc",
-              height: 20,
-            }}
-          />
+          <View style={styles.obsLine} />
+          <View style={styles.obsLine} />
+          <View style={styles.obsLine} />
         </View>
 
         {/* ASSINATURAS */}

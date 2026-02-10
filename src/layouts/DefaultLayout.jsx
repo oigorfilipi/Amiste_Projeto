@@ -4,6 +4,7 @@ import { AuthContext } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
 import { ProfileModal } from "../components/ProfileModal";
 import { Header } from "../components/Header";
+import toast from "react-hot-toast"; // <--- Import do Toast
 import {
   LayoutDashboard,
   ClipboardList,
@@ -11,7 +12,6 @@ import {
   FileText,
   Coffee,
   UserPlus,
-  Users, // Ícone usado no título da seção de equipe? Não, foi usado Shield. Vou manter importado caso queira trocar.
   DollarSign,
   Trash2,
   Edit2,
@@ -53,21 +53,25 @@ export function DefaultLayout() {
 
   async function handleDeleteMember(id, name, role, e) {
     e.stopPropagation();
+
+    // Bloqueio de segurança
     if (["DEV", "Dono"].includes(role)) {
-      return alert(
+      return toast.error(
         "Ação Bloqueada: Não é possível excluir contas de nível Superior (Dono/DEV).",
       );
     }
+
     if (!confirm(`Tem certeza que deseja EXCLUIR a conta de "${name}"?`))
       return;
 
     try {
       const { error } = await supabase.from("profiles").delete().eq("id", id);
       if (error) throw error;
-      alert(`Usuário excluído.`);
+
+      toast.success(`Usuário "${name}" excluído com sucesso.`);
       fetchTeam();
     } catch (error) {
-      alert("Erro: " + error.message);
+      toast.error("Erro ao excluir usuário: " + error.message);
     }
   }
 
@@ -123,7 +127,12 @@ export function DefaultLayout() {
         onClose={() => setIsModalOpen(false)}
         profileToEdit={profileToEdit}
         currentUserRole={realProfile?.role}
-        onSave={() => fetchTeam()}
+        onSave={() => {
+          fetchTeam();
+          // Opcional: toast de sucesso pode vir de dentro do modal,
+          // mas se quiser disparar aqui, precisaria saber se foi sucesso.
+          // Geralmente deixamos o modal gerenciar seu próprio toast.
+        }}
       />
 
       {/* --- SIDEBAR --- */}
@@ -214,8 +223,12 @@ export function DefaultLayout() {
                               confirm(
                                 `Entrar no modo visualização como ${member.role}?`,
                               )
-                            )
+                            ) {
                               startImpersonation(member);
+                              toast.success(
+                                `Visualizando como ${member.full_name}`,
+                              );
+                            }
                           }}
                           className="flex-1 text-left flex items-center gap-3"
                         >

@@ -1,18 +1,8 @@
 import React from "react";
-import {
-  Page,
-  Text,
-  View,
-  Document,
-  StyleSheet,
-  Font,
-} from "@react-pdf/renderer";
+import { Page, Text, View, Document, StyleSheet } from "@react-pdf/renderer";
 
-// Registrando fonte
-Font.register({
-  family: "Helvetica-Bold",
-  src: "https://fonts.gstatic.com/s/helveticaneue/5.13.0/HelveticaNeue-Bold.ttf",
-});
+// O React-PDF já inclui Helvetica nativamente.
+// Removemos o Font.register externo para evitar erros de carregamento/CORS no mobile.
 
 const styles = StyleSheet.create({
   page: {
@@ -128,8 +118,11 @@ const styles = StyleSheet.create({
 });
 
 export function BlankChecklistPDF({ type, machineData, quantity }) {
-  // Gera linhas vazias para a tabela
-  const rows = Array.from({ length: Math.max(quantity, 3) }, (_, i) => i + 1);
+  // Garante pelo menos 3 linhas na tabela
+  const rows = Array.from(
+    { length: Math.max(quantity || 1, 3) },
+    (_, i) => i + 1,
+  );
 
   return (
     <Document>
@@ -218,7 +211,6 @@ export function BlankChecklistPDF({ type, machineData, quantity }) {
           <View style={styles.inputRow}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Modelo da Máquina</Text>
-              {/* Se a máquina foi pré-selecionada, preenche, senão deixa linha */}
               {machineData ? (
                 <Text
                   style={{

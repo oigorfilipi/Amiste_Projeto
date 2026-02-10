@@ -1,38 +1,38 @@
 import { useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../contexts/AuthContext";
-import { User, Lock, ArrowRight, Coffee, AlertCircle } from "lucide-react";
+import toast from "react-hot-toast"; // <--- Import do Toast
+import { User, Lock, ArrowRight, Coffee } from "lucide-react";
 
 export function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const { signIn } = useContext(AuthContext);
 
   async function handleLogin(e) {
     e.preventDefault();
     setLoading(true);
-    setError("");
 
     try {
       await signIn(email, password);
       // Redirecionamento é automático pelo AuthContext após login com sucesso
+      toast.success("Login realizado com sucesso!");
     } catch (err) {
       console.error("Erro no login:", err);
 
-      // Tratamento de erros comuns do Supabase
+      // Tratamento de erros comuns do Supabase com TOAST
       const msg = err.message || "";
       if (
         msg.includes("Invalid login credentials") ||
         msg.includes("invalid_credentials")
       ) {
-        setError("E-mail ou senha incorretos.");
+        toast.error("E-mail ou senha incorretos.");
       } else if (msg.includes("Email not confirmed")) {
-        setError("E-mail não confirmado. Verifique sua caixa de entrada.");
+        toast.error("E-mail não confirmado. Verifique sua caixa de entrada.");
       } else {
-        setError("Erro ao conectar. Tente novamente.");
+        toast.error("Erro ao conectar. Tente novamente.");
       }
       setLoading(false);
     }
@@ -123,14 +123,6 @@ export function Login() {
                 />
               </div>
             </div>
-
-            {/* Mensagem de Erro */}
-            {error && (
-              <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg text-sm font-medium border border-red-100 animate-pulse">
-                <AlertCircle size={16} />
-                {error}
-              </div>
-            )}
 
             <button
               type="submit"

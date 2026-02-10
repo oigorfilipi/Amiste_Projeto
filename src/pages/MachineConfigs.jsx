@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
+import toast from "react-hot-toast"; // <--- Import do Toast
 import {
   ArrowLeft,
   Plus,
@@ -87,7 +88,7 @@ export function MachineConfigs() {
       if (error) throw error;
       setConfigs(data || []);
     } catch (err) {
-      alert("Erro ao buscar configurações.");
+      toast.error("Erro ao buscar configurações.");
     } finally {
       setLoading(false);
     }
@@ -136,26 +137,39 @@ export function MachineConfigs() {
       };
 
       if (editingId) {
-        await supabase
+        const { error } = await supabase
           .from("machine_configs")
           .update(payload)
           .eq("id", editingId);
-        alert("Configuração atualizada!");
+        if (error) throw error;
+        toast.success("Configuração atualizada!");
       } else {
-        await supabase.from("machine_configs").insert(payload);
-        alert("Configuração criada!");
+        const { error } = await supabase
+          .from("machine_configs")
+          .insert(payload);
+        if (error) throw error;
+        toast.success("Configuração criada!");
       }
       setShowModal(false);
       fetchConfigs();
     } catch (err) {
-      alert("Erro: " + err.message);
+      toast.error("Erro: " + err.message);
     }
   }
 
   async function handleDelete(id) {
     if (!confirm("Excluir esta configuração?")) return;
-    await supabase.from("machine_configs").delete().eq("id", id);
-    fetchConfigs();
+    try {
+      const { error } = await supabase
+        .from("machine_configs")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+      toast.success("Configuração excluída.");
+      fetchConfigs();
+    } catch (err) {
+      toast.error("Erro ao excluir: " + err.message);
+    }
   }
 
   // Gera array baseado na contagem ATUAL (que pode vir do modelo)

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "../services/supabaseClient";
 import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast"; // <--- Import do Toast
 import {
   User,
   Mail,
@@ -51,11 +52,14 @@ export function Register() {
     e.preventDefault();
     setErrorMsg("");
 
-    if (!isHuman) return alert("Por favor, confirme que você não é um robô.");
-    if (cpf.length < 14) return alert("CPF inválido.");
-    if (birthDate.length < 10) return alert("Data de nascimento inválida.");
+    // --- VALIDAÇÕES COM TOAST ---
+    if (!isHuman)
+      return toast.error("Por favor, confirme que você não é um robô.");
+    if (cpf.length < 14) return toast.error("CPF inválido.");
+    if (birthDate.length < 10)
+      return toast.error("Data de nascimento inválida.");
     if (password.length < 6)
-      return alert("A senha deve ter no mínimo 6 caracteres.");
+      return toast.error("A senha deve ter no mínimo 6 caracteres.");
 
     setLoading(true);
 
@@ -90,15 +94,13 @@ export function Register() {
         });
 
         if (profileError) {
-          // Se falhar ao criar perfil, idealmente deveríamos apagar o user do Auth (rollback manual),
-          // mas por simplicidade vamos apenas avisar.
           console.error("Erro ao criar perfil:", profileError);
           throw new Error(
             "Usuário criado, mas erro ao salvar perfil. Contate o suporte.",
           );
         }
 
-        alert("Cadastro realizado com sucesso!");
+        toast.success("Cadastro realizado com sucesso!");
         navigate("/");
       }
     } catch (error) {
@@ -106,7 +108,11 @@ export function Register() {
       let msg = error.message;
       if (msg.includes("already registered")) msg = "E-mail já está em uso.";
       if (msg.includes("weak password")) msg = "A senha é muito fraca.";
+
+      // Mantive o setErrorMsg pois ele mostra aquele box vermelho bonito no form
       setErrorMsg(msg);
+      // Mas adicionei um toast de erro também para garantir visibilidade
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -306,7 +312,7 @@ export function Register() {
                       required
                       type="password"
                       name="password"
-                      autoComplete="new-password" // Sugere que é uma nova senha
+                      autoComplete="new-password"
                       className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
                       placeholder="Mínimo 6 caracteres"
                       value={password}

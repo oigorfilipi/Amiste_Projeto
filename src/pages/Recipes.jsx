@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
+import toast from "react-hot-toast"; // <--- Import do Toast
 import {
   ChefHat,
   Plus,
@@ -38,9 +39,19 @@ export function Recipes() {
   }, []);
 
   async function fetchSupplies() {
-    const { data } = await supabase.from("supplies").select("*").order("name");
-    if (data) setSupplies(data);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from("supplies")
+        .select("*")
+        .order("name");
+      if (error) throw error;
+      if (data) setSupplies(data);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao carregar insumos.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function openSupplyRecipes(supply) {
@@ -50,12 +61,18 @@ export function Recipes() {
   }
 
   async function fetchRecipes(supplyId) {
-    const { data } = await supabase
-      .from("recipes")
-      .select("*")
-      .eq("supply_id", supplyId)
-      .order("created_at", { ascending: false });
-    if (data) setRecipes(data);
+    try {
+      const { data, error } = await supabase
+        .from("recipes")
+        .select("*")
+        .eq("supply_id", supplyId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      if (data) setRecipes(data);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao carregar receitas.");
+    }
   }
 
   function handleEdit(recipe) {
@@ -86,11 +103,16 @@ export function Recipes() {
       };
 
       if (editingId) {
-        await supabase.from("recipes").update(payload).eq("id", editingId);
-        alert("Receita atualizada!");
+        const { error } = await supabase
+          .from("recipes")
+          .update(payload)
+          .eq("id", editingId);
+        if (error) throw error;
+        toast.success("Receita atualizada com sucesso!");
       } else {
-        await supabase.from("recipes").insert(payload);
-        alert("Receita criada!");
+        const { error } = await supabase.from("recipes").insert(payload);
+        if (error) throw error;
+        toast.success("Receita criada com sucesso!");
       }
       setShowForm(false);
       setEditingId(null);
@@ -102,15 +124,22 @@ export function Recipes() {
       });
       fetchRecipes(selectedSupply.id);
     } catch (err) {
-      alert("Erro: " + err.message);
+      toast.error("Erro ao salvar: " + err.message);
     }
   }
 
   async function handleDelete(id, e) {
     e.stopPropagation();
-    if (!confirm("Excluir receita?")) return;
-    await supabase.from("recipes").delete().eq("id", id);
-    fetchRecipes(selectedSupply.id);
+    if (!confirm("Tem certeza que deseja excluir esta receita?")) return;
+
+    try {
+      const { error } = await supabase.from("recipes").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("Receita excluída.");
+      fetchRecipes(selectedSupply.id);
+    } catch (err) {
+      toast.error("Erro ao excluir: " + err.message);
+    }
   }
 
   const filteredSupplies = supplies.filter((s) =>

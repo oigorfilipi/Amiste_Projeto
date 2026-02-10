@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import toast from "react-hot-toast"; // <--- Importante: Toast aqui
+import toast from "react-hot-toast";
 import { MachinesList } from "../components/Machines/MachinesList";
 import { MachineForm } from "../components/Machines/MachineForm";
 import {
@@ -536,7 +536,7 @@ export function Machines() {
   };
 
   return (
-    <div className="min-h-screen pb-20 animate-fade-in">
+    <div className="min-h-screen bg-gray-50/50 pb-20 animate-fade-in">
       <MachinesList
         permissions={permissions || {}}
         loading={loading}

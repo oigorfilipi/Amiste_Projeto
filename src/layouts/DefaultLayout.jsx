@@ -17,8 +17,11 @@ import {
   Edit2,
   Shield,
   Package,
-  Menu, // <--- Novo ícone para mobile
-  X, // <--- Ícone fechar
+  X,
+  Tag,
+  ChefHat,
+  Settings,
+  History,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -30,8 +33,6 @@ export function DefaultLayout() {
   const [teamMembers, setTeamMembers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [profileToEdit, setProfileToEdit] = useState(null);
-
-  // Estado para controlar o menu mobile
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -40,7 +41,6 @@ export function DefaultLayout() {
     }
   }, [realProfile, isImpersonating]);
 
-  // Fecha o menu mobile automaticamente ao trocar de rota
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [location.pathname]);
@@ -90,6 +90,7 @@ export function DefaultLayout() {
     return "bg-gray-100 text-gray-500 border-gray-200";
   }
 
+  // --- NAVEGAÇÃO PRINCIPAL ---
   const navItems = [
     { path: "/home", icon: LayoutDashboard, label: "Início", visible: true },
     {
@@ -125,6 +126,30 @@ export function DefaultLayout() {
     },
   ];
 
+  // --- NAVEGAÇÃO SECUNDÁRIA (Vem do Header para o Mobile) ---
+  const secondaryNavItems = [
+    { path: "/prices", icon: Tag, label: "Tabela Preços", visible: true },
+    {
+      path: "/supply-prices",
+      icon: Package,
+      label: "Preços Insumos",
+      visible: true,
+    },
+    { path: "/recipes", icon: ChefHat, label: "Receitas", visible: true },
+    {
+      path: "/machine-configs",
+      icon: Settings,
+      label: "Configurações",
+      visible: permissions.canConfigureMachines,
+    },
+    {
+      path: "/history",
+      icon: History,
+      label: "Histórico",
+      visible: permissions.canViewHistory,
+    },
+  ];
+
   return (
     <div className="flex h-screen bg-gray-50/50 font-sans text-gray-900 overflow-hidden">
       <ProfileModal
@@ -135,7 +160,7 @@ export function DefaultLayout() {
         onSave={() => fetchTeam()}
       />
 
-      {/* --- OVERLAY MOBILE (Fundo escuro quando menu abre) --- */}
+      {/* OVERLAY MOBILE */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"
@@ -143,26 +168,25 @@ export function DefaultLayout() {
         />
       )}
 
-      {/* --- SIDEBAR --- */}
+      {/* SIDEBAR */}
       <aside
         className={clsx(
-          "fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 transform",
+          "fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 transform shadow-2xl lg:shadow-none",
           isSidebarOpen
-            ? "translate-x-0 shadow-2xl"
+            ? "translate-x-0"
             : "-translate-x-full lg:translate-x-0",
         )}
       >
-        {/* Logo Area */}
-        <div className="h-20 flex items-center justify-between border-b border-gray-100 px-6">
+        {/* Logo */}
+        <div className="h-20 flex items-center justify-between border-b border-gray-100 px-6 shrink-0">
           <Link
             to="/home"
-            className="bg-amiste-primary w-full py-3 rounded-xl shadow-lg shadow-red-200 flex items-center justify-center transform hover:scale-[1.02] transition-transform cursor-pointer text-center decoration-0"
+            className="bg-amiste-primary w-full py-3 rounded-xl shadow-lg shadow-red-200 flex items-center justify-center"
           >
             <span className="text-white font-black tracking-[0.25em] text-xl">
               AMISTE
             </span>
           </Link>
-          {/* Botão fechar no mobile */}
           <button
             onClick={() => setIsSidebarOpen(false)}
             className="lg:hidden ml-2 p-2 text-gray-500 hover:bg-gray-100 rounded-lg"
@@ -171,44 +195,87 @@ export function DefaultLayout() {
           </button>
         </div>
 
-        {/* Navegação */}
-        <nav className="flex-1 p-6 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200">
-          <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">
-            Operacional
-          </p>
+        {/* Scroll Nav */}
+        <nav className="flex-1 p-6 space-y-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200">
+          {/* GRUPO 1: OPERACIONAL */}
+          <div>
+            <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
+              Operacional
+            </p>
+            <div className="space-y-1">
+              {navItems
+                .filter((i) => i.visible)
+                .map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname.startsWith(item.path);
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={clsx(
+                        "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 group",
+                        isActive
+                          ? "bg-amiste-primary text-white shadow-lg shadow-amiste-primary/30"
+                          : "text-gray-500 hover:bg-gray-50 hover:text-gray-900 hover:translate-x-1",
+                      )}
+                    >
+                      <Icon
+                        size={20}
+                        className={clsx(
+                          isActive
+                            ? "text-white"
+                            : "text-gray-400 group-hover:text-gray-600 transition-colors",
+                        )}
+                      />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+            </div>
+          </div>
 
-          {navItems
-            .filter((i) => i.visible)
-            .map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname.startsWith(item.path);
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={clsx(
-                    "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 group",
-                    isActive
-                      ? "bg-amiste-primary text-white shadow-lg shadow-amiste-primary/30"
-                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-900 hover:translate-x-1",
-                  )}
-                >
-                  <Icon
-                    size={20}
-                    className={clsx(
-                      isActive
-                        ? "text-white"
-                        : "text-gray-400 group-hover:text-gray-600 transition-colors",
-                    )}
-                  />
-                  {item.label}
-                </Link>
-              );
-            })}
+          {/* GRUPO 2: CONSULTAS (Visível no Mobile e Desktop na Sidebar) */}
+          {/* Obs: No Desktop o Header já mostra, mas ter na Sidebar não faz mal, ou podemos esconder no desktop com lg:hidden se preferir. 
+              Vou deixar visível sempre para garantir acesso fácil. */}
+          <div className="pt-2 border-t border-gray-100">
+            <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 mt-4">
+              Consultas & Ferramentas
+            </p>
+            <div className="space-y-1">
+              {secondaryNavItems
+                .filter((i) => i.visible)
+                .map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname.startsWith(item.path);
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={clsx(
+                        "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 group",
+                        isActive
+                          ? "bg-red-50 text-amiste-primary border border-red-100"
+                          : "text-gray-500 hover:bg-gray-50 hover:text-gray-900 hover:translate-x-1",
+                      )}
+                    >
+                      <Icon
+                        size={20}
+                        className={clsx(
+                          isActive
+                            ? "text-amiste-primary"
+                            : "text-gray-400 group-hover:text-gray-600 transition-colors",
+                        )}
+                      />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+            </div>
+          </div>
 
           {/* Botão Cadastrar Equipe */}
           {permissions.canManageUsers && !isImpersonating && (
-            <div className="pt-6 mt-2">
+            <div className="pt-4 mt-2">
               <Link
                 to="/register"
                 className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-sm font-bold text-blue-600 bg-blue-50 border border-dashed border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-all"
@@ -222,18 +289,16 @@ export function DefaultLayout() {
           {realProfile &&
             ["DEV", "Dono"].includes(realProfile.role) &&
             !isImpersonating && (
-              <div className="mt-8 pt-6 border-t border-gray-100">
+              <div className="mt-6 pt-6 border-t border-gray-100">
                 <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                   <Shield size={12} /> Controle de Acesso
                 </p>
-
                 <div className="space-y-2">
                   {teamMembers.map((member) => {
                     const isVip = ["DEV", "Dono"].includes(member.role);
                     const initials = member.full_name
                       ? member.full_name.substring(0, 2).toUpperCase()
                       : "??";
-
                     return (
                       <div
                         key={member.id}
@@ -254,7 +319,6 @@ export function DefaultLayout() {
                           }}
                           className="flex-1 text-left flex items-center gap-3 overflow-hidden"
                         >
-                          {/* Avatar */}
                           <div
                             className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500 bg-gray-100 border border-gray-200 overflow-hidden`}
                           >
@@ -267,7 +331,6 @@ export function DefaultLayout() {
                               initials
                             )}
                           </div>
-
                           <div className="flex flex-col overflow-hidden">
                             <span className="text-xs font-bold text-gray-700 truncate">
                               {member.nickname ||
@@ -280,7 +343,6 @@ export function DefaultLayout() {
                             </span>
                           </div>
                         </button>
-
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={(e) => handleEditMember(member, e)}
@@ -315,18 +377,7 @@ export function DefaultLayout() {
 
       {/* --- CONTEÚDO PRINCIPAL --- */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
-        {/* BOTÃO MOBILE HAMBURGUER (Fica absoluto no topo esquerdo se a tela for pequena) */}
-        <div className="lg:hidden absolute top-5 left-4 z-30">
-          <button
-            onClick={() => setIsSidebarOpen(true)}
-            className="p-2 bg-white rounded-lg shadow-sm border border-gray-200 text-gray-600"
-          >
-            <Menu size={24} />
-          </button>
-        </div>
-
-        <Header />
-
+        <Header onOpenSidebar={() => setIsSidebarOpen(true)} />
         <main className="flex-1 overflow-auto p-4 md:p-10 scroll-smooth">
           <Outlet />
         </main>

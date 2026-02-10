@@ -2,7 +2,7 @@ import { useContext, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AuthContext } from "../contexts/AuthContext";
 import { ProfileModal } from "./ProfileModal";
-import toast from "react-hot-toast"; // <--- Import do Toast
+import toast from "react-hot-toast";
 import {
   History,
   Tag,
@@ -13,10 +13,12 @@ import {
   ChevronDown,
   Package,
   ChefHat,
+  Menu, // Ícone do Menu Mobile
 } from "lucide-react";
 import clsx from "clsx";
 
-export function Header() {
+// Recebe a função onOpenSidebar do DefaultLayout
+export function Header({ onOpenSidebar }) {
   const location = useLocation();
   const {
     userProfile,
@@ -29,34 +31,22 @@ export function Header() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Itens que ficarão no TOPO (Consulta)
+  // Itens de navegação extra (Tabela de preços, etc)
   const topNavItems = [
-    {
-      path: "/prices",
-      icon: Tag,
-      label: "Tabela Preços",
-      visible: true,
-    },
+    { path: "/prices", icon: Tag, label: "Tabela Preços", visible: true },
     {
       path: "/supply-prices",
       icon: Package,
       label: "Preços Insumos",
       visible: true,
     },
-    // --- NOVOS ITENS ---
-    {
-      path: "/recipes",
-      icon: ChefHat,
-      label: "Receitas",
-      visible: true, // Visível para todos
-    },
+    { path: "/recipes", icon: ChefHat, label: "Receitas", visible: true },
     {
       path: "/machine-configs",
       icon: Settings,
       label: "Configurações",
-      visible: permissions.canConfigureMachines, // Só aparece para quem tem permissão
+      visible: permissions.canConfigureMachines,
     },
-    // -------------------
     {
       path: "/history",
       icon: History,
@@ -88,16 +78,29 @@ export function Header() {
     }
   }
 
-  // Gera as iniciais para o avatar
   const initials = userProfile?.full_name
     ? userProfile.full_name.substring(0, 2).toUpperCase()
     : userProfile?.nickname?.substring(0, 2).toUpperCase() || "US";
 
   return (
-    <header className="bg-white border-b border-gray-100 h-20 px-8 flex items-center justify-between sticky top-0 z-20 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] transition-all">
-      {/* 1. LADO ESQUERDO: Navegação Secundária (Abas) */}
-      <div className="flex items-center gap-6">
-        <div className="hidden md:flex items-center gap-3">
+    <header className="bg-white border-b border-gray-100 h-16 md:h-20 px-4 md:px-8 flex items-center justify-between sticky top-0 z-20 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] transition-all">
+      {/* --- LADO ESQUERDO --- */}
+      <div className="flex items-center gap-4">
+        {/* MOBILE: Botão Menu + Logo (Aparece só no celular) */}
+        <div className="flex items-center gap-3 lg:hidden">
+          <button
+            onClick={onOpenSidebar}
+            className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg active:scale-95 transition-transform"
+          >
+            <Menu size={24} />
+          </button>
+          <span className="text-amiste-primary font-black tracking-[0.15em] text-lg">
+            AMISTE
+          </span>
+        </div>
+
+        {/* DESKTOP: Navegação Secundária (Aparece só no PC/Tablet) */}
+        <div className="hidden lg:flex items-center gap-2">
           {topNavItems
             .filter((i) => i.visible)
             .map((item) => {
@@ -108,7 +111,7 @@ export function Header() {
                   key={item.path}
                   to={item.path}
                   className={clsx(
-                    "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border",
+                    "flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all border",
                     isActive
                       ? "bg-red-50 text-amiste-primary border-red-100 shadow-sm"
                       : "bg-white text-gray-500 border-transparent hover:bg-gray-50 hover:border-gray-200",
@@ -120,20 +123,23 @@ export function Header() {
                       isActive ? "text-amiste-primary" : "text-gray-400"
                     }
                   />
-                  {item.label}
+                  <span>{item.label}</span>
                 </Link>
               );
             })}
         </div>
       </div>
 
-      {/* 2. LADO DIREITO: Perfil e Ações */}
-      <div className="flex items-center gap-6">
-        {/* Aviso de Modo Teste (Se estiver ativo) */}
+      {/* --- LADO DIREITO: Perfil e Ações --- */}
+      <div className="flex items-center gap-3 md:gap-6">
+        {/* Aviso de Modo Teste */}
         {isImpersonating && (
-          <div className="hidden md:flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-1.5 rounded-full text-xs font-bold border border-amber-100 animate-pulse shadow-sm">
+          <div className="flex items-center gap-2 bg-amber-50 text-amber-700 px-3 py-1.5 rounded-full text-[10px] md:text-xs font-bold border border-amber-100 animate-pulse shadow-sm">
             <Eye size={14} />
-            <span>Modo Visualização: {userProfile?.role}</span>
+            <span className="hidden md:inline">
+              Modo Visualização: {userProfile?.role}
+            </span>
+            <span className="md:hidden">{userProfile?.role}</span>
             <button
               onClick={handleStopImpersonation}
               title="Sair do Teste"
@@ -148,9 +154,9 @@ export function Header() {
 
         {/* Botão do Perfil (Dropdown Trigger) */}
         <div className="relative group">
-          <button className="flex items-center gap-3 focus:outline-none p-1 pr-3 rounded-full hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
-            {/* LÓGICA DE FOTO OU INICIAIS */}
-            <div className="h-10 w-10 bg-amiste-primary text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md shadow-red-100 overflow-hidden">
+          <button className="flex items-center gap-2 md:gap-3 focus:outline-none p-1 pr-2 rounded-full hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
+            {/* Avatar */}
+            <div className="h-8 w-8 md:h-10 md:w-10 bg-amiste-primary text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md shadow-red-100 overflow-hidden shrink-0">
               {userProfile?.avatar_url ? (
                 <img
                   src={userProfile.avatar_url}
@@ -172,16 +178,20 @@ export function Header() {
             </div>
             <ChevronDown
               size={14}
-              className="text-gray-300 group-hover:text-gray-500 transition-colors"
+              className="text-gray-300 group-hover:text-gray-500 transition-colors hidden md:block"
             />
           </button>
 
-          {/* Dropdown Menu (Hover ou Click) */}
+          {/* Dropdown Menu */}
           <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all transform origin-top-right z-50 p-2">
             <div className="px-4 py-3 border-b border-gray-50 mb-1">
               <p className="text-xs font-bold text-gray-400 uppercase">Conta</p>
               <p className="text-sm font-bold text-gray-800 truncate">
                 {userProfile?.email}
+              </p>
+              {/* Mostra cargo no dropdown mobile já que escondemos no header */}
+              <p className="md:hidden text-[10px] text-amiste-primary font-bold uppercase mt-1">
+                {userProfile?.role}
               </p>
             </div>
 
@@ -213,11 +223,11 @@ export function Header() {
         </div>
       </div>
 
-      {/* MODAL DE EDIÇÃO (Auto-contido no Header para editar a si mesmo) */}
+      {/* MODAL DE EDIÇÃO */}
       <ProfileModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        profileToEdit={realProfile} // Sempre edita o perfil REAL
+        profileToEdit={realProfile}
         currentUserRole={realProfile?.role}
         onSave={() => window.location.reload()}
       />

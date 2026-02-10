@@ -1,6 +1,7 @@
 import { useEffect, useState, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
+import toast from "react-hot-toast"; // <--- Import do Toast
 import {
   Search,
   Package,
@@ -28,9 +29,19 @@ export function SupplyPriceList() {
   }, []);
 
   async function fetchSupplies() {
-    const { data } = await supabase.from("supplies").select("*").order("name");
-    if (data) setSupplies(data);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from("supplies")
+        .select("*")
+        .order("name");
+      if (error) throw error;
+      if (data) setSupplies(data);
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao carregar lista de preços.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleUpdatePrice(id) {
@@ -47,8 +58,9 @@ export function SupplyPriceList() {
         supplies.map((s) => (s.id === id ? { ...s, price: finalPrice } : s)),
       );
       setEditingId(null);
+      toast.success("Preço atualizado com sucesso!"); // Feedback positivo
     } catch (error) {
-      alert("Erro: " + error.message);
+      toast.error("Erro ao atualizar: " + error.message); // Erro visual
     }
   }
 

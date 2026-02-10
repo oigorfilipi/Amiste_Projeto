@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../services/supabaseClient";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast"; // <--- Import do Toast
 import { ArrowLeft, Printer, Coffee } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { BlankChecklistPDF } from "../components/BlankChecklistPDF";
@@ -16,12 +17,20 @@ export function PrintBlankChecklist() {
 
   useEffect(() => {
     async function fetchMachines() {
-      const { data } = await supabase
-        .from("machines")
-        .select("*")
-        .order("name");
-      if (data) setMachines(data);
-      setLoading(false);
+      try {
+        const { data, error } = await supabase
+          .from("machines")
+          .select("*")
+          .order("name");
+
+        if (error) throw error;
+        if (data) setMachines(data);
+      } catch (err) {
+        console.error(err);
+        toast.error("Erro ao carregar lista de máquinas.");
+      } finally {
+        setLoading(false);
+      }
     }
     fetchMachines();
   }, []);
@@ -61,13 +70,21 @@ export function PrintBlankChecklist() {
             <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={() => setType("Cliente")}
-                className={`p-4 rounded-xl border-2 text-center transition-all ${type === "Cliente" ? "border-amiste-primary bg-red-50 text-amiste-primary font-bold" : "border-gray-100 hover:border-gray-200 text-gray-500"}`}
+                className={`p-4 rounded-xl border-2 text-center transition-all ${
+                  type === "Cliente"
+                    ? "border-amiste-primary bg-red-50 text-amiste-primary font-bold"
+                    : "border-gray-100 hover:border-gray-200 text-gray-500"
+                }`}
               >
                 Instalação Cliente
               </button>
               <button
                 onClick={() => setType("Evento")}
-                className={`p-4 rounded-xl border-2 text-center transition-all ${type === "Evento" ? "border-amiste-primary bg-red-50 text-amiste-primary font-bold" : "border-gray-100 hover:border-gray-200 text-gray-500"}`}
+                className={`p-4 rounded-xl border-2 text-center transition-all ${
+                  type === "Evento"
+                    ? "border-amiste-primary bg-red-50 text-amiste-primary font-bold"
+                    : "border-gray-100 hover:border-gray-200 text-gray-500"
+                }`}
               >
                 Evento Temporário
               </button>

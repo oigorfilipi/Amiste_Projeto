@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../services/supabaseClient";
 import { PDFDownloadLink, PDFViewer } from "@react-pdf/renderer";
 import { PortfolioPDF } from "../components/PortfolioPDF";
-import toast from "react-hot-toast"; // <--- Import do Toast
+import toast from "react-hot-toast";
 import {
   FileText,
   Save,
@@ -20,6 +20,7 @@ import {
   AlertCircle,
   FileBarChart,
   Layers,
+  Printer,
 } from "lucide-react";
 
 export function Portfolio() {
@@ -83,7 +84,7 @@ export function Portfolio() {
           const response = await fetch(proxyUrl);
           const blob = await response.blob();
           const reader = new FileReader();
-          reader.onloadend = () => {
+          const reader.onloadend = () => {
             setMachineImageBase64(reader.result);
           };
           reader.readAsDataURL(blob);
@@ -348,19 +349,20 @@ export function Portfolio() {
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20">
-      {/* ... (TELA DE LISTAGEM IGUAL) ... */}
+      {/* ... (TELA DE LISTAGEM) ... */}
       {view === "list" && (
-        <div className="max-w-7xl mx-auto p-6 md:p-8 animate-fade-in">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6 animate-fade-in">
           <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
             <div>
-              <h1 className="text-3xl font-display font-bold text-gray-800">
+              <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-800">
                 Portfólio & Propostas
               </h1>
-              <p className="text-gray-500 mt-1">
+              <p className="text-gray-500 mt-1 text-sm md:text-base">
                 Gerencie propostas comerciais e acompanhe o status.
               </p>
             </div>
-            <div className="flex gap-3 w-full md:w-auto">
+            
+            <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
               <div className="relative flex-1 md:w-64">
                 <Search
                   className="absolute left-3 top-3 text-gray-400"
@@ -375,10 +377,10 @@ export function Portfolio() {
               </div>
               <button
                 onClick={handleNewPortfolio}
-                className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2"
+                className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
               >
                 <Plus size={20} />{" "}
-                <span className="hidden md:inline">Nova Proposta</span>
+                <span className="md:hidden lg:inline">Nova Proposta</span>
               </button>
             </div>
           </div>
@@ -388,14 +390,14 @@ export function Portfolio() {
               Carregando propostas...
             </p>
           ) : filteredPortfolios.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in mx-auto max-w-2xl mt-8">
+            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in mx-auto max-w-2xl mt-4">
               <div className="bg-gray-50 p-6 rounded-full mb-4">
                 <FileBarChart size={48} className="text-gray-300" />
               </div>
               <h3 className="text-xl font-bold text-gray-600 mb-2">
                 Nenhuma proposta encontrada
               </h3>
-              <p className="text-gray-400 max-w-sm mx-auto mb-8 text-sm">
+              <p className="text-gray-400 max-w-sm mx-auto mb-8 text-sm px-4">
                 Não encontramos propostas para esse filtro. Crie um novo
                 orçamento para começar.
               </p>
@@ -407,32 +409,36 @@ export function Portfolio() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            // GRID DE PROPOSTAS
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
               {filteredPortfolios.map((p) => {
                 const statusStyle = getStatusStyle(p.status || "Aguardando");
                 return (
                   <div
                     key={p.id}
                     onClick={() => handleEditPortfolio(p)}
-                    className="group cursor-pointer flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden hover:-translate-y-1"
+                    className="group cursor-pointer flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden hover:-translate-y-1 active:scale-[0.98]"
                   >
+                    {/* Badge de Status */}
                     <div
-                      className={`absolute top-2 left-2 z-10 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-sm ${statusStyle.bg} ${statusStyle.text}`}
+                      className={`absolute top-2 left-2 z-10 px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-sm ${statusStyle.bg} ${statusStyle.text}`}
                     >
                       <statusStyle.icon size={10} /> {statusStyle.label}
                     </div>
+                    
+                    {/* Capa */}
                     <div className="w-full aspect-[210/297] bg-white relative flex flex-col border-b border-gray-100">
                       <div className="h-[15%] bg-white px-4 pt-4 flex justify-end"></div>
                       <div className="flex-1 flex flex-col items-center justify-center p-4">
                         {p.machine_data?.photo_url ? (
                           <img
                             src={p.machine_data.photo_url}
-                            className="w-20 h-20 object-contain mix-blend-multiply mb-2"
+                            className="w-16 h-16 md:w-20 md:h-20 object-contain mix-blend-multiply mb-2"
                           />
                         ) : (
                           <Coffee size={24} className="text-gray-300" />
                         )}
-                        <div className="text-[9px] font-bold text-gray-800 text-center leading-tight line-clamp-2">
+                        <div className="text-[9px] font-bold text-gray-800 text-center leading-tight line-clamp-2 px-2">
                           {p.machine_data?.name}
                         </div>
                       </div>
@@ -451,18 +457,20 @@ export function Portfolio() {
                         <Trash2 size={14} />
                       </button>
                     </div>
-                    <div className="p-4 bg-white">
+                    
+                    {/* Rodapé do Card */}
+                    <div className="p-3 md:p-4 bg-white">
                       <h3
-                        className="font-bold text-gray-800 text-sm truncate"
+                        className="font-bold text-gray-800 text-xs md:text-sm truncate"
                         title={p.customer_name}
                       >
                         {p.customer_name}
                       </h3>
                       <div className="flex items-center justify-between mt-2">
-                        <span className="text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded uppercase font-bold">
+                        <span className="text-[9px] md:text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded uppercase font-bold">
                           {p.negotiation_type}
                         </span>
-                        <span className="text-[10px] text-gray-400">
+                        <span className="text-[9px] md:text-[10px] text-gray-400">
                           {new Date(p.created_at).toLocaleDateString()}
                         </span>
                       </div>
@@ -477,9 +485,11 @@ export function Portfolio() {
 
       {/* --- MODO EDITOR --- */}
       {view === "editor" && (
-        <div className="flex flex-col h-screen overflow-hidden bg-gray-100">
-          <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center z-20 shadow-sm">
-            <div className="flex items-center gap-4">
+        <div className="flex flex-col h-screen overflow-hidden bg-gray-100 fixed inset-0 z-50">
+          
+          {/* Header do Editor */}
+          <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4 flex justify-between items-center z-20 shadow-sm shrink-0">
+            <div className="flex items-center gap-3 md:gap-4">
               <button
                 onClick={() => setView("list")}
                 className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"
@@ -487,39 +497,51 @@ export function Portfolio() {
                 <ChevronLeft size={24} />
               </button>
               <div>
-                <h1 className="text-lg font-bold text-gray-800 leading-tight">
-                  Editor de Proposta
+                <h1 className="text-base md:text-lg font-bold text-gray-800 leading-tight">
+                  Editor
                 </h1>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 hidden md:block">
                   {selectedMachine ? selectedMachine.name : "Nova Proposta"}
                 </p>
               </div>
             </div>
-            <div className="flex gap-3">
+            
+            <div className="flex gap-2">
+              {/* Botão PDF Mobile (Ícone apenas) */}
               {selectedMachine && (
                 <PDFDownloadLink
                   document={<PortfolioPDF data={previewData} />}
                   fileName={`proposta_${customerName || "rascunho"}.pdf`}
-                  className="px-4 py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors"
+                  className="p-2 md:px-4 md:py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors"
                 >
-                  <Search size={16} />{" "}
+                  {({ loading }) => (
+                    loading ? <Clock size={20} className="animate-spin" /> : <Printer size={20} />
+                  )}
                   <span className="hidden md:inline">Baixar PDF</span>
                 </PDFDownloadLink>
               )}
+              
               <button
                 onClick={handleSave}
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-md flex items-center gap-2 transition-all"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md flex items-center gap-2 transition-all active:scale-95"
               >
                 <Save size={18} />{" "}
-                {editingId ? "Salvar Alterações" : "Criar Proposta"}
+                <span className="hidden md:inline">
+                  {editingId ? "Salvar Alterações" : "Criar Proposta"}
+                </span>
+                <span className="md:hidden">Salvar</span>
               </button>
             </div>
           </div>
 
           <div className="flex flex-1 overflow-hidden">
-            {/* SIDEBAR DE EDIÇÃO */}
-            <div className="w-96 bg-white border-r border-gray-200 flex flex-col z-10 overflow-y-auto">
-              <div className="p-6 space-y-6">
+            
+            {/* SIDEBAR DE EDIÇÃO (Formulário) */}
+            {/* No mobile: w-full. No desktop: w-96 */}
+            <div className="w-full lg:w-96 bg-white border-r border-gray-200 flex flex-col z-10 overflow-y-auto">
+              <div className="p-4 md:p-6 space-y-6 pb-24">
+                
+                {/* Status */}
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                   <label className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-1">
                     <AlertCircle size={14} /> Status da Negociação
@@ -558,7 +580,7 @@ export function Portfolio() {
                         }`}
                       >
                         <st.icon size={20} className="mb-1" />
-                        <span className="text-[10px] font-bold uppercase">
+                        <span className="text-[9px] font-bold uppercase truncate w-full text-center">
                           {st.id}
                         </span>
                       </button>
@@ -588,7 +610,7 @@ export function Portfolio() {
                     </select>
                   </div>
 
-                  {/* --- SELETOR DE MODELOS (SÓ APARECE SE TIVER VARIAÇÃO) --- */}
+                  {/* SELETOR DE MODELOS */}
                   {selectedMachine &&
                     selectedMachine.models &&
                     selectedMachine.models.length > 0 && (
@@ -721,7 +743,7 @@ export function Portfolio() {
                   </div>
                 </div>
 
-                <div className="bg-gray-900 text-white p-5 rounded-2xl shadow-lg mt-4">
+                <div className="bg-gray-900 text-white p-5 rounded-2xl shadow-lg mt-4 mb-8">
                   <p className="text-xs text-gray-400 uppercase font-bold mb-1">
                     Parcela Mensal Estimada
                   </p>
@@ -732,8 +754,8 @@ export function Portfolio() {
               </div>
             </div>
 
-            {/* --- ÁREA DE PREVIEW COM PDFVIEWER --- */}
-            <div className="flex-1 bg-gray-200 overflow-hidden flex justify-center items-center">
+            {/* --- ÁREA DE PREVIEW (SÓ DESKTOP) --- */}
+            <div className="hidden lg:flex flex-1 bg-gray-200 overflow-hidden justify-center items-center">
               {previewData ? (
                 <PDFViewer showToolbar={false} className="w-full h-full">
                   <PortfolioPDF data={previewData} />

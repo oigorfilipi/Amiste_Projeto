@@ -1,7 +1,7 @@
 import { useEffect, useState, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
-import toast from "react-hot-toast"; // <--- Import do Toast
+import toast from "react-hot-toast";
 import {
   Search,
   Tag,
@@ -12,7 +12,7 @@ import {
   X,
   DollarSign,
   ShoppingCart,
-  Layers, // Ícone para identificar variação
+  Layers,
 } from "lucide-react";
 
 export function PriceList() {
@@ -61,19 +61,17 @@ export function PriceList() {
           .eq("id", machineId);
         if (error) throw error;
 
-        // Atualiza estado local
         setMachines(
           machines.map((m) =>
             m.id === machineId ? { ...m, price: finalPrice } : m,
           ),
         );
       } else {
-        // Atualiza preço do MODELO FILHO (dentro do JSONB)
+        // Atualiza preço do MODELO FILHO
         const machineToUpdate = machines.find((m) => m.id === machineId);
         if (!machineToUpdate) return;
 
         const newModels = [...machineToUpdate.models];
-        // Adiciona a propriedade price ao modelo específico
         newModels[modelIndex] = { ...newModels[modelIndex], price: finalPrice };
 
         const { error } = await supabase
@@ -82,7 +80,6 @@ export function PriceList() {
           .eq("id", machineId);
         if (error) throw error;
 
-        // Atualiza estado local
         setMachines(
           machines.map((m) =>
             m.id === machineId ? { ...m, models: newModels } : m,
@@ -120,12 +117,12 @@ export function PriceList() {
     if (m.models && m.models.length > 0) {
       m.models.forEach((mod, idx) => {
         flattenedList.push({
-          ...m, // Herda dados do pai (foto, marca) para exibição
-          uniqueId: `${m.id}-${idx}`, // ID composto
+          ...m,
+          uniqueId: `${m.id}-${idx}`,
           isModel: true,
           modelIndex: idx,
           displayName: `${m.name} - ${mod.name}`,
-          displayPrice: mod.price, // Preço específico do modelo
+          displayPrice: mod.price,
         });
       });
     }
@@ -144,14 +141,14 @@ export function PriceList() {
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20 animate-fade-in">
-      {/* CABEÇALHO */}
-      <div className="max-w-7xl mx-auto p-6 md:p-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6">
+        {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-display font-bold text-gray-800">
+            <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-800">
               Tabela de Preços
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-gray-500 mt-1 text-sm md:text-base">
               Catálogo oficial de venda e consulta rápida.
             </p>
           </div>
@@ -167,42 +164,49 @@ export function PriceList() {
           </div>
         </div>
 
+        {/* LOADING & EMPTY STATES */}
         {loading ? (
           <div className="text-center py-20 text-gray-400">
-            <Tag size={48} className="mx-auto mb-4 opacity-20" />
+            <Tag size={48} className="mx-auto mb-4 opacity-20 animate-pulse" />
             <p>Carregando catálogo...</p>
           </div>
         ) : filteredItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in max-w-2xl mx-auto mt-8">
+          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in max-w-2xl mx-auto mt-4">
             <div className="bg-gray-50 p-6 rounded-full mb-4">
               <ShoppingCart size={48} className="text-gray-300" />
             </div>
             <h3 className="text-xl font-bold text-gray-600 mb-2">
               Nenhuma máquina encontrada
             </h3>
-            <p className="text-gray-400 max-w-sm mx-auto text-sm">
+            <p className="text-gray-400 max-w-sm mx-auto text-sm px-4">
               Não encontramos equipamentos no catálogo. Cadastre máquinas na aba
               "Catálogo Máquinas" para definir preços.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          /* GRID RESPONSIVO */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {filteredItems.map((item) => (
               <div
                 key={item.uniqueId}
-                className={`bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col group hover:-translate-y-1 relative ${item.isModel ? "border-purple-100 ring-1 ring-purple-50" : "border-gray-100"}`}
+                className={`bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col group hover:-translate-y-1 relative ${
+                  item.isModel
+                    ? "border-purple-100 ring-1 ring-purple-50"
+                    : "border-gray-100"
+                }`}
               >
                 {/* Imagem */}
                 <div className="h-48 bg-gray-50 p-6 flex items-center justify-center relative">
                   <div className="absolute inset-0 bg-amiste-primary/0 group-hover:bg-amiste-primary/5 transition-colors duration-300"></div>
-                  {/* Se for modelo, mostra badge */}
+
+                  {/* Badge de Variação */}
                   {item.isModel && (
                     <div className="absolute top-3 left-3 bg-purple-100 text-purple-700 px-2 py-1 rounded text-[10px] font-bold uppercase flex items-center gap-1 shadow-sm z-10">
                       <Layers size={10} /> Variação
                     </div>
                   )}
 
-                  {/* Tenta mostrar foto específica do modelo se tiver, senão usa a do pai */}
+                  {/* Lógica de Foto (Filho ou Pai) */}
                   {item.isModel && item.models[item.modelIndex].photo_url ? (
                     <img
                       src={item.models[item.modelIndex].photo_url}
@@ -217,42 +221,42 @@ export function PriceList() {
                     <Coffee size={48} className="text-gray-300" />
                   )}
 
-                  <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-bold text-gray-600 border border-gray-200 uppercase tracking-wide shadow-sm">
+                  <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-bold text-gray-600 border border-gray-200 uppercase tracking-wide shadow-sm">
                     {item.brand}
                   </div>
                 </div>
 
                 {/* Conteúdo */}
-                <div className="p-5 flex-1 flex flex-col">
+                <div className="p-4 md:p-5 flex-1 flex flex-col">
                   <h3
                     className="font-bold text-gray-800 text-lg leading-tight mb-1 truncate"
                     title={item.displayName}
                   >
                     {item.displayName}
                   </h3>
-                  <p className="text-xs text-gray-500 mb-6 font-medium">
+                  <p className="text-xs text-gray-500 mb-6 font-medium truncate">
                     {item.isModel
                       ? `Modelo: ${item.models[item.modelIndex].name}`
                       : `${item.model || "Modelo Padrão"}`}
                   </p>
 
                   <div className="mt-auto pt-4 border-t border-gray-100">
-                    <div className="flex justify-between items-end">
-                      <div className="flex-1">
-                        <p className="text-[10px] uppercase font-bold text-gray-400 mb-1 flex items-center gap-1">
-                          <DollarSign size={10} /> Preço de Venda
-                        </p>
+                    <p className="text-[10px] uppercase font-bold text-gray-400 mb-1 flex items-center gap-1">
+                      <DollarSign size={10} /> Preço de Venda
+                    </p>
 
-                        {editingId === item.uniqueId ? (
-                          // MODO EDIÇÃO
-                          <div className="flex items-center gap-2 animate-fade-in bg-gray-50 p-1 rounded-lg border border-amiste-primary/30">
-                            <span className="text-xs font-bold text-gray-500 ml-1">
+                    <div className="flex justify-between items-end min-h-[40px]">
+                      {editingId === item.uniqueId ? (
+                        // MODO EDIÇÃO
+                        <div className="flex items-center gap-2 animate-fade-in w-full">
+                          <div className="relative flex-1">
+                            <span className="absolute left-2 top-2 text-xs font-bold text-gray-400">
                               R$
                             </span>
                             <input
                               autoFocus
                               type="number"
-                              className="w-full p-1 bg-transparent border-none outline-none font-bold text-gray-800 text-sm"
+                              className="w-full pl-7 pr-2 py-1.5 bg-gray-50 border border-amiste-primary rounded-lg outline-none font-bold text-gray-800 text-sm"
                               value={editPrice}
                               placeholder="0.00"
                               onChange={(e) => setEditPrice(e.target.value)}
@@ -264,51 +268,53 @@ export function PriceList() {
                                 )
                               }
                             />
-                            <button
-                              onClick={() =>
-                                handleUpdatePrice(
-                                  item.id,
-                                  item.isModel ? item.modelIndex : null,
-                                )
-                              }
-                              className="p-1.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors shadow-sm"
-                            >
-                              <Check size={14} />
-                            </button>
-                            <button
-                              onClick={() => setEditingId(null)}
-                              className="p-1.5 bg-gray-200 text-gray-600 rounded hover:bg-gray-300 transition-colors"
-                            >
-                              <X size={14} />
-                            </button>
                           </div>
-                        ) : (
-                          // MODO VISUALIZAÇÃO
+
+                          <button
+                            onClick={() =>
+                              handleUpdatePrice(
+                                item.id,
+                                item.isModel ? item.modelIndex : null,
+                              )
+                            }
+                            className="h-8 w-8 flex items-center justify-center bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-sm"
+                          >
+                            <Check size={16} />
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="h-8 w-8 flex items-center justify-center bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        // MODO VISUALIZAÇÃO
+                        <>
                           <div>
                             {item.displayPrice > 0 ? (
                               <div className="text-2xl font-bold text-amiste-primary tracking-tight">
                                 {formatMoney(item.displayPrice)}
                               </div>
                             ) : (
-                              <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-700 text-xs px-3 py-1.5 rounded-lg font-bold border border-amber-100">
+                              <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-700 text-xs px-2 py-1 rounded-lg font-bold border border-amber-100">
                                 <AlertCircle size={14} /> Consultar
                               </div>
                             )}
                           </div>
-                        )}
-                      </div>
 
-                      {/* Botão de Editar */}
-                      {canEditPrice && editingId !== item.uniqueId && (
-                        <button
-                          onClick={() =>
-                            startEditing(item.uniqueId, item.displayPrice)
-                          }
-                          className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-all ml-2"
-                          title="Editar Preço"
-                        >
-                          <Edit2 size={18} />
-                        </button>
+                          {canEditPrice && (
+                            <button
+                              onClick={() =>
+                                startEditing(item.uniqueId, item.displayPrice)
+                              }
+                              className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-all active:scale-95"
+                              title="Editar Preço"
+                            >
+                              <Edit2 size={18} />
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>

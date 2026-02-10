@@ -83,11 +83,14 @@ export function Portfolio() {
           const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(urlToUse)}`;
           const response = await fetch(proxyUrl);
           const blob = await response.blob();
+
+          // --- CORREÇÃO DO ERRO AQUI ---
           const reader = new FileReader();
-          const reader.onloadend = () => {
+          reader.onloadend = () => {
             setMachineImageBase64(reader.result);
           };
           reader.readAsDataURL(blob);
+          // -----------------------------
         } catch (error) {
           console.error("Erro ao converter imagem:", error);
           setMachineImageBase64(null);
@@ -361,7 +364,7 @@ export function Portfolio() {
                 Gerencie propostas comerciais e acompanhe o status.
               </p>
             </div>
-            
+
             <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
               <div className="relative flex-1 md:w-64">
                 <Search
@@ -425,7 +428,7 @@ export function Portfolio() {
                     >
                       <statusStyle.icon size={10} /> {statusStyle.label}
                     </div>
-                    
+
                     {/* Capa */}
                     <div className="w-full aspect-[210/297] bg-white relative flex flex-col border-b border-gray-100">
                       <div className="h-[15%] bg-white px-4 pt-4 flex justify-end"></div>
@@ -457,7 +460,7 @@ export function Portfolio() {
                         <Trash2 size={14} />
                       </button>
                     </div>
-                    
+
                     {/* Rodapé do Card */}
                     <div className="p-3 md:p-4 bg-white">
                       <h3
@@ -486,7 +489,6 @@ export function Portfolio() {
       {/* --- MODO EDITOR --- */}
       {view === "editor" && (
         <div className="flex flex-col h-screen overflow-hidden bg-gray-100 fixed inset-0 z-50">
-          
           {/* Header do Editor */}
           <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4 flex justify-between items-center z-20 shadow-sm shrink-0">
             <div className="flex items-center gap-3 md:gap-4">
@@ -505,7 +507,7 @@ export function Portfolio() {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex gap-2">
               {/* Botão PDF Mobile (Ícone apenas) */}
               {selectedMachine && (
@@ -514,13 +516,17 @@ export function Portfolio() {
                   fileName={`proposta_${customerName || "rascunho"}.pdf`}
                   className="p-2 md:px-4 md:py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors"
                 >
-                  {({ loading }) => (
-                    loading ? <Clock size={20} className="animate-spin" /> : <Printer size={20} />
-                  )}
+                  {({ loading }) =>
+                    loading ? (
+                      <Clock size={20} className="animate-spin" />
+                    ) : (
+                      <Printer size={20} />
+                    )
+                  }
                   <span className="hidden md:inline">Baixar PDF</span>
                 </PDFDownloadLink>
               )}
-              
+
               <button
                 onClick={handleSave}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md flex items-center gap-2 transition-all active:scale-95"
@@ -535,12 +541,10 @@ export function Portfolio() {
           </div>
 
           <div className="flex flex-1 overflow-hidden">
-            
             {/* SIDEBAR DE EDIÇÃO (Formulário) */}
             {/* No mobile: w-full. No desktop: w-96 */}
             <div className="w-full lg:w-96 bg-white border-r border-gray-200 flex flex-col z-10 overflow-y-auto">
               <div className="p-4 md:p-6 space-y-6 pb-24">
-                
                 {/* Status */}
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                   <label className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-1">

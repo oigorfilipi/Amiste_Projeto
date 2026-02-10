@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../services/supabaseClient";
+import toast from "react-hot-toast"; // <--- Import do Toast
 import {
   DollarSign,
   FileText,
@@ -39,20 +40,24 @@ export function Financial() {
   async function fetchData() {
     try {
       // 1. Portfólios (Propostas)
-      const { data: portfolios } = await supabase
+      const { data: portfolios, error: portError } = await supabase
         .from("portfolios")
         .select(
           "id, customer_name, total_value, created_at, status, description",
         )
         .order("created_at", { ascending: false });
 
+      if (portError) throw portError;
+
       // 2. Checklists (Serviços)
-      const { data: checklists } = await supabase
+      const { data: checklists, error: checkError } = await supabase
         .from("checklists")
         .select(
           "id, client_name, event_name, financials, created_at, status, machine_name",
         )
         .order("created_at", { ascending: false });
+
+      if (checkError) throw checkError;
 
       // 3. Normalizar
       const normPortfolios = (portfolios || []).map((p) => ({
@@ -90,6 +95,7 @@ export function Financial() {
       setLoading(false);
     } catch (error) {
       console.error(error);
+      toast.error("Erro ao carregar dados financeiros.");
       setLoading(false);
     }
   }

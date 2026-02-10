@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
+import toast from "react-hot-toast"; // <--- Import do Toast
 import {
   ClipboardList,
   Wrench,
@@ -26,16 +27,19 @@ export function Home() {
     try {
       // Só busca dados se tiver permissão de ver checklist ou financeiro
       if (permissions.canCreateChecklist || permissions.canViewFinancials) {
-        const { data: checklists } = await supabase
+        const { data: checklists, error } = await supabase
           .from("checklists")
           .select("*")
           .order("created_at", { ascending: false })
           .limit(5);
+
+        if (error) throw error;
         if (checklists) setRecentChecklists(checklists);
       }
       setLoading(false);
     } catch (error) {
       console.error(error);
+      toast.error("Erro ao carregar dados do painel.");
       setLoading(false);
     }
   }

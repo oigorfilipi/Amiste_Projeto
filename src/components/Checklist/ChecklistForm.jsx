@@ -22,7 +22,6 @@ import {
 } from "./ChecklistUI";
 
 export function ChecklistForm(props) {
-  // Desestruturando as props para facilitar o uso no JSX
   const {
     editingId,
     setView,
@@ -102,53 +101,55 @@ export function ChecklistForm(props) {
   } = props;
 
   return (
-    <div className="max-w-5xl mx-auto p-4 md:p-8 animate-fade-in">
+    <div className="max-w-5xl mx-auto px-4 md:px-8 pb-20 animate-fade-in">
       {/* HEADER FIXO */}
-      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md px-6 py-4 -mx-4 md:-mx-8 mb-8 border-b border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
-        <div className="flex items-center gap-3">
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md px-4 py-3 -mx-4 md:-mx-8 mb-6 border-b border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-3 transition-all">
+        <div className="flex items-center gap-3 w-full md:w-auto">
           <button
             onClick={() => setView("list")}
-            className="p-2 hover:bg-gray-100 rounded-full text-gray-500"
+            className="p-2 hover:bg-gray-100 rounded-full text-gray-500 shrink-0"
           >
             <ArrowLeft size={20} />
           </button>
-          <div>
-            <h1 className="text-xl font-bold text-gray-800">
+          <div className="truncate">
+            <h1 className="text-lg md:text-xl font-bold text-gray-800 truncate">
               {editingId ? "Editar Checklist" : "Novo Checklist"}
             </h1>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 hidden md:block">
               Preencha os dados da instalação.
             </p>
           </div>
         </div>
-        <div className="flex gap-2 w-full md:w-auto">
+
+        <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 no-scrollbar">
           {editingId && (
             <button
               onClick={handleCancelChecklist}
-              className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg font-bold text-sm flex items-center gap-2"
+              className="px-3 md:px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg font-bold text-xs md:text-sm flex items-center gap-2 whitespace-nowrap shrink-0"
             >
-              <XCircle size={16} /> Cancelar Serviço
+              <XCircle size={16} />{" "}
+              <span className="hidden sm:inline">Cancelar</span>
             </button>
           )}
           <button
             onClick={() => handleSave("Rascunho")}
-            className="flex-1 md:flex-none px-4 py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg font-bold text-sm flex items-center justify-center gap-2"
+            className="flex-1 md:flex-none px-3 md:px-4 py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg font-bold text-xs md:text-sm flex items-center justify-center gap-2 whitespace-nowrap"
           >
-            <Save size={16} /> Salvar Rascunho
+            <Save size={16} /> Rascunho
           </button>
           <button
             onClick={() => handleSave("Finalizado")}
-            className="flex-1 md:flex-none px-6 py-2 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-lg font-bold text-sm shadow-md flex items-center justify-center gap-2"
+            className="flex-1 md:flex-none px-4 md:px-6 py-2 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-lg font-bold text-xs md:text-sm shadow-md flex items-center justify-center gap-2 whitespace-nowrap"
           >
             <Check size={16} /> Finalizar
           </button>
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-6 md:space-y-8">
         {/* --- DADOS GERAIS --- */}
         <FormSection title="Dados Gerais" icon={Calendar}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <div className="col-span-full">
               <RadioGroup
                 label="Tipo de Serviço"
@@ -157,6 +158,7 @@ export function ChecklistForm(props) {
                 onChange={setInstallType}
               />
             </div>
+
             {installType === "Cliente" ? (
               <>
                 <div className="col-span-full">
@@ -164,7 +166,7 @@ export function ChecklistForm(props) {
                     Nome do Cliente *
                   </label>
                   <input
-                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none"
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
                     placeholder="Ex: Padaria Central"
@@ -176,7 +178,7 @@ export function ChecklistForm(props) {
                   </label>
                   <input
                     type="date"
-                    className="w-full p-3 border border-gray-200 rounded-xl outline-none"
+                    className="w-full p-3 border border-gray-200 rounded-xl outline-none transition-all"
                     value={installDate}
                     onChange={(e) => setInstallDate(e.target.value)}
                   />
@@ -189,32 +191,34 @@ export function ChecklistForm(props) {
                     Nome do Evento *
                   </label>
                   <input
-                    className="w-full p-3 border border-gray-200 rounded-xl outline-none"
+                    className="w-full p-3 border border-gray-200 rounded-xl outline-none transition-all"
                     value={eventName}
                     onChange={(e) => setEventName(e.target.value)}
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
-                    Qtd. Dias
-                  </label>
-                  <input
-                    type="number"
-                    className="w-full p-3 border border-gray-200 rounded-xl outline-none"
-                    value={eventDays}
-                    onChange={(e) => setEventDays(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
-                    Data Instalação
-                  </label>
-                  <input
-                    type="date"
-                    className="w-full p-3 border border-gray-200 rounded-xl outline-none"
-                    value={installDate}
-                    onChange={(e) => setInstallDate(e.target.value)}
-                  />
+                <div className="grid grid-cols-2 gap-4 md:contents">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Qtd. Dias
+                    </label>
+                    <input
+                      type="number"
+                      className="w-full p-3 border border-gray-200 rounded-xl outline-none transition-all"
+                      value={eventDays}
+                      onChange={(e) => setEventDays(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Data Instalação
+                    </label>
+                    <input
+                      type="date"
+                      className="w-full p-3 border border-gray-200 rounded-xl outline-none transition-all"
+                      value={installDate}
+                      onChange={(e) => setInstallDate(e.target.value)}
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
@@ -222,7 +226,7 @@ export function ChecklistForm(props) {
                   </label>
                   <input
                     type="date"
-                    className="w-full p-3 border border-gray-200 rounded-xl outline-none"
+                    className="w-full p-3 border border-gray-200 rounded-xl outline-none transition-all"
                     value={pickupDate}
                     onChange={(e) => setPickupDate(e.target.value)}
                   />
@@ -234,13 +238,13 @@ export function ChecklistForm(props) {
 
         {/* --- EQUIPAMENTO --- */}
         <FormSection title="Equipamento" icon={Coffee}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
             <div className="md:col-span-2">
               <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                 Modelo da Máquina *
               </label>
               <select
-                className="w-full p-3 border border-gray-200 rounded-xl bg-white outline-none"
+                className="w-full p-3 border border-gray-200 rounded-xl bg-white outline-none transition-all"
                 value={selectedMachineId}
                 onChange={handleMachineSelect}
               >
@@ -259,7 +263,7 @@ export function ChecklistForm(props) {
               <input
                 type="number"
                 min="1"
-                className="w-full p-3 border border-gray-200 rounded-xl outline-none"
+                className="w-full p-3 border border-gray-200 rounded-xl outline-none transition-all"
                 value={quantity}
                 onChange={(e) => handleQuantityChange(e.target.value)}
               />
@@ -293,43 +297,45 @@ export function ChecklistForm(props) {
             {machineItems.map((item, idx) => (
               <div
                 key={idx}
-                className="flex flex-col md:flex-row gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100"
+                className="flex flex-col sm:flex-row gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100"
               >
-                <span className="font-bold text-gray-400 self-center text-sm">
+                <span className="font-bold text-gray-400 self-start sm:self-center text-sm">
                   #{idx + 1}
                 </span>
-                <select
-                  className="p-2 rounded-lg border-gray-200 text-sm bg-white"
-                  value={item.voltage}
-                  onChange={(e) =>
-                    updateMachineItem(idx, "voltage", e.target.value)
-                  }
-                >
-                  <option>220v</option>
-                  <option>110v</option>
-                  <option>Bivolt</option>
-                </select>
-                <input
-                  className="flex-1 p-2 rounded-lg border border-gray-200 text-sm outline-none"
-                  placeholder="Nº Série"
-                  value={item.serial}
-                  onChange={(e) =>
-                    updateMachineItem(idx, "serial", e.target.value)
-                  }
-                />
-                <input
-                  className="flex-1 p-2 rounded-lg border border-gray-200 text-sm outline-none"
-                  placeholder="Patrimônio"
-                  value={item.patrimony}
-                  onChange={(e) =>
-                    updateMachineItem(idx, "patrimony", e.target.value)
-                  }
-                />
+                <div className="grid grid-cols-2 sm:flex sm:flex-1 gap-3 w-full">
+                  <select
+                    className="p-2 rounded-lg border-gray-200 text-sm bg-white w-full sm:w-auto"
+                    value={item.voltage}
+                    onChange={(e) =>
+                      updateMachineItem(idx, "voltage", e.target.value)
+                    }
+                  >
+                    <option>220v</option>
+                    <option>110v</option>
+                    <option>Bivolt</option>
+                  </select>
+                  <input
+                    className="flex-1 p-2 rounded-lg border border-gray-200 text-sm outline-none w-full"
+                    placeholder="Nº Série"
+                    value={item.serial}
+                    onChange={(e) =>
+                      updateMachineItem(idx, "serial", e.target.value)
+                    }
+                  />
+                  <input
+                    className="flex-1 p-2 rounded-lg border border-gray-200 text-sm outline-none col-span-2 sm:col-span-1"
+                    placeholder="Patrimônio"
+                    value={item.patrimony}
+                    onChange={(e) =>
+                      updateMachineItem(idx, "patrimony", e.target.value)
+                    }
+                  />
+                </div>
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100">
             <RadioGroup
               label="Rede Hídrica"
               options={["Sim", "Não"]}
@@ -359,10 +365,12 @@ export function ChecklistForm(props) {
 
         {/* --- PREPARAÇÃO E TESTES --- */}
         <FormSection title="Preparação e Testes" icon={Wrench}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div className="bg-gray-50 p-5 rounded-xl border border-gray-100">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
+            <div className="bg-gray-50 p-4 md:p-5 rounded-xl border border-gray-100">
               <div className="flex justify-between items-center mb-3">
-                <span className="font-bold text-gray-700">Configuração</span>
+                <span className="font-bold text-gray-700 text-sm md:text-base">
+                  Configuração
+                </span>
                 <RadioGroup
                   options={["Configurado", "Não"]}
                   value={configStatus}
@@ -372,15 +380,17 @@ export function ChecklistForm(props) {
               {configStatus === "Configurado" && (
                 <input
                   type="date"
-                  className="w-full p-2 border rounded-lg text-sm"
+                  className="w-full p-2 border rounded-lg text-sm transition-all animate-fade-in"
                   value={configDate}
                   onChange={(e) => setConfigDate(e.target.value)}
                 />
               )}
             </div>
-            <div className="bg-gray-50 p-5 rounded-xl border border-gray-100">
+            <div className="bg-gray-50 p-4 md:p-5 rounded-xl border border-gray-100">
               <div className="flex justify-between items-center mb-3">
-                <span className="font-bold text-gray-700">Testes</span>
+                <span className="font-bold text-gray-700 text-sm md:text-base">
+                  Testes
+                </span>
                 <RadioGroup
                   options={["Testado", "Não"]}
                   value={testStatus}
@@ -390,7 +400,7 @@ export function ChecklistForm(props) {
               {testStatus === "Testado" && (
                 <input
                   type="date"
-                  className="w-full p-2 border rounded-lg text-sm"
+                  className="w-full p-2 border rounded-lg text-sm transition-all animate-fade-in"
                   value={testDate}
                   onChange={(e) => setTestDate(e.target.value)}
                 />
@@ -470,9 +480,9 @@ export function ChecklistForm(props) {
                   className="cursor-pointer flex items-center gap-2 mb-2"
                 >
                   <div
-                    className={`w-4 h-4 rounded-full border ${selectedDrinks[drink] !== undefined ? "bg-amiste-primary border-amiste-primary" : "border-gray-300"}`}
+                    className={`w-4 h-4 rounded-full border shrink-0 ${selectedDrinks[drink] !== undefined ? "bg-amiste-primary border-amiste-primary" : "border-gray-300"}`}
                   ></div>
-                  <span className="text-sm font-bold text-gray-700">
+                  <span className="text-sm font-bold text-gray-700 truncate">
                     {drink}
                   </span>
                 </div>
@@ -503,7 +513,7 @@ export function ChecklistForm(props) {
             {Object.entries(suppliesData).map(([cat, items]) => (
               <div
                 key={cat}
-                className="min-w-[240px] bg-gray-50 rounded-xl p-4 border border-gray-100"
+                className="min-w-[240px] md:min-w-[260px] bg-gray-50 rounded-xl p-4 border border-gray-100 shrink-0"
               >
                 <h5 className="font-bold text-xs uppercase mb-3 text-amiste-primary flex items-center gap-2">
                   <div className="w-2 h-2 bg-amiste-primary rounded-full"></div>{" "}
@@ -517,9 +527,9 @@ export function ChecklistForm(props) {
                         className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded"
                       >
                         <div
-                          className={`w-3 h-3 rounded border ${items[key].active ? "bg-green-500 border-green-500" : "border-gray-400"}`}
+                          className={`w-3 h-3 rounded border shrink-0 ${items[key].active ? "bg-green-500 border-green-500" : "border-gray-400"}`}
                         ></div>
-                        <span className="text-xs font-medium text-gray-600">
+                        <span className="text-xs font-medium text-gray-600 truncate">
                           {key}
                         </span>
                       </div>
@@ -527,7 +537,7 @@ export function ChecklistForm(props) {
                         <input
                           type="text"
                           placeholder="Qtd"
-                          className="w-full p-1 text-xs border rounded mt-1 bg-white"
+                          className="w-full p-1 text-xs border rounded mt-1 bg-white animate-fade-in"
                           value={items[key].qty}
                           onChange={(e) =>
                             updateSupplyQty(cat, key, e.target.value)
@@ -540,6 +550,7 @@ export function ChecklistForm(props) {
               </div>
             ))}
           </div>
+
           <h4 className="font-bold text-gray-400 text-xs uppercase mb-3">
             Acessórios
           </h4>
@@ -547,7 +558,7 @@ export function ChecklistForm(props) {
             {accessoriesList.map((acc) => (
               <div
                 key={acc}
-                className={`p-3 rounded-xl border ${selectedAccessories[acc] !== undefined ? "bg-blue-50 border-blue-300" : "bg-white"}`}
+                className={`p-3 rounded-xl border transition-all ${selectedAccessories[acc] !== undefined ? "bg-blue-50 border-blue-300" : "bg-white"}`}
               >
                 <div
                   onClick={() =>
@@ -561,15 +572,15 @@ export function ChecklistForm(props) {
                   className="cursor-pointer flex items-center gap-2 mb-1"
                 >
                   <div
-                    className={`w-3 h-3 rounded border ${selectedAccessories[acc] !== undefined ? "bg-blue-500 border-blue-500" : "border-gray-300"}`}
+                    className={`w-3 h-3 rounded border shrink-0 ${selectedAccessories[acc] !== undefined ? "bg-blue-500 border-blue-500" : "border-gray-300"}`}
                   ></div>
-                  <span className="text-sm text-gray-700">{acc}</span>
+                  <span className="text-sm text-gray-700 truncate">{acc}</span>
                 </div>
                 {selectedAccessories[acc] !== undefined && (
                   <input
                     type="text"
                     placeholder="Qtd"
-                    className="w-full p-1 text-xs border rounded bg-white"
+                    className="w-full p-1 text-xs border rounded bg-white animate-fade-in"
                     value={selectedAccessories[acc]}
                     onChange={(e) =>
                       updateItemValue(
@@ -588,10 +599,10 @@ export function ChecklistForm(props) {
 
         {/* --- LOCAL --- */}
         <FormSection title="Local de Instalação" icon={MapPin}>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-3 md:p-4 bg-gray-50 rounded-xl border border-gray-100">
               <span className="block text-xs font-bold text-gray-500 uppercase mb-2">
-                <Zap size={12} className="inline" /> Tomada
+                <Zap size={12} className="inline mr-1" /> Tomada
               </span>
               <RadioGroup
                 options={["10A", "20A"]}
@@ -602,13 +613,13 @@ export function ChecklistForm(props) {
                 localSocket &&
                 selectedMachineData.amperage !== localSocket && (
                   <div className="text-xs text-red-600 font-bold bg-red-50 p-2 rounded mt-2">
-                    ⚠️ Máquina é {selectedMachineData.amperage}!
+                    ⚠️ {selectedMachineData.amperage}!
                   </div>
                 )}
             </div>
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+            <div className="p-3 md:p-4 bg-gray-50 rounded-xl border border-gray-100">
               <span className="block text-xs font-bold text-gray-500 uppercase mb-2">
-                <Droplet size={12} className="inline" /> Água
+                <Droplet size={12} className="inline mr-1" /> Água
               </span>
               <RadioGroup
                 options={["Sim", "Não"]}
@@ -617,11 +628,11 @@ export function ChecklistForm(props) {
               />
               {waterInstall === "Sim" && localWater === "Não" && (
                 <div className="text-xs text-red-600 font-bold bg-red-50 p-2 rounded mt-2">
-                  ⚠️ Necessário ponto hidráulico!
+                  ⚠️ Hidráulica
                 </div>
               )}
             </div>
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+            <div className="p-3 md:p-4 bg-gray-50 rounded-xl border border-gray-100">
               <span className="block text-xs font-bold text-gray-500 uppercase mb-2">
                 Esgoto
               </span>
@@ -632,18 +643,18 @@ export function ChecklistForm(props) {
               />
               {sewageInstall === "Sim" && localSewage === "Não" && (
                 <div className="text-xs text-red-600 font-bold bg-red-50 p-2 rounded mt-2">
-                  ⚠️ Necessário ponto de esgoto!
+                  ⚠️ Esgoto
                 </div>
               )}
             </div>
-            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+            <div className="p-3 md:p-4 bg-gray-50 rounded-xl border border-gray-100">
               <span className="block text-xs font-bold text-gray-500 uppercase mb-2">
                 Treinamento
               </span>
               <input
                 type="number"
                 placeholder="Qtd Pessoas"
-                className="w-full p-2 border rounded-lg bg-white"
+                className="w-full p-2 border rounded-lg bg-white outline-none"
                 value={trainedPeople}
                 onChange={(e) => setTrainedPeople(e.target.value)}
               />
@@ -659,7 +670,7 @@ export function ChecklistForm(props) {
                 Nº Contrato
               </label>
               <input
-                className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50"
+                className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 transition-all outline-none focus:bg-white focus:ring-2 focus:ring-amiste-primary"
                 value={contractNum}
                 onChange={(e) => setContractNum(e.target.value)}
               />
@@ -670,7 +681,7 @@ export function ChecklistForm(props) {
               </label>
               <textarea
                 rows="3"
-                className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50"
+                className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 transition-all outline-none focus:bg-white focus:ring-2 focus:ring-amiste-primary resize-none"
                 value={salesObs}
                 onChange={(e) => setSalesObs(e.target.value)}
               ></textarea>

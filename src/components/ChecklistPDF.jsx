@@ -1,18 +1,8 @@
 import React from "react";
-import {
-  Page,
-  Text,
-  View,
-  Document,
-  StyleSheet,
-  Font,
-} from "@react-pdf/renderer";
+import { Page, Text, View, Document, StyleSheet } from "@react-pdf/renderer";
 
-// Registrando fonte para garantir negrito real
-Font.register({
-  family: "Helvetica-Bold",
-  src: "https://fonts.gstatic.com/s/helveticaneue/5.13.0/HelveticaNeue-Bold.ttf",
-});
+// REMOVIDO: Font.register externo para evitar erros de CORS/Rede no mobile.
+// O react-pdf usa Helvetica nativamente sem precisar baixar nada.
 
 const styles = StyleSheet.create({
   page: {
@@ -106,7 +96,7 @@ const styles = StyleSheet.create({
     color: "#111",
   },
 
-  // Specs Técnicas (Novo)
+  // Specs Técnicas
   specsRow: {
     flexDirection: "row",
     backgroundColor: "#EFF6FF", // Azul bem claro
@@ -369,7 +359,7 @@ export function ChecklistPDF({ data }) {
               </View>
             </View>
 
-            {/* SPECS TÉCNICAS (NOVO) */}
+            {/* SPECS TÉCNICAS */}
             <View style={styles.specsRow}>
               <View style={styles.specItem}>
                 <Text style={styles.specLabel}>Voltagem:</Text>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { supabase } from "../services/supabaseClient";
 import { Link, useNavigate } from "react-router-dom";
-import toast from "react-hot-toast"; // <--- Import do Toast
+import toast from "react-hot-toast";
 import {
   User,
   Mail,
@@ -18,7 +18,7 @@ import {
 export function Register() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(""); // Estado para mensagem de erro
+  const [errorMsg, setErrorMsg] = useState("");
 
   // Campos do Formulário
   const [email, setEmail] = useState("");
@@ -52,7 +52,6 @@ export function Register() {
     e.preventDefault();
     setErrorMsg("");
 
-    // --- VALIDAÇÕES COM TOAST ---
     if (!isHuman)
       return toast.error("Por favor, confirme que você não é um robô.");
     if (cpf.length < 14) return toast.error("CPF inválido.");
@@ -70,7 +69,6 @@ export function Register() {
         finalNickname = parts.slice(0, 2).join(" ");
       }
 
-      // Converte DD/MM/AAAA para YYYY-MM-DD
       const [d, m, y] = birthDate.split("/");
       const isoDate = `${y}-${m}-${d}`;
 
@@ -109,9 +107,7 @@ export function Register() {
       if (msg.includes("already registered")) msg = "E-mail já está em uso.";
       if (msg.includes("weak password")) msg = "A senha é muito fraca.";
 
-      // Mantive o setErrorMsg pois ele mostra aquele box vermelho bonito no form
       setErrorMsg(msg);
-      // Mas adicionei um toast de erro também para garantir visibilidade
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -122,22 +118,23 @@ export function Register() {
     <div className="min-h-screen bg-gray-50/50 flex items-center justify-center p-4 md:p-8 font-sans">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row">
         {/* Lado Esquerdo (Visual/Info) */}
-        <div className="bg-amiste-primary md:w-1/3 p-8 md:p-12 text-white flex flex-col justify-between relative overflow-hidden">
+        <div className="bg-amiste-primary md:w-1/3 p-8 md:p-12 text-white flex flex-col justify-between relative overflow-hidden shrink-0">
           <div className="absolute top-0 left-0 w-full h-full bg-black/10 z-0"></div>
+
           <div className="relative z-10">
             <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center mb-6">
               <Briefcase size={24} className="text-white" />
             </div>
-            <h1 className="text-3xl font-black tracking-tight mb-2">
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight mb-2">
               Junte-se ao Time
             </h1>
-            <p className="text-red-100 text-sm leading-relaxed">
-              Crie sua conta para acessar o ecossistema Amiste de gestão e
-              serviços.
+            <p className="text-red-100 text-xs md:text-sm leading-relaxed">
+              Crie sua conta para acessar o ecossistema Amiste.
             </p>
           </div>
 
-          <div className="relative z-10 mt-12 md:mt-0">
+          {/* Escondido no mobile para economizar espaço vertical */}
+          <div className="relative z-10 mt-12 md:mt-0 hidden md:block">
             <p className="text-xs font-bold text-red-200 uppercase tracking-widest mb-4">
               Acesso Seguro
             </p>
@@ -153,9 +150,9 @@ export function Register() {
         </div>
 
         {/* Lado Direito (Formulário) */}
-        <div className="md:w-2/3 p-8 md:p-12">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-800">
+        <div className="md:w-2/3 p-6 md:p-12 bg-white">
+          <div className="mb-6 md:mb-8">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-800">
               Cadastro de Colaborador
             </h2>
             <p className="text-gray-500 text-sm">
@@ -171,7 +168,7 @@ export function Register() {
             </div>
           )}
 
-          <form onSubmit={handleRegister} className="space-y-8">
+          <form onSubmit={handleRegister} className="space-y-6 md:space-y-8">
             {/* SEÇÃO 1: PESSOAL */}
             <div className="space-y-4">
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">
@@ -193,7 +190,7 @@ export function Register() {
                       type="text"
                       name="fullName"
                       autoComplete="name"
-                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
+                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all text-sm"
                       placeholder="Nome completo"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
@@ -213,7 +210,7 @@ export function Register() {
                     <input
                       required
                       type="text"
-                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
+                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all text-sm"
                       placeholder="000.000.000-00"
                       value={cpf}
                       onChange={handleCpfChange}
@@ -234,7 +231,7 @@ export function Register() {
                     <input
                       required
                       type="text"
-                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
+                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all text-sm"
                       placeholder="DD/MM/AAAA"
                       value={birthDate}
                       onChange={handleDateChange}
@@ -263,7 +260,7 @@ export function Register() {
                     />
                     <select
                       required
-                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-amiste-primary outline-none transition-all appearance-none"
+                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-amiste-primary outline-none transition-all appearance-none text-sm"
                       value={role}
                       onChange={(e) => setRole(e.target.value)}
                     >
@@ -291,7 +288,7 @@ export function Register() {
                       type="email"
                       name="email"
                       autoComplete="email"
-                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
+                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all text-sm"
                       placeholder="seu@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -313,7 +310,7 @@ export function Register() {
                       type="password"
                       name="password"
                       autoComplete="new-password"
-                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
+                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all text-sm"
                       placeholder="Mínimo 6 caracteres"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -326,7 +323,7 @@ export function Register() {
             {/* VERIFICAÇÃO */}
             <div
               onClick={() => setIsHuman(!isHuman)}
-              className={`p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${isHuman ? "bg-green-50 border-green-200 shadow-inner" : "bg-gray-50 border-gray-200 hover:bg-gray-100"}`}
+              className={`p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between active:scale-[0.98] ${isHuman ? "bg-green-50 border-green-200 shadow-inner" : "bg-gray-50 border-gray-200 hover:bg-gray-100"}`}
             >
               <div className="flex items-center gap-3">
                 <div
@@ -341,23 +338,23 @@ export function Register() {
                 </span>
               </div>
               {isHuman && (
-                <span className="text-xs font-bold text-green-600 uppercase tracking-wide">
+                <span className="text-xs font-bold text-green-600 uppercase tracking-wide hidden sm:block">
                   Verificado
                 </span>
               )}
             </div>
 
-            <div className="flex items-center justify-between pt-4">
+            <div className="flex flex-col-reverse md:flex-row items-center justify-between gap-4 pt-2">
               <Link
                 to="/"
-                className="text-sm font-bold text-gray-400 hover:text-amiste-primary transition-colors"
+                className="text-sm font-bold text-gray-400 hover:text-amiste-primary transition-colors py-2"
               >
                 Já tenho conta
               </Link>
               <button
                 disabled={loading}
                 type="submit"
-                className="bg-amiste-primary hover:bg-amiste-secondary text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-red-100 flex items-center gap-2 transition-all disabled:opacity-70 hover:-translate-y-1"
+                className="w-full md:w-auto bg-amiste-primary hover:bg-amiste-secondary text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-red-100 flex items-center justify-center gap-2 transition-all disabled:opacity-70 hover:-translate-y-1"
               >
                 {loading ? "Processando..." : "Finalizar Cadastro"}{" "}
                 <ArrowRight size={20} />

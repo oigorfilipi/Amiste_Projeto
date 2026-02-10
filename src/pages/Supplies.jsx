@@ -155,7 +155,7 @@ export function Supplies() {
     e.stopPropagation();
     if (!permissions.canManageMachines)
       return toast.error("Sem permissão para excluir.");
-    if (!confirm("Excluir este insumo?")) return;
+    if (!confirm("Tem certeza que deseja excluir este insumo?")) return;
 
     try {
       const { error } = await supabase.from("supplies").delete().eq("id", id);

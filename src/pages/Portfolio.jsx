@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../services/supabaseClient";
 import { PDFDownloadLink, PDFViewer } from "@react-pdf/renderer";
 import { PortfolioPDF } from "../components/PortfolioPDF";
+import toast from "react-hot-toast"; // <--- Import do Toast
 import {
   FileText,
   Save,
@@ -106,17 +107,29 @@ export function Portfolio() {
   }, [totalValue, installments]);
 
   async function fetchMachines() {
-    const { data } = await supabase.from("machines").select("*").order("name");
-    if (data) setMachines(data);
+    try {
+      const { data } = await supabase
+        .from("machines")
+        .select("*")
+        .order("name");
+      if (data) setMachines(data);
+    } catch (error) {
+      toast.error("Erro ao carregar máquinas.");
+    }
   }
 
   async function fetchPortfolios() {
-    const { data } = await supabase
-      .from("portfolios")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (data) setSavedPortfolios(data);
-    setLoading(false);
+    try {
+      const { data } = await supabase
+        .from("portfolios")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (data) setSavedPortfolios(data);
+    } catch (error) {
+      toast.error("Erro ao carregar propostas.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   // --- AÇÕES ---
@@ -145,9 +158,6 @@ export function Portfolio() {
 
     // Tenta recuperar o índice do modelo se foi salvo anteriormente
     // Se não tiver salvo, tenta adivinhar pelo nome ou deixa vazio
-    // Idealmente você salvaria 'machine_model_index' no banco, mas
-    // como estamos usando o snapshot 'machine_data', deixamos vazio para edição
-    // ou o usuário seleciona novamente se quiser mudar.
     setSelectedModelIndex("");
 
     setCustomerName(p.customer_name);
@@ -232,7 +242,7 @@ export function Portfolio() {
 
   async function handleSave() {
     if (!selectedMachine || !customerName)
-      return alert("Selecione a máquina e informe o cliente.");
+      return toast.error("Selecione a máquina e informe o cliente.");
 
     // Se a máquina exige modelo, obriga a selecionar
     if (
@@ -240,7 +250,7 @@ export function Portfolio() {
       selectedMachine.models.length > 0 &&
       selectedModelIndex === ""
     ) {
-      return alert(
+      return toast.error(
         "Esta máquina possui variações. Por favor, selecione o Modelo específico.",
       );
     }
@@ -272,24 +282,31 @@ export function Portfolio() {
           .update({ ...currentData, versions: newVersionsList })
           .eq("id", editingId);
         if (error) throw error;
-        alert("Proposta atualizada!");
+        toast.success("Proposta atualizada com sucesso!");
       } else {
         const { error } = await supabase.from("portfolios").insert(currentData);
         if (error) throw error;
-        alert("Proposta criada!");
+        toast.success("Proposta criada com sucesso!");
       }
       fetchPortfolios();
       setView("list");
     } catch (error) {
-      alert("Erro ao salvar: " + error.message);
+      toast.error("Erro ao salvar: " + error.message);
     }
   }
 
   async function handleDelete(id, e) {
     e.stopPropagation();
-    if (!confirm("Excluir esta proposta?")) return;
-    await supabase.from("portfolios").delete().eq("id", id);
-    fetchPortfolios();
+    if (!confirm("Excluir esta proposta permanentemente?")) return;
+
+    try {
+      const { error } = await supabase.from("portfolios").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("Proposta excluída.");
+      fetchPortfolios();
+    } catch (err) {
+      toast.error("Erro ao excluir: " + err.message);
+    }
   }
 
   const formatMoney = (val) =>

@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
-import toast from "react-hot-toast"; // <--- Import do Toast
+import toast from "react-hot-toast";
 import {
   ArrowLeft,
   Plus,
@@ -13,7 +13,7 @@ import {
   X,
   Database,
   Coffee,
-  Layers, // Novo ícone
+  Layers,
 } from "lucide-react";
 
 export function MachineConfigs() {
@@ -57,22 +57,11 @@ export function MachineConfigs() {
       machineData.models &&
       machineData.models[selectedModelIndex]
     ) {
-      // Se escolheu um modelo, usa a contagem dele (se tiver), senão usa a do pai
       const model = machineData.models[selectedModelIndex];
-      // Nota: O reservoir_count no modelo pode não existir se foi criado antes da atualização
-      // Mas assumindo que a lógica de save do Machine.jsx está certa, deve estar lá.
-      // Se não tiver no modelo, assume o do pai.
-      // Como o reservoir_count não estava explícito no form de variação do Machine.jsx (estava implícito na lógica de "não mostrar se for moedor"),
-      // vamos assumir que se não tiver no modelo, usa o do pai.
-      // Mas espere! No Machine.jsx nós salvamos reservoir_count no payload geral se não tiver variação.
-      // Se tiver variação, o reservoir_count fica dentro do objeto do modelo?
-      // Vamos garantir: O ideal é que o modelo tenha sua própria contagem se ela diferir.
-      // Por simplificação: vamos usar a lógica de que se o modelo tem a propriedade definida, usa ela.
       setCurrentReservoirCount(
         model.reservoir_count || machineData.reservoir_count || 0,
       );
     } else {
-      // Se não tem modelo selecionado (ou é o pai), usa o do pai
       setCurrentReservoirCount(machineData.reservoir_count || 0);
     }
   }, [selectedModelIndex, machineData]);
@@ -103,7 +92,6 @@ export function MachineConfigs() {
 
   function handleNew() {
     setEditingId(null);
-    // Sugere um nome com base no modelo selecionado
     let initialName = "";
     if (selectedModelIndex !== "" && machineData.models) {
       initialName = `${machineData.models[selectedModelIndex].name} - `;
@@ -132,8 +120,6 @@ export function MachineConfigs() {
         name,
         description,
         product_map: productMap,
-        // Opcional: Salvar qual modelo essa config se refere (se quiser filtrar depois)
-        // model_index: selectedModelIndex
       };
 
       if (editingId) {
@@ -172,7 +158,6 @@ export function MachineConfigs() {
     }
   }
 
-  // Gera array baseado na contagem ATUAL (que pode vir do modelo)
   const reservoirs = Array.from(
     { length: parseInt(currentReservoirCount) || 0 },
     (_, i) => i + 1,
@@ -182,19 +167,19 @@ export function MachineConfigs() {
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20 animate-fade-in">
-      <div className="max-w-5xl mx-auto p-6 md:p-8">
-        {/* HEADER */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-4">
+      <div className="max-w-5xl mx-auto px-4 md:px-8 pt-6">
+        {/* HEADER DA MÁQUINA */}
+        <div className="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-gray-100 mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="flex items-center gap-4 w-full md:w-auto">
             <button
               onClick={() => navigate("/machines")}
-              className="p-2 hover:bg-gray-100 rounded-full text-gray-500"
+              className="p-2 hover:bg-gray-100 rounded-full text-gray-500 shrink-0"
             >
               <ArrowLeft size={24} />
             </button>
 
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 shrink-0">
                 {machineData.photo_url ? (
                   <img
                     src={machineData.photo_url}
@@ -204,24 +189,24 @@ export function MachineConfigs() {
                   <Coffee size={24} className="text-gray-300" />
                 )}
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">
+              <div className="min-w-0">
+                <h1 className="text-lg md:text-2xl font-bold text-gray-800 truncate">
                   {machineData.name}
                 </h1>
-                <p className="text-sm text-gray-500">
-                  Gerenciando Configurações de Bebidas
+                <p className="text-xs md:text-sm text-gray-500 truncate">
+                  Configurações de Bebidas
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col items-end gap-2">
-            {/* SELETOR DE MODELO (Se houver) */}
+          <div className="flex flex-col items-end gap-3 w-full md:w-auto">
+            {/* SELETOR DE MODELO */}
             {machineData.models && machineData.models.length > 0 && (
-              <div className="flex items-center gap-2 bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-100">
-                <Layers size={14} className="text-purple-600" />
+              <div className="flex items-center gap-2 bg-purple-50 px-3 py-2 rounded-lg border border-purple-100 w-full md:w-auto">
+                <Layers size={16} className="text-purple-600 shrink-0" />
                 <select
-                  className="bg-transparent text-sm font-bold text-purple-800 outline-none cursor-pointer"
+                  className="bg-transparent text-sm font-bold text-purple-800 outline-none cursor-pointer w-full"
                   value={selectedModelIndex}
                   onChange={(e) => setSelectedModelIndex(e.target.value)}
                 >
@@ -235,12 +220,12 @@ export function MachineConfigs() {
               </div>
             )}
 
-            <div className="flex gap-4 items-center">
+            <div className="flex flex-col-reverse md:flex-row gap-3 items-center w-full md:w-auto">
               <div className="text-right hidden md:block">
-                <p className="text-xs font-bold text-gray-400 uppercase">
+                <p className="text-[10px] font-bold text-gray-400 uppercase">
                   Capacidade Atual
                 </p>
-                <p className="font-bold text-amiste-primary">
+                <p className="font-bold text-amiste-primary text-sm">
                   {currentReservoirCount > 0
                     ? `${currentReservoirCount} Reservatórios`
                     : "Sem Reservatórios"}
@@ -249,9 +234,11 @@ export function MachineConfigs() {
               <button
                 onClick={handleNew}
                 disabled={currentReservoirCount === 0}
-                className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-2.5 rounded-xl font-bold shadow-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full md:w-auto bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-2.5 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
               >
-                <Plus size={20} /> Nova Configuração
+                <Plus size={20} />{" "}
+                <span className="md:hidden">Nova Config</span>
+                <span className="hidden md:inline">Nova Configuração</span>
               </button>
             </div>
           </div>
@@ -260,7 +247,7 @@ export function MachineConfigs() {
         {/* LISTA DE CONFIGURAÇÕES */}
         <div className="grid grid-cols-1 gap-6">
           {loading ? (
-            <p className="text-center text-gray-400">Carregando...</p>
+            <p className="text-center text-gray-400 py-10">Carregando...</p>
           ) : configs.length === 0 ? (
             <div className="text-center py-12 text-gray-400 bg-white rounded-2xl border border-dashed border-gray-200">
               <Settings size={48} className="mx-auto mb-4 opacity-20" />
@@ -270,34 +257,36 @@ export function MachineConfigs() {
             configs.map((config) => (
               <div
                 key={config.id}
-                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 relative group hover:shadow-md transition-all"
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 md:p-6 relative group hover:shadow-md transition-all"
               >
                 <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <Settings size={20} className="text-amiste-primary" />{" "}
-                    {config.name}
+                  <h3 className="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <Settings
+                      size={20}
+                      className="text-amiste-primary shrink-0"
+                    />
+                    <span className="break-words">{config.name}</span>
                   </h3>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+
+                  <div className="flex gap-2 ml-2">
                     <button
                       onClick={() => handleEdit(config)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                     >
                       <Edit2 size={18} />
                     </button>
                     <button
                       onClick={() => handleDelete(config.id)}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                     >
                       <Trash2 size={18} />
                     </button>
                   </div>
                 </div>
 
-                {/* Exibe os produtos apenas se houver reservatórios configurados */}
+                {/* Grid de Produtos */}
                 {Object.keys(config.product_map || {}).length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    {/* Aqui iteramos sobre o MAP salvo, pois a config pode ter sido criada
-                        para um modelo com mais/menos reservatórios do que o selecionado agora */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4">
                     {Object.entries(config.product_map).map(([key, value]) => (
                       <div
                         key={key}
@@ -306,7 +295,7 @@ export function MachineConfigs() {
                         <span className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
                           Reservatório {key}
                         </span>
-                        <span className="font-bold text-gray-700 break-words">
+                        <span className="font-bold text-gray-700 text-sm break-words leading-tight block">
                           {value || "-"}
                         </span>
                       </div>
@@ -315,7 +304,7 @@ export function MachineConfigs() {
                 )}
 
                 {config.description && (
-                  <div className="bg-blue-50 p-4 rounded-xl text-sm text-blue-800 leading-relaxed whitespace-pre-wrap break-words">
+                  <div className="bg-blue-50 p-4 rounded-xl text-xs md:text-sm text-blue-800 leading-relaxed whitespace-pre-wrap break-words">
                     {config.description}
                   </div>
                 )}
@@ -324,34 +313,40 @@ export function MachineConfigs() {
           )}
         </div>
 
-        {/* MODAL FORMULÁRIO */}
+        {/* MODAL FORMULÁRIO RESPONSIVO */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center sticky top-0 z-10">
-                <h2 className="text-xl font-bold text-gray-800">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="bg-white border-b border-gray-100 px-5 py-4 flex justify-between items-center shrink-0">
+                <h2 className="text-lg md:text-xl font-bold text-gray-800">
                   {editingId ? "Editar Configuração" : "Nova Configuração"}
                 </h2>
-                <button onClick={() => setShowModal(false)}>
-                  <X size={24} className="text-gray-400" />
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <X size={24} />
                 </button>
               </div>
 
-              <form onSubmit={handleSave} className="p-6 space-y-6">
+              <form
+                onSubmit={handleSave}
+                className="p-5 md:p-6 space-y-6 overflow-y-auto"
+              >
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                     Nome da Configuração
                   </label>
                   <input
                     required
-                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none"
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all text-sm"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Ex: Padrão Recepção"
                   />
                 </div>
 
-                <div className="bg-gray-50 p-5 rounded-2xl border border-gray-100">
+                <div className="bg-gray-50 p-4 md:p-5 rounded-2xl border border-gray-100">
                   <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
                     <Database size={16} /> Mapeamento de Reservatórios
                   </h3>
@@ -362,19 +357,19 @@ export function MachineConfigs() {
                       configurados.
                     </p>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {reservoirs.map((i) => (
                         <div key={i}>
                           <label className="block text-xs font-bold text-gray-400 uppercase mb-1">
                             Produto {i}
                           </label>
                           <input
-                            className="w-full p-2 border border-gray-200 rounded-lg text-sm bg-white"
+                            className="w-full p-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-1 focus:ring-amiste-primary outline-none"
                             value={productMap[i] || ""}
                             onChange={(e) =>
                               handleProductChange(i, e.target.value)
                             }
-                            placeholder={`Conteúdo do reservatório ${i}`}
+                            placeholder={`Conteúdo ${i}`}
                           />
                         </div>
                       ))}
@@ -387,23 +382,25 @@ export function MachineConfigs() {
                     Observações / Detalhes
                   </label>
                   <textarea
-                    className="w-full p-3 border border-gray-200 rounded-xl h-24 resize-none"
+                    className="w-full p-3 border border-gray-200 rounded-xl h-24 resize-none focus:ring-2 focus:ring-amiste-primary outline-none text-sm"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Detalhes sobre a regulagem (ex: moagem fina, temperatura alta)..."
+                    placeholder="Detalhes sobre a regulagem (ex: moagem fina)..."
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={
-                    reservoirs.length === 0 &&
-                    Object.keys(productMap).length === 0
-                  }
-                  className="w-full py-3 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Save size={20} /> Salvar Configuração
-                </button>
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={
+                      reservoirs.length === 0 &&
+                      Object.keys(productMap).length === 0
+                    }
+                    className="w-full py-3 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+                  >
+                    <Save size={20} /> Salvar Configuração
+                  </button>
+                </div>
               </form>
             </div>
           </div>

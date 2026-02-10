@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
+import toast from "react-hot-toast"; // <--- Import do Toast
 import {
   Filter,
   History as HistoryIcon,
@@ -69,6 +70,7 @@ export function History() {
       if (historyData) setLogs(historyData);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
+      toast.error("Erro ao carregar histórico de atividades.");
     } finally {
       setLoading(false);
     }

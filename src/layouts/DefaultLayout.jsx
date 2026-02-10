@@ -4,7 +4,7 @@ import { AuthContext } from "../contexts/AuthContext";
 import { supabase } from "../services/supabaseClient";
 import { ProfileModal } from "../components/ProfileModal";
 import { Header } from "../components/Header";
-import toast from "react-hot-toast"; // <--- Import do Toast
+import toast from "react-hot-toast";
 import {
   LayoutDashboard,
   ClipboardList,
@@ -17,6 +17,8 @@ import {
   Edit2,
   Shield,
   Package,
+  Menu, // <--- Novo ícone para mobile
+  X, // <--- Ícone fechar
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -29,11 +31,19 @@ export function DefaultLayout() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [profileToEdit, setProfileToEdit] = useState(null);
 
+  // Estado para controlar o menu mobile
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   useEffect(() => {
     if (realProfile && ["DEV", "Dono"].includes(realProfile.role)) {
       fetchTeam();
     }
   }, [realProfile, isImpersonating]);
+
+  // Fecha o menu mobile automaticamente ao trocar de rota
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [location.pathname]);
 
   async function fetchTeam() {
     const { data } = await supabase
@@ -53,21 +63,17 @@ export function DefaultLayout() {
 
   async function handleDeleteMember(id, name, role, e) {
     e.stopPropagation();
-
-    // Bloqueio de segurança
     if (["DEV", "Dono"].includes(role)) {
       return toast.error(
-        "Ação Bloqueada: Não é possível excluir contas de nível Superior (Dono/DEV).",
+        "Ação Bloqueada: Não é possível excluir contas de nível Superior.",
       );
     }
-
     if (!confirm(`Tem certeza que deseja EXCLUIR a conta de "${name}"?`))
       return;
 
     try {
       const { error } = await supabase.from("profiles").delete().eq("id", id);
       if (error) throw error;
-
       toast.success(`Usuário "${name}" excluído com sucesso.`);
       fetchTeam();
     } catch (error) {
@@ -84,7 +90,6 @@ export function DefaultLayout() {
     return "bg-gray-100 text-gray-500 border-gray-200";
   }
 
-  // --- MENU LATERAL ---
   const navItems = [
     { path: "/home", icon: LayoutDashboard, label: "Início", visible: true },
     {
@@ -121,32 +126,49 @@ export function DefaultLayout() {
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50/50 font-sans text-gray-900">
+    <div className="flex h-screen bg-gray-50/50 font-sans text-gray-900 overflow-hidden">
       <ProfileModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         profileToEdit={profileToEdit}
         currentUserRole={realProfile?.role}
-        onSave={() => {
-          fetchTeam();
-          // Opcional: toast de sucesso pode vir de dentro do modal,
-          // mas se quiser disparar aqui, precisaria saber se foi sucesso.
-          // Geralmente deixamos o modal gerenciar seu próprio toast.
-        }}
+        onSave={() => fetchTeam()}
       />
 
+      {/* --- OVERLAY MOBILE (Fundo escuro quando menu abre) --- */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* --- SIDEBAR --- */}
-      <aside className="w-72 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 z-30 transition-all duration-300">
-        {/* Logo Area (Link para Home) */}
-        <div className="h-20 flex items-center justify-center border-b border-gray-100 px-6">
+      <aside
+        className={clsx(
+          "fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 transform",
+          isSidebarOpen
+            ? "translate-x-0 shadow-2xl"
+            : "-translate-x-full lg:translate-x-0",
+        )}
+      >
+        {/* Logo Area */}
+        <div className="h-20 flex items-center justify-between border-b border-gray-100 px-6">
           <Link
             to="/home"
-            className="bg-amiste-primary w-full py-3 rounded-xl shadow-lg shadow-red-200 flex items-center justify-center transform hover:scale-[1.02] transition-transform cursor-pointer block text-center decoration-0"
+            className="bg-amiste-primary w-full py-3 rounded-xl shadow-lg shadow-red-200 flex items-center justify-center transform hover:scale-[1.02] transition-transform cursor-pointer text-center decoration-0"
           >
             <span className="text-white font-black tracking-[0.25em] text-xl">
               AMISTE
             </span>
           </Link>
+          {/* Botão fechar no mobile */}
+          <button
+            onClick={() => setIsSidebarOpen(false)}
+            className="lg:hidden ml-2 p-2 text-gray-500 hover:bg-gray-100 rounded-lg"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         {/* Navegação */}
@@ -230,25 +252,24 @@ export function DefaultLayout() {
                               );
                             }
                           }}
-                          className="flex-1 text-left flex items-center gap-3"
+                          className="flex-1 text-left flex items-center gap-3 overflow-hidden"
                         >
                           {/* Avatar */}
                           <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500 bg-gray-100 border border-gray-200 overflow-hidden`}
+                            className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500 bg-gray-100 border border-gray-200 overflow-hidden`}
                           >
                             {member.avatar_url ? (
                               <img
                                 src={member.avatar_url}
                                 className="w-full h-full object-cover"
-                                alt={member.full_name}
                               />
                             ) : (
                               initials
                             )}
                           </div>
 
-                          <div className="flex flex-col">
-                            <span className="text-xs font-bold text-gray-700 truncate w-24">
+                          <div className="flex flex-col overflow-hidden">
+                            <span className="text-xs font-bold text-gray-700 truncate">
                               {member.nickname ||
                                 member.full_name?.split(" ")[0]}
                             </span>
@@ -260,16 +281,13 @@ export function DefaultLayout() {
                           </div>
                         </button>
 
-                        {/* Ações */}
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={(e) => handleEditMember(member, e)}
-                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Editar"
+                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
                           >
                             <Edit2 size={14} />
                           </button>
-
                           {!isVip && (
                             <button
                               onClick={(e) =>
@@ -280,8 +298,7 @@ export function DefaultLayout() {
                                   e,
                                 )
                               }
-                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Excluir"
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
                             >
                               <Trash2 size={14} />
                             </button>
@@ -298,9 +315,19 @@ export function DefaultLayout() {
 
       {/* --- CONTEÚDO PRINCIPAL --- */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
+        {/* BOTÃO MOBILE HAMBURGUER (Fica absoluto no topo esquerdo se a tela for pequena) */}
+        <div className="lg:hidden absolute top-5 left-4 z-30">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="p-2 bg-white rounded-lg shadow-sm border border-gray-200 text-gray-600"
+          >
+            <Menu size={24} />
+          </button>
+        </div>
+
         <Header />
 
-        <main className="flex-1 overflow-auto p-6 md:p-10 scroll-smooth">
+        <main className="flex-1 overflow-auto p-4 md:p-10 scroll-smooth">
           <Outlet />
         </main>
       </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../services/supabaseClient";
+import toast from "react-hot-toast"; // <--- Import do Toast
 import { X, Save, Shield, User, Lock, Key } from "lucide-react";
 
 export function ProfileModal({
@@ -57,15 +58,18 @@ export function ProfileModal({
         const { error: passError } = await supabase.auth.updateUser({
           password: formData.password,
         });
-        if (passError) alert("Erro ao mudar senha: " + passError.message);
-        else alert("Senha alterada com sucesso!");
+        if (passError) {
+          toast.error("Erro ao mudar senha: " + passError.message);
+        } else {
+          toast.success("Senha alterada com sucesso!");
+        }
       }
 
-      alert("Perfil atualizado!");
+      toast.success("Perfil atualizado com sucesso!");
       onSave();
       onClose();
     } catch (error) {
-      alert("Erro ao atualizar: " + error.message);
+      toast.error("Erro ao atualizar: " + error.message);
     } finally {
       setLoading(false);
     }

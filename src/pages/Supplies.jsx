@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
 import { Link } from "react-router-dom";
-import toast from "react-hot-toast"; // <--- Import do Toast
+import toast from "react-hot-toast";
 import {
   Plus,
   Search,
@@ -175,19 +175,19 @@ export function Supplies() {
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20 animate-fade-in">
-      <div className="max-w-7xl mx-auto p-6 md:p-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6">
         {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-display font-bold text-gray-800">
+            <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-800">
               Catálogo de Insumos
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-gray-500 mt-1 text-sm md:text-base">
               Gerencie xaropes, pós, grãos e descartáveis.
             </p>
           </div>
 
-          <div className="flex gap-3 w-full md:w-auto">
+          <div className="flex gap-2 w-full md:w-auto">
             <div className="relative flex-1 md:w-64">
               <Search
                 className="absolute left-3 top-3 text-gray-400"
@@ -195,7 +195,7 @@ export function Supplies() {
               />
               <input
                 className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
-                placeholder="Buscar insumo..."
+                placeholder="Buscar..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -203,7 +203,8 @@ export function Supplies() {
 
             <Link
               to="/recipes"
-              className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-5 py-3 rounded-xl font-bold shadow-sm flex items-center gap-2 transition-all"
+              className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-3 md:px-5 py-3 rounded-xl font-bold shadow-sm flex items-center gap-2 transition-all shrink-0"
+              title="Receitas"
             >
               <ChefHat size={20} />{" "}
               <span className="hidden md:inline">Receitas</span>
@@ -212,7 +213,8 @@ export function Supplies() {
             {permissions.canManageMachines && (
               <button
                 onClick={handleNew}
-                className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all hover:-translate-y-1"
+                className="bg-amiste-primary hover:bg-amiste-secondary text-white px-3 md:px-5 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all hover:-translate-y-1 shrink-0"
+                title="Novo Insumo"
               >
                 <Plus size={20} />{" "}
                 <span className="hidden md:inline">Novo Insumo</span>
@@ -223,19 +225,20 @@ export function Supplies() {
 
         {/* CONTEÚDO CONDICIONAL */}
         {loading ? (
-          <p className="text-center text-gray-400 py-10">
+          <p className="text-center text-gray-400 py-20 flex flex-col items-center">
+            <Package className="animate-bounce opacity-50 mb-2" size={32} />
             Carregando catálogo...
           </p>
         ) : filteredSupplies.length === 0 ? (
           // --- EMPTY STATE ---
-          <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in max-w-2xl mx-auto mt-8">
+          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in max-w-2xl mx-auto mt-4">
             <div className="bg-gray-50 p-6 rounded-full mb-4">
               <ShoppingCart size={48} className="text-gray-300" />
             </div>
             <h3 className="text-xl font-bold text-gray-600 mb-2">
               Nenhum insumo encontrado
             </h3>
-            <p className="text-gray-400 max-w-sm mx-auto mb-8 text-sm">
+            <p className="text-gray-400 max-w-sm mx-auto mb-8 text-sm px-4">
               Não encontramos produtos no estoque com esse critério. Cadastre um
               novo item para começar.
             </p>
@@ -250,7 +253,7 @@ export function Supplies() {
           </div>
         ) : (
           // --- GRID DE INSUMOS ---
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {filteredSupplies.map((item) => (
               <div
                 key={item.id}
@@ -278,15 +281,15 @@ export function Supplies() {
                     </button>
                   )}
                 </div>
-                <div className="p-5 flex-1 flex flex-col">
-                  <h3 className="font-bold text-gray-800 text-lg leading-tight mb-1">
+                <div className="p-4 md:p-5 flex-1 flex flex-col">
+                  <h3 className="font-bold text-gray-800 text-lg leading-tight mb-1 truncate">
                     {item.name}
                   </h3>
-                  <div className="flex gap-2 mt-auto">
-                    <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
+                  <div className="flex gap-2 mt-auto pt-4">
+                    <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1">
                       <Tag size={12} /> {item.brand}
                     </span>
-                    <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
+                    <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1">
                       <Scale size={12} /> {item.size}
                     </span>
                   </div>
@@ -296,12 +299,12 @@ export function Supplies() {
           </div>
         )}
 
-        {/* MODAL */}
+        {/* MODAL RESPONSIVO */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-              <div className="bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+              <div className="bg-white border-b border-gray-100 px-5 py-4 flex justify-between items-center shrink-0">
+                <h2 className="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">
                   {editingId ? (
                     <Edit2 size={20} className="text-amiste-primary" />
                   ) : (
@@ -309,19 +312,25 @@ export function Supplies() {
                   )}
                   {editingId ? "Editar Insumo" : "Novo Insumo"}
                 </h2>
-                <button onClick={() => setShowModal(false)}>
-                  <X size={24} className="text-gray-400 hover:text-red-500" />
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="p-1 text-gray-400 hover:text-red-500 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <X size={24} />
                 </button>
               </div>
 
-              <form onSubmit={handleSave} className="p-6 space-y-4">
+              <form
+                onSubmit={handleSave}
+                className="p-5 space-y-4 overflow-y-auto"
+              >
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                     Nome do Produto
                   </label>
                   <input
                     required
-                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none"
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
                     value={formData.name}
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
@@ -336,7 +345,7 @@ export function Supplies() {
                       Marca
                     </label>
                     <select
-                      className="w-full p-3 border border-gray-200 rounded-xl bg-white"
+                      className="w-full p-3 border border-gray-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-amiste-primary"
                       value={formData.brand}
                       onChange={(e) =>
                         setFormData({ ...formData, brand: e.target.value })
@@ -354,7 +363,7 @@ export function Supplies() {
                       Tamanho
                     </label>
                     <select
-                      className="w-full p-3 border border-gray-200 rounded-xl bg-white"
+                      className="w-full p-3 border border-gray-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-amiste-primary"
                       value={formData.size}
                       onChange={(e) =>
                         setFormData({ ...formData, size: e.target.value })
@@ -379,20 +388,20 @@ export function Supplies() {
                     <button
                       type="button"
                       onClick={() => setImageMode("url")}
-                      className={`flex-1 py-1.5 text-xs font-bold rounded-md flex items-center justify-center gap-1 ${imageMode === "url" ? "bg-amiste-primary text-white shadow-sm" : "text-gray-500 hover:bg-gray-50"}`}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-md flex items-center justify-center gap-1 transition-all ${imageMode === "url" ? "bg-amiste-primary text-white shadow-sm" : "text-gray-500 hover:bg-gray-50"}`}
                     >
                       <LinkIcon size={12} /> Link (URL)
                     </button>
                     <button
                       type="button"
                       onClick={() => setImageMode("file")}
-                      className={`flex-1 py-1.5 text-xs font-bold rounded-md flex items-center justify-center gap-1 ${imageMode === "file" ? "bg-amiste-primary text-white shadow-sm" : "text-gray-500 hover:bg-gray-50"}`}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-md flex items-center justify-center gap-1 transition-all ${imageMode === "file" ? "bg-amiste-primary text-white shadow-sm" : "text-gray-500 hover:bg-gray-50"}`}
                     >
-                      <Upload size={12} /> Upload (Arquivo)
+                      <Upload size={12} /> Upload
                     </button>
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 items-center">
                     {imageMode === "url" ? (
                       <input
                         className="w-full p-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-amiste-primary outline-none"
@@ -412,7 +421,7 @@ export function Supplies() {
                           accept="image/*"
                           onChange={handleImageUpload}
                           disabled={uploading}
-                          className="w-full p-2 border border-gray-200 rounded-xl text-sm bg-white file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                          className="w-full p-2 border border-gray-200 rounded-xl text-sm bg-white file:mr-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                         />
                         {uploading && (
                           <div className="absolute right-3 top-2.5 text-xs text-blue-600 font-bold animate-pulse">
@@ -426,20 +435,23 @@ export function Supplies() {
                       <div className="w-12 h-12 bg-white border border-gray-200 rounded-lg flex items-center justify-center shrink-0 p-1">
                         <img
                           src={formData.photo_url}
-                          className="w-full h-full object-contain"
+                          className="w-full h-full object-contain rounded"
                         />
                       </div>
                     )}
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={loading || uploading}
-                  className="w-full py-3 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 mt-4 disabled:opacity-70"
-                >
-                  <Save size={20} /> {loading ? "Salvando..." : "Salvar Insumo"}
-                </button>
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={loading || uploading}
+                    className="w-full py-3 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+                  >
+                    <Save size={20} />{" "}
+                    {loading ? "Salvando..." : "Salvar Insumo"}
+                  </button>
+                </div>
               </form>
             </div>
           </div>

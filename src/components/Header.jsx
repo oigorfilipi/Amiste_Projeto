@@ -2,6 +2,7 @@ import { useContext, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AuthContext } from "../contexts/AuthContext";
 import { ProfileModal } from "./ProfileModal";
+import toast from "react-hot-toast"; // <--- Import do Toast
 import {
   History,
   Tag,
@@ -66,10 +67,25 @@ export function Header() {
 
   function handleOpenProfile() {
     if (isImpersonating) {
-      alert("Saia do Modo Teste para editar seu perfil.");
-      return;
+      return toast.error(
+        "Saia do Modo de Visualização para editar seu perfil.",
+      );
     }
     setIsModalOpen(true);
+  }
+
+  function handleStopImpersonation() {
+    stopImpersonation();
+    toast.success("Modo de visualização encerrado.");
+  }
+
+  async function handleLogout() {
+    try {
+      await logOut();
+      toast.success("Você saiu do sistema.");
+    } catch (error) {
+      toast.error("Erro ao sair: " + error.message);
+    }
   }
 
   // Gera as iniciais para o avatar
@@ -119,7 +135,7 @@ export function Header() {
             <Eye size={14} />
             <span>Modo Visualização: {userProfile?.role}</span>
             <button
-              onClick={stopImpersonation}
+              onClick={handleStopImpersonation}
               title="Sair do Teste"
               className="ml-1 hover:text-amber-900"
             >
@@ -169,7 +185,7 @@ export function Header() {
 
             {isImpersonating && (
               <button
-                onClick={stopImpersonation}
+                onClick={handleStopImpersonation}
                 className="w-full text-left px-4 py-2.5 text-sm text-amber-600 hover:bg-amber-50 rounded-xl flex items-center gap-3 transition-colors font-medium"
               >
                 <Eye size={16} /> Sair do Modo Teste
@@ -179,7 +195,7 @@ export function Header() {
             <div className="h-px bg-gray-100 my-1 mx-2"></div>
 
             <button
-              onClick={logOut}
+              onClick={handleLogout}
               className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 rounded-xl flex items-center gap-3 transition-colors font-bold"
             >
               <LogOut size={16} /> Sair do Sistema

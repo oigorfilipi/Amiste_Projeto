@@ -234,9 +234,17 @@ export function DefaultLayout() {
                         >
                           {/* Avatar */}
                           <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500 bg-gray-100 border border-gray-200`}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500 bg-gray-100 border border-gray-200 overflow-hidden`}
                           >
-                            {initials}
+                            {member.avatar_url ? (
+                              <img
+                                src={member.avatar_url}
+                                className="w-full h-full object-cover"
+                                alt={member.full_name}
+                              />
+                            ) : (
+                              initials
+                            )}
                           </div>
 
                           <div className="flex flex-col">

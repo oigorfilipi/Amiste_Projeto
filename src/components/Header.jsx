@@ -149,8 +149,17 @@ export function Header() {
         {/* Botão do Perfil (Dropdown Trigger) */}
         <div className="relative group">
           <button className="flex items-center gap-3 focus:outline-none p-1 pr-3 rounded-full hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
-            <div className="h-10 w-10 bg-amiste-primary text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md shadow-red-100">
-              {initials}
+            {/* LÓGICA DE FOTO OU INICIAIS */}
+            <div className="h-10 w-10 bg-amiste-primary text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md shadow-red-100 overflow-hidden">
+              {userProfile?.avatar_url ? (
+                <img
+                  src={userProfile.avatar_url}
+                  alt="Avatar"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                initials
+              )}
             </div>
 
             <div className="text-right hidden md:block">

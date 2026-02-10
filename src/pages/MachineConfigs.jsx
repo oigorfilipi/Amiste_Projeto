@@ -40,18 +40,22 @@ export function MachineConfigs() {
   const [productMap, setProductMap] = useState({});
 
   useEffect(() => {
+    // PROTEÇÃO: Se não tiver dados da máquina, volta para o catálogo e para a execução
     if (!machineData) {
       navigate("/machines");
       return;
     }
+
     fetchConfigs();
 
-    // Inicializa a contagem de reservatórios com o valor do pai
-    setCurrentReservoirCount(machineData.reservoir_count || 0);
-  }, [machineData]);
+    // Inicializa a contagem de reservatórios com segurança (?)
+    setCurrentReservoirCount(machineData?.reservoir_count || 0);
+  }, [machineData, navigate]);
 
   // Efeito para atualizar a contagem quando troca o modelo
   useEffect(() => {
+    if (!machineData) return; // Proteção extra
+
     if (
       selectedModelIndex !== "" &&
       machineData.models &&
@@ -67,6 +71,8 @@ export function MachineConfigs() {
   }, [selectedModelIndex, machineData]);
 
   async function fetchConfigs() {
+    if (!machineData?.id) return;
+
     try {
       const { data, error } = await supabase
         .from("machine_configs")
@@ -93,7 +99,7 @@ export function MachineConfigs() {
   function handleNew() {
     setEditingId(null);
     let initialName = "";
-    if (selectedModelIndex !== "" && machineData.models) {
+    if (selectedModelIndex !== "" && machineData?.models) {
       initialName = `${machineData.models[selectedModelIndex].name} - `;
     }
 
@@ -113,6 +119,8 @@ export function MachineConfigs() {
 
   async function handleSave(e) {
     e.preventDefault();
+    if (!machineData?.id) return;
+
     try {
       const payload = {
         machine_id: machineData.id,
@@ -158,11 +166,13 @@ export function MachineConfigs() {
     }
   }
 
+  // Gera array com segurança
   const reservoirs = Array.from(
     { length: parseInt(currentReservoirCount) || 0 },
     (_, i) => i + 1,
   );
 
+  // Se não tiver dados, renderiza nada enquanto redireciona (evita o crash visual)
   if (!machineData) return null;
 
   return (

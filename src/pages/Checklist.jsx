@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
-import toast from "react-hot-toast"; // <--- Importante: Toast aqui
+import toast from "react-hot-toast";
 import { ChecklistList } from "../components/Checklist/ChecklistList";
 import { ChecklistForm } from "../components/Checklist/ChecklistForm";
 import {
@@ -526,7 +526,7 @@ export function Checklist() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/50 pb-20">
+    <div className="min-h-screen bg-gray-50/50 pb-20 animate-fade-in">
       {view === "list" && (
         <ChecklistList
           permissions={permissions || {}}

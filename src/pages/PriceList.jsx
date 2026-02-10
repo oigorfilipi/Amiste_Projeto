@@ -1,6 +1,7 @@
 import { useEffect, useState, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
+import toast from "react-hot-toast"; // <--- Import do Toast
 import {
   Search,
   Tag,
@@ -21,7 +22,6 @@ export function PriceList() {
   const [loading, setLoading] = useState(true);
 
   // Estados para edição rápida
-  // editingId agora pode ser "ID_MAQUINA" ou "ID_MAQUINA-INDEX_MODELO"
   const [editingId, setEditingId] = useState(null);
   const [editPrice, setEditPrice] = useState("");
 
@@ -34,9 +34,19 @@ export function PriceList() {
   }, []);
 
   async function fetchMachines() {
-    const { data } = await supabase.from("machines").select("*").order("name");
-    if (data) setMachines(data);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from("machines")
+        .select("*")
+        .order("name");
+      if (error) throw error;
+      if (data) setMachines(data);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao carregar tabela de preços.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleUpdatePrice(machineId, modelIndex = null) {
@@ -81,8 +91,9 @@ export function PriceList() {
       }
 
       setEditingId(null);
+      toast.success("Preço atualizado com sucesso!");
     } catch (error) {
-      alert("Erro ao atualizar preço: " + error.message);
+      toast.error("Erro ao atualizar preço: " + error.message);
     }
   }
 

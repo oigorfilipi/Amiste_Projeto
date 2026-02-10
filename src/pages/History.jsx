@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
-import toast from "react-hot-toast"; // <--- Import do Toast
+import toast from "react-hot-toast";
 import {
   Filter,
   History as HistoryIcon,
@@ -137,27 +137,26 @@ export function History() {
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20 animate-fade-in">
-      {/* CABEÇALHO */}
-      <div className="max-w-5xl mx-auto p-6 md:p-8">
+      <div className="max-w-5xl mx-auto px-4 md:px-8 pt-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-display font-bold text-gray-800">
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-800">
             Histórico Global
           </h1>
-          <p className="text-gray-500 mt-1">
+          <p className="text-gray-500 mt-1 text-sm md:text-base">
             Linha do tempo de atividades e auditoria do sistema.
           </p>
         </div>
 
         {/* BARRA DE FILTROS */}
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 items-center mb-8">
-          <div className="flex items-center gap-2 text-gray-400 font-bold text-xs uppercase tracking-wider pl-2">
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 items-stretch md:items-center mb-8">
+          <div className="flex items-center gap-2 text-gray-400 font-bold text-xs uppercase tracking-wider pl-1">
             <Filter size={16} /> Filtros
           </div>
 
           <div className="h-8 w-px bg-gray-100 hidden md:block"></div>
 
           <select
-            className="flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-amiste-primary outline-none transition-all cursor-pointer"
+            className="flex-1 p-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-amiste-primary outline-none transition-all cursor-pointer"
             value={filterModule}
             onChange={(e) => setFilterModule(e.target.value)}
           >
@@ -169,7 +168,7 @@ export function History() {
           </select>
 
           <select
-            className="flex-1 p-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-amiste-primary outline-none transition-all cursor-pointer"
+            className="flex-1 p-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-amiste-primary outline-none transition-all cursor-pointer"
             value={filterAction}
             onChange={(e) => setFilterAction(e.target.value)}
           >
@@ -179,7 +178,7 @@ export function History() {
             <option>Exclusão</option>
           </select>
 
-          <div className="ml-auto text-xs font-bold text-gray-400 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+          <div className="text-xs font-bold text-gray-400 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 text-center">
             {filteredLogs.length} Eventos
           </div>
         </div>
@@ -194,7 +193,7 @@ export function History() {
             <p>Carregando histórico...</p>
           </div>
         ) : filteredLogs.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200">
+          <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200 mx-auto max-w-lg">
             <HistoryIcon
               size={48}
               className="mx-auto text-gray-300 mb-2 opacity-50"
@@ -219,23 +218,39 @@ export function History() {
               return (
                 <div
                   key={log.id}
-                  className="group bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-amiste-primary/30 transition-all flex flex-col md:flex-row gap-4 items-start md:items-center relative overflow-hidden"
+                  className="group bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-amiste-primary/30 transition-all flex flex-col md:flex-row gap-4 items-start md:items-center relative overflow-hidden"
                 >
                   {/* Linha colorida lateral */}
                   <div
                     className={`absolute left-0 top-0 bottom-0 w-1 ${style.bg.replace("bg-", "bg-").replace("50", "500")}`}
                   ></div>
 
-                  {/* Ícone */}
-                  <div
-                    className={`p-3 rounded-xl ${style.bg} ${style.color} border ${style.border} shrink-0 ml-2`}
-                  >
-                    <Icon size={20} />
+                  {/* Topo do Card (Mobile) ou Esquerda (Desktop) */}
+                  <div className="flex w-full md:w-auto items-center gap-3">
+                    <div
+                      className={`p-2.5 rounded-xl ${style.bg} ${style.color} border ${style.border} shrink-0 ml-1`}
+                    >
+                      <Icon size={20} />
+                    </div>
+
+                    {/* Info Mobile (Data e Tipo) */}
+                    <div className="md:hidden flex-1">
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${style.bg} ${style.color} ${style.border}`}
+                        >
+                          {log.action_type}
+                        </span>
+                        <span className="text-[10px] text-gray-400">
+                          {new Date(log.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Info Principal */}
-                  <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <div className="flex-1 w-full">
+                    <div className="hidden md:flex flex-wrap items-center gap-2 mb-1">
                       <span
                         className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${style.bg} ${style.color} ${style.border}`}
                       >
@@ -254,7 +269,7 @@ export function History() {
                         })}
                       </span>
                     </div>
-                    <h3 className="font-bold text-gray-800 text-sm md:text-base leading-tight">
+                    <h3 className="font-bold text-gray-800 text-sm md:text-base leading-tight break-words">
                       {log.description}
                     </h3>
                   </div>
@@ -265,7 +280,11 @@ export function History() {
                   {/* Autor */}
                   <div className="flex items-center gap-3 md:pl-6 md:border-l border-gray-100 min-w-[140px]">
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center border ${authorProfile ? "bg-gray-50 border-gray-200 text-gray-500" : "bg-red-50 border-red-100 text-red-400"}`}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center border ${
+                        authorProfile
+                          ? "bg-gray-50 border-gray-200 text-gray-500"
+                          : "bg-red-50 border-red-100 text-red-400"
+                      }`}
                     >
                       {authorProfile ? (
                         <User size={14} />

@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
-import toast from "react-hot-toast"; // <--- Import do Toast
+import toast from "react-hot-toast";
 import {
   ChefHat,
   Plus,
@@ -150,23 +150,25 @@ export function Recipes() {
     <div className="min-h-screen bg-gray-50/50 pb-20 animate-fade-in">
       {/* MODO GRID */}
       {view === "grid" && (
-        <div className="max-w-7xl mx-auto p-6 md:p-8">
-          <div className="flex justify-between items-end mb-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 pt-6">
+          <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
             <div>
-              <h1 className="text-3xl font-display font-bold text-gray-800">
+              <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-800">
                 Receitas & Bebidas
               </h1>
-              <p className="text-gray-500 mt-1">
+              <p className="text-gray-500 mt-1 text-sm md:text-base">
                 Selecione um insumo para ver o que pode ser feito com ele.
               </p>
             </div>
-            <div className="relative w-64">
+
+            {/* Busca Responsiva */}
+            <div className="relative w-full md:w-72">
               <Search
                 className="absolute left-3 top-3 text-gray-400"
                 size={20}
               />
               <input
-                className="w-full pl-10 p-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-amiste-primary"
+                className="w-full pl-10 p-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-amiste-primary transition-all"
                 placeholder="Buscar insumo..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -179,25 +181,27 @@ export function Recipes() {
               Carregando insumos...
             </p>
           ) : filteredSupplies.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in max-w-2xl mx-auto mt-8">
+            // --- EMPTY STATE ---
+            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in max-w-2xl mx-auto mt-4">
               <div className="bg-gray-50 p-6 rounded-full mb-4">
                 <Package size={48} className="text-gray-300" />
               </div>
               <h3 className="text-xl font-bold text-gray-600 mb-2">
                 Nenhum insumo encontrado
               </h3>
-              <p className="text-gray-400 max-w-sm mx-auto text-sm">
+              <p className="text-gray-400 max-w-sm mx-auto text-sm px-4">
                 Não encontramos insumos para mostrar. Cadastre novos insumos no
                 menu "Insumos" para gerenciar receitas.
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            // --- GRID DE INSUMOS ---
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {filteredSupplies.map((item) => (
                 <div
                   key={item.id}
                   onClick={() => openSupplyRecipes(item)}
-                  className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-xl transition-all cursor-pointer group hover:-translate-y-1"
+                  className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-xl transition-all cursor-pointer group hover:-translate-y-1 active:scale-[0.98]"
                 >
                   <div className="h-32 flex items-center justify-center mb-4 bg-gray-50 rounded-xl relative overflow-hidden">
                     {item.photo_url ? (
@@ -209,7 +213,7 @@ export function Recipes() {
                       <Package size={40} className="text-gray-300" />
                     )}
                   </div>
-                  <h3 className="font-bold text-gray-800 text-lg leading-tight">
+                  <h3 className="font-bold text-gray-800 text-lg leading-tight truncate">
                     {item.name}
                   </h3>
                   <div className="flex items-center text-amiste-primary text-sm font-bold gap-1 mt-3">
@@ -224,25 +228,26 @@ export function Recipes() {
 
       {/* MODO DETALHES */}
       {view === "details" && selectedSupply && (
-        <div className="max-w-5xl mx-auto p-6 md:p-8">
-          <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md px-6 py-4 -mx-4 md:-mx-8 mb-8 border-b border-gray-100 shadow-sm flex justify-between items-center">
-            <div className="flex items-center gap-4">
+        <div className="max-w-5xl mx-auto px-4 md:px-8 pt-4">
+          <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md px-4 py-3 -mx-4 md:-mx-8 mb-6 border-b border-gray-100 shadow-sm flex justify-between items-center transition-all">
+            <div className="flex items-center gap-3 overflow-hidden">
               <button
                 onClick={() => setView("grid")}
-                className="p-2 hover:bg-gray-100 rounded-full"
+                className="p-2 hover:bg-gray-100 rounded-full shrink-0"
               >
                 <ArrowLeft size={24} />
               </button>
-              <div>
-                <h1 className="text-xl font-bold text-gray-800">
+              <div className="truncate">
+                <h1 className="text-lg md:text-xl font-bold text-gray-800 truncate">
                   {selectedSupply.name}
                 </h1>
                 <p className="text-xs text-gray-500">Gerenciando Receitas</p>
               </div>
             </div>
+
             <button
               onClick={() => setShowForm(!showForm)}
-              className={`px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md transition-all ${
+              className={`p-2 md:px-5 md:py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md transition-all shrink-0 ${
                 showForm
                   ? "bg-gray-100 text-gray-600"
                   : "bg-amiste-primary text-white"
@@ -250,11 +255,13 @@ export function Recipes() {
             >
               {showForm ? (
                 <>
-                  <X size={18} /> Cancelar
+                  <X size={20} />{" "}
+                  <span className="hidden md:inline">Cancelar</span>
                 </>
               ) : (
                 <>
-                  <Plus size={18} /> Nova Receita
+                  <Plus size={20} />{" "}
+                  <span className="hidden md:inline">Nova Receita</span>
                 </>
               )}
             </button>
@@ -263,7 +270,7 @@ export function Recipes() {
           {showForm && (
             <div
               id="recipe-form"
-              className="bg-white p-8 rounded-2xl shadow-lg border border-amiste-primary/30 ring-4 ring-amiste-primary/5 mb-8 animate-slide-down"
+              className="bg-white p-5 md:p-8 rounded-2xl shadow-lg border border-amiste-primary/30 ring-4 ring-amiste-primary/5 mb-8 animate-slide-down"
             >
               <h3 className="font-bold text-lg mb-6 flex items-center gap-2 text-gray-800">
                 <ChefHat size={24} className="text-amiste-primary" />{" "}
@@ -277,7 +284,7 @@ export function Recipes() {
                     </label>
                     <input
                       required
-                      className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none"
+                      className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
                       value={formData.name}
                       onChange={(e) =>
                         setFormData({ ...formData, name: e.target.value })
@@ -285,12 +292,13 @@ export function Recipes() {
                       placeholder="Ex: Soda Italiana de Maçã"
                     />
                   </div>
+
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Rendimento
                     </label>
                     <input
-                      className="w-full p-3 border border-gray-200 rounded-xl"
+                      className="w-full p-3 border border-gray-200 rounded-xl transition-all"
                       value={formData.yield}
                       onChange={(e) =>
                         setFormData({ ...formData, yield: e.target.value })
@@ -298,12 +306,13 @@ export function Recipes() {
                       placeholder="Ex: 300ml"
                     />
                   </div>
-                  <div>
+
+                  <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Ingredientes
                     </label>
                     <textarea
-                      className="w-full p-3 border border-gray-200 rounded-xl h-24"
+                      className="w-full p-3 border border-gray-200 rounded-xl h-24 transition-all"
                       value={formData.ingredients}
                       onChange={(e) =>
                         setFormData({
@@ -314,12 +323,13 @@ export function Recipes() {
                       placeholder="Liste os ingredientes..."
                     />
                   </div>
+
                   <div className="md:col-span-2">
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                       Modo de Preparo
                     </label>
                     <textarea
-                      className="w-full p-3 border border-gray-200 rounded-xl h-32"
+                      className="w-full p-3 border border-gray-200 rounded-xl h-32 transition-all"
                       value={formData.instructions}
                       onChange={(e) =>
                         setFormData({
@@ -331,10 +341,11 @@ export function Recipes() {
                     />
                   </div>
                 </div>
+
                 <div className="flex justify-end gap-3 pt-2">
                   <button
                     type="submit"
-                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md"
+                    className="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md active:scale-[0.98]"
                   >
                     <Save size={18} /> Salvar Receita
                   </button>
@@ -360,23 +371,24 @@ export function Recipes() {
               recipes.map((r) => (
                 <div
                   key={r.id}
-                  className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all"
+                  className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all"
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-3 bg-orange-50 text-orange-600 rounded-xl">
+                  <div className="flex flex-col md:flex-row justify-between items-start mb-4 gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="p-3 bg-orange-50 text-orange-600 rounded-xl shrink-0">
                         <ChefHat size={24} />
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold text-gray-800">
+                        <h3 className="text-xl font-bold text-gray-800 leading-tight">
                           {r.name}
                         </h3>
-                        <p className="text-xs text-gray-500 uppercase font-bold tracking-wide">
+                        <p className="text-xs text-gray-500 uppercase font-bold tracking-wide mt-1">
                           Rendimento: {r.yield}
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+
+                    <div className="flex gap-2 self-end md:self-auto">
                       <button
                         onClick={() => handleEdit(r)}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
@@ -391,12 +403,13 @@ export function Recipes() {
                       </button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-600">
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 text-sm text-gray-600">
                     <div className="bg-gray-50 p-4 rounded-xl">
                       <strong className="block text-gray-400 text-xs uppercase mb-2">
                         Ingredientes
                       </strong>
-                      <p className="whitespace-pre-wrap break-words">
+                      <p className="whitespace-pre-wrap break-words leading-relaxed">
                         {r.ingredients}
                       </p>
                     </div>
@@ -404,7 +417,7 @@ export function Recipes() {
                       <strong className="block text-gray-400 text-xs uppercase mb-2">
                         Preparo
                       </strong>
-                      <p className="whitespace-pre-wrap break-words">
+                      <p className="whitespace-pre-wrap break-words leading-relaxed">
                         {r.instructions}
                       </p>
                     </div>

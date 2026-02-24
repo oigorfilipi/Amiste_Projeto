@@ -275,6 +275,11 @@ export function Checklist() {
   };
 
   async function handleSave(status = "Finalizado") {
+    // Validação de Permissão antes de Salvar
+    if (permissions?.Checklist !== "All") {
+      return toast.error("Você não tem permissão para salvar checklists.");
+    }
+
     if (status === "Finalizado" && !contractNum)
       return toast.error("Por favor, preencha o Nº Contrato.");
     if (!clientName && !eventName)
@@ -369,8 +374,9 @@ export function Checklist() {
   }
 
   async function handleDelete(id) {
-    if (!permissions.canDeleteChecklist)
+    if (permissions?.Checklist !== "All")
       return toast.error("Você não tem permissão para excluir checklists.");
+
     if (!confirm("Tem certeza que deseja excluir este checklist?")) return;
     try {
       await supabase.from("checklists").delete().eq("id", id);
@@ -383,6 +389,9 @@ export function Checklist() {
 
   async function handleCancelChecklist() {
     if (!editingId) return;
+    if (permissions?.Checklist !== "All")
+      return toast.error("Você não tem permissão para cancelar checklists.");
+
     if (!confirm("Tem certeza que deseja CANCELAR este serviço?")) return;
     try {
       const { error } = await supabase
@@ -399,8 +408,16 @@ export function Checklist() {
   }
 
   function handleEdit(checklist) {
-    if (!permissions.canEditChecklist)
-      return toast.error("Você não tem permissão para editar.");
+    // Se a pessoa tiver ALL, ela entra pra editar.
+    // Se ela tiver READ, ela NÃO DEVERIA chegar aqui pelo botão editar,
+    // mas se chegar, a gente mostra como leitura
+    if (
+      permissions?.Checklist === "Nothing" ||
+      permissions?.Checklist === "Ghost"
+    ) {
+      return toast.error("Você não tem permissão de acesso.");
+    }
+
     setEditingId(checklist.id);
 
     // ... (States simples iguais) ...
@@ -526,7 +543,7 @@ export function Checklist() {
   }
 
   function handleNewChecklist() {
-    if (!permissions.canCreateChecklist)
+    if (permissions?.Checklist !== "All")
       return toast.error("Você não tem permissão para criar checklists.");
 
     setEditingId(null);

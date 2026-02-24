@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { AuthContext } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
-import { ArrowLeft, Printer, Coffee } from "lucide-react";
+import { ArrowLeft, Printer, Coffee, ShieldAlert } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { BlankChecklistPDF } from "../components/BlankChecklistPDF";
 
 export function PrintBlankChecklist() {
+  const { permissions } = useContext(AuthContext);
   const [loading, setLoading] = useState(true);
   const [machines, setMachines] = useState([]);
 
@@ -14,6 +16,9 @@ export function PrintBlankChecklist() {
   const [type, setType] = useState("Cliente");
   const [selectedMachineId, setSelectedMachineId] = useState("");
   const [quantity, setQuantity] = useState(1);
+
+  // Verificação de permissão: Se não houver permissão definida para Checklists, bloqueia
+  const hasAccess = permissions?.Checklists !== undefined;
 
   useEffect(() => {
     async function fetchMachines() {
@@ -32,8 +37,33 @@ export function PrintBlankChecklist() {
         setLoading(false);
       }
     }
-    fetchMachines();
-  }, []);
+
+    if (hasAccess) {
+      fetchMachines();
+    }
+  }, [hasAccess]);
+
+  if (!hasAccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 max-w-sm w-full text-center">
+          <ShieldAlert size={48} className="text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-800 mb-2">
+            Acesso Restrito
+          </h2>
+          <p className="text-gray-500 mb-6">
+            Você não tem permissão para acessar o módulo de Checklists.
+          </p>
+          <Link
+            to="/"
+            className="block w-full bg-gray-900 text-white py-3 rounded-xl font-bold"
+          >
+            Voltar ao Início
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const selectedMachineData = machines.find(
     (m) => m.id.toString() === selectedMachineId,
@@ -129,32 +159,38 @@ export function PrintBlankChecklist() {
               max="10"
               className="w-full p-3 md:p-4 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-amiste-primary"
               value={quantity}
-              onChange={(e) => setQuantity(parseInt(e.target.value))}
+              onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
             />
           </div>
 
           {/* Botão Gerar */}
-          <PDFDownloadLink
-            document={
-              <BlankChecklistPDF
-                type={type}
-                machineData={selectedMachineData}
-                quantity={quantity}
-              />
-            }
-            fileName={`checklist_manual_${type.toLowerCase()}.pdf`}
-            className="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all hover:-translate-y-1 active:scale-[0.98]"
-          >
-            {({ loading }) =>
-              loading ? (
-                "Gerando PDF..."
-              ) : (
-                <>
-                  <Printer size={20} /> Baixar PDF para Impressão
-                </>
-              )
-            }
-          </PDFDownloadLink>
+          {loading ? (
+            <div className="w-full bg-gray-100 text-gray-400 font-bold py-4 rounded-xl text-center">
+              Carregando dados...
+            </div>
+          ) : (
+            <PDFDownloadLink
+              document={
+                <BlankChecklistPDF
+                  type={type}
+                  machineData={selectedMachineData}
+                  quantity={quantity}
+                />
+              }
+              fileName={`checklist_manual_${type.toLowerCase()}.pdf`}
+              className="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all hover:-translate-y-1 active:scale-[0.98]"
+            >
+              {({ loading: pdfLoading }) =>
+                pdfLoading ? (
+                  "Gerando PDF..."
+                ) : (
+                  <>
+                    <Printer size={20} /> Baixar PDF para Impressão
+                  </>
+                )
+              }
+            </PDFDownloadLink>
+          )}
         </div>
       </div>
     </div>

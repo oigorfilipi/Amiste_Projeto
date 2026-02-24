@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
+import { AuthContext } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
 import {
   X,
@@ -16,10 +17,10 @@ export function ProfileModal({
   isOpen,
   onClose,
   profileToEdit,
-  currentUserRole,
+  // currentUserRole foi removido daqui pois agora usamos o AuthContext super inteligente!
   onSave,
 }) {
-  if (!isOpen || !profileToEdit) return null;
+  const { realProfile, permissions } = useContext(AuthContext);
 
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -32,18 +33,32 @@ export function ProfileModal({
     avatar_url: "",
   });
 
-  const canEditRole = ["DEV", "Dono"].includes(currentUserRole);
-
   useEffect(() => {
-    setFormData({
-      full_name: profileToEdit.full_name || "",
-      nickname: profileToEdit.nickname || "",
-      role: profileToEdit.role || "Visitante",
-      email: profileToEdit.email || "Email gerido pelo Auth",
-      password: "",
-      avatar_url: profileToEdit.avatar_url || "",
-    });
+    if (profileToEdit) {
+      setFormData({
+        full_name: profileToEdit.full_name || "",
+        nickname: profileToEdit.nickname || "",
+        role: profileToEdit.role || "Visitante",
+        email: profileToEdit.email || "Email gerido pelo Auth",
+        password: "",
+        avatar_url: profileToEdit.avatar_url || "",
+      });
+    }
   }, [profileToEdit]);
+
+  if (!isOpen || !profileToEdit) return null;
+
+  // --- REGRAS DE PERMISSÃO DO PERFIL (Conforme sua lista) ---
+  const isOwnProfile = realProfile?.id === profileToEdit.id;
+
+  // O Dono não pode alterar o cargo do DEV
+  const isDonoEditingDev =
+    ["Dono", "Don."].includes(realProfile?.role) &&
+    ["DEV", "Dev", "Dev."].includes(profileToEdit?.role);
+
+  // Só pode editar a ROLE se a permissão for "All", NÃO for o próprio perfil, e NÃO for Dono editando DEV
+  const canEditRole =
+    permissions?.Perfil === "All" && !isOwnProfile && !isDonoEditingDev;
 
   async function handleAvatarUpload(event) {
     try {
@@ -83,6 +98,7 @@ export function ProfileModal({
         avatar_url: formData.avatar_url,
       };
 
+      // Só envia a atualização de cargo se for permitido
       if (canEditRole) {
         updates.role = formData.role;
       }
@@ -116,9 +132,9 @@ export function ProfileModal({
   }
 
   const getRoleColor = (role) => {
-    if (role === "DEV") return "bg-purple-600";
-    if (role === "Dono") return "bg-amber-500";
-    if (role === "Comercial") return "bg-blue-600";
+    if (["DEV", "Dev", "Dev."].includes(role)) return "bg-purple-600";
+    if (["Dono", "Don."].includes(role)) return "bg-amber-500";
+    if (["Comercial", "Com."].includes(role)) return "bg-blue-600";
     return "bg-amiste-primary";
   };
 
@@ -129,7 +145,6 @@ export function ProfileModal({
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden relative flex flex-col max-h-[90vh]">
-        {/* PARTE SUPERIOR (Fixo ou Rola junto? Rola junto para garantir acesso em telas pequenas) */}
         <div className="overflow-y-auto">
           {/* --- HEADER COM FOTO --- */}
           <div
@@ -154,6 +169,7 @@ export function ProfileModal({
                   initials
                 )}
 
+                {/* Só quem tem permissão para editar foto (si mesmo ou Master) vai poder ver o input */}
                 <label className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                   {uploading ? (
                     <Loader2 className="text-white animate-spin" size={24} />
@@ -222,10 +238,12 @@ export function ProfileModal({
               </div>
             </div>
 
+            {/* SEÇÃO DE PERMISSÃO: Fica Oculta se não for DEV/Dono, ou se for o próprio perfil, ou se for Dono editando Dev */}
             {canEditRole && (
               <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-1">
                   <Shield size={14} className="text-amiste-primary" /> Permissão
+                  (Tag)
                 </label>
                 <select
                   className="w-full p-2.5 border border-gray-200 rounded-lg bg-white outline-none"
@@ -234,12 +252,12 @@ export function ProfileModal({
                     setFormData({ ...formData, role: e.target.value })
                   }
                 >
-                  <option value="Comercial">Comercial</option>
-                  <option value="Técnico">Técnico</option>
-                  <option value="Financeiro">Financeiro</option>
-                  <option value="ADM">Administrativo</option>
+                  <option value="Comercial">Comercial (Com.)</option>
+                  <option value="Técnico">Técnico (Téc.)</option>
+                  <option value="Financeiro">Financeiro (Fin.)</option>
+                  <option value="Administrativo">Administrativo (Adm.)</option>
                   <option value="DEV">DEV (System Admin)</option>
-                  <option value="Dono">Dono</option>
+                  <option value="Dono">Dono (Don.)</option>
                 </select>
               </div>
             )}

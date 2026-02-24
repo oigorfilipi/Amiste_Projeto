@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 export function PriceList() {
-  const { userProfile } = useContext(AuthContext);
+  const { permissions } = useContext(AuthContext);
   const [machines, setMachines] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
@@ -25,9 +25,8 @@ export function PriceList() {
   const [editingId, setEditingId] = useState(null);
   const [editPrice, setEditPrice] = useState("");
 
-  const canEditPrice = ["DEV", "Dono", "Comercial", "Vendedor"].includes(
-    userProfile?.role,
-  );
+  // Permissão baseada no novo sistema
+  const canEditPrice = permissions?.Financeiro === "Admin";
 
   useEffect(() => {
     fetchMachines();
@@ -50,6 +49,8 @@ export function PriceList() {
   }
 
   async function handleUpdatePrice(machineId, modelIndex = null) {
+    if (!canEditPrice) return toast.error("Sem permissão para alterar preços.");
+
     const finalPrice = editPrice === "" ? 0 : parseFloat(editPrice);
 
     try {

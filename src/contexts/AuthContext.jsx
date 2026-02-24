@@ -60,7 +60,7 @@ export function AuthProvider({ children }) {
     if (error) throw error;
   }
 
-  // --- LOGICA DE TESTE ---
+  // --- LÓGICA DE TESTE DO DEV ---
   const activeProfile = impersonatedProfile || realProfile;
   const isImpersonating = !!impersonatedProfile;
 
@@ -71,71 +71,178 @@ export function AuthProvider({ children }) {
     setImpersonatedProfile(null);
   }
 
-  // --- PERMISSÕES ---
-  const role = activeProfile?.role || "Visitante";
+  // =========================================================
+  // A SUA MATRIZ DE PERMISSÕES (ALL, READ, NOTHING, GHOST, PARTIAL)
+  // =========================================================
+  const rawRole = activeProfile?.role || "Visitante";
 
-  const permissions = {
-    // 1. FINANCEIRO: Ver totais e gráficos
-    canViewFinancials: ["Dono", "Financeiro", "DEV"].includes(role),
+  // Essa função garante que se no banco estiver escrito "Técnico" ou "Téc.", o sistema entende.
+  function getNormalizedRole(r) {
+    if (["DEV", "Dev", "Dev."].includes(r)) return "Dev.";
+    if (["Dono", "Don."].includes(r)) return "Don.";
+    if (["Financeiro", "Fin."].includes(r)) return "Fin.";
+    if (["Comercial", "Com."].includes(r)) return "Com.";
+    if (["Administrativo", "Adm.", "ADM"].includes(r)) return "Adm.";
+    if (["Técnico", "Téc.", "Tecnico"].includes(r)) return "Téc.";
+    return "Visitante";
+  }
 
-    // 2. CHECKLIST (Criar): Todo mundo operacional
-    canCreateChecklist: [
-      "Dono",
-      "DEV",
-      "ADM",
-      "Comercial",
-      "Vendedor",
-      "Técnico",
-    ].includes(role),
+  const role = getNormalizedRole(rawRole);
 
-    // 3. CHECKLIST (Editar): Quem põe a mão na massa
-    canEditChecklist: [
-      "Dono",
-      "DEV",
-      "ADM",
-      "Técnico",
-      "Comercial",
-      "Vendedor",
-    ].includes(role),
-
-    // 4. CHECKLIST (Excluir): Só os Chefes Supremos
-    canDeleteChecklist: ["Dono", "DEV"].includes(role),
-
-    // 5. MÁQUINAS: ADM REMOVIDO DAQUI
-    canManageMachines: [
-      "Dono",
-      "DEV",
-      "Comercial",
-      "Vendedor",
-      "Técnico", // Técnico geralmente precisa ver/editar detalhes técnicos
-    ].includes(role),
-
-    // 6. PORTFÓLIO: Vendas, Chefia e ADM
-    canManagePortfolio: [
-      "Dono",
-      "DEV",
-      "Comercial",
-      "Vendedor",
-      "ADM",
-    ].includes(role),
-
-    // 7. HISTÓRICO: Só Chefia Suprema
-    canViewHistory: ["Dono", "DEV"].includes(role),
-
-    // 8. WIKI: Todo mundo vê, edição restrita a técnicos e chefia
-    canManageWiki: ["Dono", "DEV", "Técnico"].includes(role),
-
-    // 9. USUÁRIOS: Só Chefia Suprema
-    canManageUsers: ["Dono", "DEV"].includes(role),
-
-    // 10. INSUMOS: ADM TEM ACESSO
-    canManageSupplies: ["Dono", "DEV", "ADM", "Comercial", "Vendedor"].includes(
-      role,
-    ),
-
-    // 11. CONFIGURAÇÃO DE MÁQUINAS: DEV, Dono e Técnico
-    canConfigureMachines: ["Dono", "DEV", "Técnico", "Tecnico"].includes(role),
+  // MATRIZ EXATA COMO SOLICITADA
+  const PERMISSIONS_MATRIX = {
+    "Adm.": {
+      Home: "Partial",
+      Checklist: "Read",
+      Portfolio: "Ghost",
+      Manutencao: "Read",
+      Maquinas: "Read",
+      Insumos: "All",
+      Wiki: "Read",
+      Financeiro: "Ghost",
+      Receitas: "All",
+      PrecosInsumos: "All",
+      PrecosMaquinas: "Read",
+      Contagem: "All",
+      StatusCliente: "Read",
+      ConfigMaquinas: "Read",
+      AdicionarOpcao: "Read",
+      Etiquetas: "Partial",
+      HistoricoGeral: "Ghost",
+      ImprimirPDFs: "Partial",
+      Perfil: "Partial",
+    },
+    "Com.": {
+      Home: "Partial",
+      Checklist: "All",
+      Portfolio: "All",
+      Manutencao: "Read",
+      Maquinas: "All",
+      Insumos: "Read",
+      Wiki: "Read",
+      Financeiro: "Read",
+      Receitas: "Read",
+      PrecosInsumos: "Read",
+      PrecosMaquinas: "All",
+      Contagem: "Read",
+      StatusCliente: "All",
+      ConfigMaquinas: "Read",
+      AdicionarOpcao: "All",
+      Etiquetas: "Partial",
+      HistoricoGeral: "Ghost",
+      ImprimirPDFs: "Partial",
+      Perfil: "Partial",
+    },
+    "Dev.": {
+      Home: "Partial",
+      Checklist: "All",
+      Portfolio: "All",
+      Manutencao: "All",
+      Maquinas: "All",
+      Insumos: "All",
+      Wiki: "All",
+      Financeiro: "All",
+      Receitas: "All",
+      PrecosInsumos: "All",
+      PrecosMaquinas: "All",
+      Contagem: "All",
+      StatusCliente: "All",
+      ConfigMaquinas: "All",
+      AdicionarOpcao: "All",
+      Etiquetas: "All",
+      HistoricoGeral: "All",
+      ImprimirPDFs: "Partial",
+      Perfil: "All",
+    },
+    "Fin.": {
+      Home: "Partial",
+      Checklist: "Read",
+      Portfolio: "Read",
+      Manutencao: "Read",
+      Maquinas: "Read",
+      Insumos: "Read",
+      Wiki: "Read",
+      Financeiro: "All",
+      Receitas: "Read",
+      PrecosInsumos: "Read",
+      PrecosMaquinas: "Read",
+      Contagem: "Read",
+      StatusCliente: "Read",
+      ConfigMaquinas: "Read",
+      AdicionarOpcao: "Read",
+      Etiquetas: "Read",
+      HistoricoGeral: "All",
+      ImprimirPDFs: "Partial",
+      Perfil: "Partial",
+    },
+    "Don.": {
+      Home: "Partial",
+      Checklist: "All",
+      Portfolio: "All",
+      Manutencao: "All",
+      Maquinas: "All",
+      Insumos: "All",
+      Wiki: "All",
+      Financeiro: "All",
+      Receitas: "All",
+      PrecosInsumos: "All",
+      PrecosMaquinas: "All",
+      Contagem: "All",
+      StatusCliente: "All",
+      ConfigMaquinas: "All",
+      AdicionarOpcao: "All",
+      Etiquetas: "All",
+      HistoricoGeral: "All",
+      ImprimirPDFs: "Partial",
+      Perfil: "All",
+    },
+    "Téc.": {
+      Home: "Partial",
+      Checklist: "All",
+      Portfolio: "Ghost",
+      Manutencao: "All",
+      Maquinas: "All",
+      Insumos: "Read",
+      Wiki: "All",
+      Financeiro: "Ghost",
+      Receitas: "Read",
+      PrecosInsumos: "Read",
+      PrecosMaquinas: "Read",
+      Contagem: "Read",
+      StatusCliente: "Read",
+      ConfigMaquinas: "All",
+      AdicionarOpcao: "Read",
+      Etiquetas: "Partial",
+      HistoricoGeral: "Ghost",
+      ImprimirPDFs: "Partial",
+      Perfil: "Partial",
+    },
+    Visitante: {
+      Home: "Nothing",
+      Checklist: "Nothing",
+      Portfolio: "Nothing",
+      Manutencao: "Nothing",
+      Maquinas: "Nothing",
+      Insumos: "Nothing",
+      Wiki: "Nothing",
+      Financeiro: "Nothing",
+      Receitas: "Nothing",
+      PrecosInsumos: "Nothing",
+      PrecosMaquinas: "Nothing",
+      Contagem: "Nothing",
+      StatusCliente: "Nothing",
+      ConfigMaquinas: "Nothing",
+      AdicionarOpcao: "Nothing",
+      Etiquetas: "Nothing",
+      HistoricoGeral: "Nothing",
+      ImprimirPDFs: "Nothing",
+      Perfil: "Nothing",
+    },
   };
+
+  // Pega as permissões do cargo atual baseado na matriz
+  const permissions =
+    PERMISSIONS_MATRIX[role] || PERMISSIONS_MATRIX["Visitante"];
 
   return (
     <AuthContext.Provider
@@ -147,8 +254,8 @@ export function AuthProvider({ children }) {
         isImpersonating,
         startImpersonation,
         stopImpersonation,
-        role,
-        permissions,
+        role: rawRole,
+        permissions, // Agora você chama `permissions.Checklist` e ele retorna "All", "Read", etc.
         signIn,
         logOut,
         loadingAuth,

@@ -17,26 +17,20 @@ import { History } from "./pages/History";
 import { Financial } from "./pages/Financial";
 import { PriceList } from "./pages/PriceList";
 
-// Páginas Secundárias
+// --- NOVAS PÁGINAS ---
 import { Supplies } from "./pages/Supplies";
 import { Recipes } from "./pages/Recipes";
 import { SupplyPriceList } from "./pages/SupplyPriceList";
 import { MachineConfigs } from "./pages/MachineConfigs";
 import { PrintBlankChecklist } from "./pages/PrintBlankChecklist";
-import { SystemSettings } from "./pages/SystemSettings";
-
-// --- NOVAS PÁGINAS (Fase 1) ---
-import { Stock } from "./pages/Stock";
-import { ClientStatus } from "./pages/ClientStatus";
-import { Labels } from "./pages/Labels";
+import { SystemSettings } from "./pages/SystemSettings"; // <--- Importado aqui
 
 // Contexto
 import { AuthProvider, AuthContext } from "./contexts/AuthContext";
 
 // 1. Verifica se está logado
 const Private = ({ children }) => {
-  // Alterado de "signed" para "user" para refletir o seu AuthContext real
-  const { user, loadingAuth } = useContext(AuthContext);
+  const { signed, loadingAuth } = useContext(AuthContext);
 
   if (loadingAuth) {
     return (
@@ -53,17 +47,17 @@ const Private = ({ children }) => {
     );
   }
 
-  return user ? children : <Navigate to="/" />;
+  return signed ? children : <Navigate to="/" />;
 };
 
 // 2. Rota Protegida por Permissão (RBAC)
-const ProtectedRoute = ({ children, permissionKey }) => {
+const ProtectedRoute = ({ children, moduleName }) => {
   const { permissions, loadingAuth } = useContext(AuthContext);
 
   if (loadingAuth) return null;
 
-  // Se existir uma chave de permissão obrigatória e o usuário não a tiver, bloqueia.
-  if (permissionKey && permissions && permissions[permissionKey] === false) {
+  // Se a página pede um módulo e o usuário tem permissão "Nothing", manda pra home
+  if (moduleName && permissions && permissions[moduleName] === "Nothing") {
     return <Navigate to="/home" replace />;
   }
 
@@ -74,7 +68,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        {/* --- CONFIGURAÇÃO DAS NOTIFICAÇÕES (Mantidas do seu código original) --- */}
+        {/* --- CONFIGURAÇÃO DAS NOTIFICAÇÕES --- */}
         <Toaster
           position="top-right"
           reverseOrder={false}
@@ -135,13 +129,8 @@ export default function App() {
             <Route path="/supply-prices" element={<SupplyPriceList />} />
             <Route path="/recipes" element={<Recipes />} />
 
-            {/* Corrigido o caminho para bater certinho com o Menu DefaultLayout */}
-            <Route path="/system-settings" element={<SystemSettings />} />
-
-            {/* --- NOVAS ROTAS FASE 1 --- */}
-            <Route path="/stock" element={<Stock />} />
-            <Route path="/client-status" element={<ClientStatus />} />
-            <Route path="/labels" element={<Labels />} />
+            {/* Configurações do Sistema (A proteção está dentro da página) */}
+            <Route path="/settings" element={<SystemSettings />} />
 
             {/* Checklists */}
             <Route
@@ -153,9 +142,8 @@ export default function App() {
               }
             />
             <Route path="/checklists/:id" element={<ChecklistDetails />} />
-            {/* Corrigida a rota do PDF de impressão manual para não bater em conflito com /:id */}
             <Route
-              path="/print-blank-checklist"
+              path="/checklists/print-blank"
               element={<PrintBlankChecklist />}
             />
 
@@ -163,7 +151,7 @@ export default function App() {
             <Route
               path="/portfolio"
               element={
-                <ProtectedRoute permissionKey="canManagePortfolio">
+                <ProtectedRoute moduleName="Portfolio">
                   <Portfolio />
                 </ProtectedRoute>
               }
@@ -208,7 +196,7 @@ export default function App() {
             />
           </Route>
 
-          {/* Rota 404 - Qualquer URL inválida volta para a base */}
+          {/* Rota 404 */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

@@ -26,22 +26,30 @@ export const FormSection = ({ title, icon: Icon, children }) => (
   </div>
 );
 
-export const RadioGroup = ({ options, value, onChange, label }) => (
+export const RadioGroup = ({ options, value, onChange, label, disabled }) => (
   <div className="mb-4">
     {label && (
       <label className="block text-xs font-bold text-gray-500 uppercase mb-2 ml-1">
         {label}
       </label>
     )}
-    <div className="flex bg-gray-100 p-1 rounded-lg">
+    <div
+      className={`flex bg-gray-100 p-1 rounded-lg ${disabled ? "opacity-70" : ""}`}
+    >
       {options.map((opt) => (
         <button
           key={opt}
-          onClick={() => onChange(opt)}
-          className={`flex-1 py-2 md:py-2.5 px-2 rounded-md text-xs md:text-sm font-bold transition-all active:scale-[0.98] ${
+          type="button"
+          disabled={disabled}
+          onClick={() => !disabled && onChange(opt)}
+          className={`flex-1 py-2 md:py-2.5 px-2 rounded-md text-xs md:text-sm font-bold transition-all ${
             value === opt
               ? "bg-white text-amiste-primary shadow-sm ring-1 ring-black/5"
-              : "text-gray-500 hover:text-gray-700"
+              : "text-gray-500"
+          } ${
+            disabled
+              ? "cursor-not-allowed"
+              : "active:scale-[0.98] hover:text-gray-700"
           }`}
         >
           {opt}
@@ -51,13 +59,23 @@ export const RadioGroup = ({ options, value, onChange, label }) => (
   </div>
 );
 
-export const ToggleCard = ({ label, checked, onChange, icon: Icon }) => (
+export const ToggleCard = ({
+  label,
+  checked,
+  onChange,
+  icon: Icon,
+  disabled,
+}) => (
   <div
-    onClick={() => onChange(!checked)}
-    className={`cursor-pointer p-3 rounded-xl border transition-all flex items-center gap-3 active:scale-[0.98] select-none ${
+    onClick={() => !disabled && onChange(!checked)}
+    className={`p-3 rounded-xl border transition-all flex items-center gap-3 select-none ${
       checked
         ? "bg-red-50 border-amiste-primary/50 ring-1 ring-amiste-primary/50"
-        : "bg-white border-gray-200 hover:border-gray-300"
+        : "bg-white border-gray-200"
+    } ${
+      disabled
+        ? "opacity-70 cursor-not-allowed"
+        : "cursor-pointer hover:border-gray-300 active:scale-[0.98]"
     }`}
   >
     <div

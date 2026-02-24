@@ -1,3 +1,5 @@
+import { useContext } from "react";
+import { AuthContext } from "../../contexts/AuthContext";
 import {
   Edit2,
   Plus,
@@ -20,6 +22,11 @@ import {
 import { MODEL_OPTIONS, BRAND_OPTIONS, TYPE_OPTIONS } from "./MachinesUI";
 
 export function MachineForm(props) {
+  const { permissions } = useContext(AuthContext);
+
+  // MODO DE LEITURA (Read-Only)
+  const isReadOnly = permissions?.Maquinas === "Read";
+
   const {
     showModal,
     setShowModal,
@@ -129,9 +136,18 @@ export function MachineForm(props) {
 
         {/* BODY SCROLLABLE */}
         <form
-          onSubmit={handleSave}
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!isReadOnly) handleSave(e);
+          }}
           className="p-5 md:p-8 space-y-8 overflow-y-auto"
         >
+          {isReadOnly && (
+            <div className="bg-blue-50 text-blue-800 p-3 rounded-lg text-sm font-bold flex items-center gap-2 mb-4">
+              Você está em modo de visualização. As edições estão desabilitadas.
+            </div>
+          )}
+
           {/* Identificação */}
           <section className="space-y-4">
             <h3 className="text-xs uppercase font-bold text-gray-400 tracking-wider mb-4 flex items-center gap-2">
@@ -144,10 +160,11 @@ export function MachineForm(props) {
                 </label>
                 <input
                   required
-                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
+                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all disabled:bg-gray-50 disabled:text-gray-500"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ex: Phedra Evo"
+                  disabled={isReadOnly}
                 />
               </div>
               <div className="md:col-span-2">
@@ -155,77 +172,92 @@ export function MachineForm(props) {
                   Descrição Comercial (Padrão)
                 </label>
                 <textarea
-                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none h-24 resize-none transition-all"
+                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none h-24 resize-none transition-all disabled:bg-gray-50 disabled:text-gray-500"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  disabled={isReadOnly}
                 />
               </div>
 
               {/* UPLOAD / URL IMAGEM */}
-              <div className="md:col-span-2 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-3">
-                  Foto Principal (Padrão)
-                </label>
-                <div className="flex bg-white rounded-lg p-1 border border-gray-200 mb-3 w-full md:w-1/2">
-                  <button
-                    type="button"
-                    onClick={() => setImageMode("url")}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${imageMode === "url" ? "bg-amiste-primary text-white shadow-sm" : "text-gray-500 hover:bg-gray-50"}`}
-                  >
-                    Link
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setImageMode("file")}
-                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${imageMode === "file" ? "bg-amiste-primary text-white shadow-sm" : "text-gray-500 hover:bg-gray-50"}`}
-                  >
-                    Upload
-                  </button>
-                </div>
-                <div className="flex gap-3 items-center">
-                  {imageMode === "url" ? (
-                    <input
-                      className="w-full p-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-amiste-primary outline-none"
-                      value={photoUrl}
-                      onChange={(e) => setPhotoUrl(e.target.value)}
-                      placeholder="https://..."
-                    />
-                  ) : (
-                    <div className="relative w-full">
+              {!isReadOnly && (
+                <div className="md:col-span-2 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-3">
+                    Foto Principal (Padrão)
+                  </label>
+                  <div className="flex bg-white rounded-lg p-1 border border-gray-200 mb-3 w-full md:w-1/2">
+                    <button
+                      type="button"
+                      onClick={() => setImageMode("url")}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${imageMode === "url" ? "bg-amiste-primary text-white shadow-sm" : "text-gray-500 hover:bg-gray-50"}`}
+                    >
+                      Link
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImageMode("file")}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${imageMode === "file" ? "bg-amiste-primary text-white shadow-sm" : "text-gray-500 hover:bg-gray-50"}`}
+                    >
+                      Upload
+                    </button>
+                  </div>
+                  <div className="flex gap-3 items-center">
+                    {imageMode === "url" ? (
                       <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        disabled={uploading}
-                        className="w-full p-2 border border-gray-200 rounded-xl text-sm bg-white file:mr-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        className="w-full p-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-amiste-primary outline-none"
+                        value={photoUrl}
+                        onChange={(e) => setPhotoUrl(e.target.value)}
+                        placeholder="https://..."
                       />
-                      {uploading && (
-                        <div className="absolute right-3 top-2.5 text-xs text-blue-600 font-bold animate-pulse">
-                          Enviando...
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {photoUrl && (
-                    <div className="w-12 h-12 bg-white border rounded-lg p-1 shrink-0">
-                      <img
-                        src={photoUrl}
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                  )}
+                    ) : (
+                      <div className="relative w-full">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          disabled={uploading}
+                          className="w-full p-2 border border-gray-200 rounded-xl text-sm bg-white file:mr-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        />
+                        {uploading && (
+                          <div className="absolute right-3 top-2.5 text-xs text-blue-600 font-bold animate-pulse">
+                            Enviando...
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {photoUrl && (
+                      <div className="w-12 h-12 bg-white border rounded-lg p-1 shrink-0">
+                        <img
+                          src={photoUrl}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+              {isReadOnly && photoUrl && (
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                    Foto Principal
+                  </label>
+                  <img
+                    src={photoUrl}
+                    className="h-32 object-contain bg-gray-50 border rounded-xl"
+                  />
+                </div>
+              )}
 
               <div className="md:col-span-2">
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1 flex items-center gap-1">
                   <Youtube size={14} /> Link de Vídeo (Padrão)
                 </label>
                 <input
-                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none"
+                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none disabled:bg-gray-50 disabled:text-gray-500"
                   value={videoUrl}
                   onChange={(e) => setVideoUrl(e.target.value)}
                   placeholder="https://youtube.com/..."
+                  disabled={isReadOnly}
                 />
               </div>
 
@@ -234,9 +266,10 @@ export function MachineForm(props) {
                   Marca *
                 </label>
                 <select
-                  className="w-full p-3 border border-gray-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-amiste-primary"
+                  className="w-full p-3 border border-gray-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-amiste-primary disabled:bg-gray-50 disabled:text-gray-500"
                   value={brand}
                   onChange={(e) => setBrand(e.target.value)}
+                  disabled={isReadOnly}
                 >
                   <option value="">Selecione...</option>
                   {BRAND_OPTIONS.map((o) => (
@@ -248,10 +281,11 @@ export function MachineForm(props) {
                 </select>
                 {brand === "Outro" && (
                   <input
-                    className="mt-2 w-full p-2 border rounded-lg"
+                    className="mt-2 w-full p-2 border rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
                     value={customBrand}
                     onChange={(e) => setCustomBrand(e.target.value)}
                     placeholder="Digite a marca"
+                    disabled={isReadOnly}
                   />
                 )}
               </div>
@@ -261,9 +295,10 @@ export function MachineForm(props) {
                   Categoria *
                 </label>
                 <select
-                  className="w-full p-3 border border-gray-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-amiste-primary"
+                  className="w-full p-3 border border-gray-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-amiste-primary disabled:bg-gray-50 disabled:text-gray-500"
                   value={type}
                   onChange={(e) => setType(e.target.value)}
+                  disabled={isReadOnly}
                 >
                   <option value="">Selecione...</option>
                   {TYPE_OPTIONS.map((o) => (
@@ -275,10 +310,11 @@ export function MachineForm(props) {
                 </select>
                 {type === "Outro" && (
                   <input
-                    className="mt-2 w-full p-2 border rounded-lg"
+                    className="mt-2 w-full p-2 border rounded-lg disabled:bg-gray-50 disabled:text-gray-500"
                     value={customType}
                     onChange={(e) => setCustomType(e.target.value)}
                     placeholder="Digite a categoria"
+                    disabled={isReadOnly}
                   />
                 )}
               </div>
@@ -307,9 +343,14 @@ export function MachineForm(props) {
                 type="checkbox"
                 className="sr-only peer"
                 checked={hasVariations}
-                onChange={(e) => setHasVariations(e.target.checked)}
+                onChange={(e) =>
+                  !isReadOnly && setHasVariations(e.target.checked)
+                }
+                disabled={isReadOnly}
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+              <div
+                className={`w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${isReadOnly ? "opacity-60 cursor-not-allowed" : "peer-checked:bg-purple-600"}`}
+              ></div>
             </label>
           </div>
 
@@ -343,230 +384,236 @@ export function MachineForm(props) {
                           </span>
                         )}
                       </div>
-                      <div className="flex gap-2 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleEditModel(idx)}
-                          className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeModel(idx)}
-                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                      {!isReadOnly && (
+                        <div className="flex gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleEditModel(idx)}
+                            className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeModel(idx)}
+                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
               )}
 
-              <div
-                className={`p-4 rounded-xl border transition-all ${editingModelIndex !== null ? "bg-purple-50 border-purple-200 ring-2 ring-purple-100" : "bg-gray-50 border-gray-200"}`}
-              >
-                <div className="flex justify-between items-center mb-3">
-                  <h4
-                    className={`text-sm font-bold ${editingModelIndex !== null ? "text-purple-800" : "text-gray-700"}`}
-                  >
-                    {editingModelIndex !== null
-                      ? "Editando Variação"
-                      : "Adicionar Variação"}
-                  </h4>
-                  {editingModelIndex !== null && (
-                    <button
-                      type="button"
-                      onClick={handleCancelEditModel}
-                      className="text-xs font-bold text-purple-600 hover:bg-purple-100 px-2 py-1 rounded flex items-center gap-1"
+              {!isReadOnly && (
+                <div
+                  className={`p-4 rounded-xl border transition-all ${editingModelIndex !== null ? "bg-purple-50 border-purple-200 ring-2 ring-purple-100" : "bg-gray-50 border-gray-200"}`}
+                >
+                  <div className="flex justify-between items-center mb-3">
+                    <h4
+                      className={`text-sm font-bold ${editingModelIndex !== null ? "text-purple-800" : "text-gray-700"}`}
                     >
-                      <RotateCcw size={12} /> Cancelar
-                    </button>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
-                    <label className="block text-[10px] text-gray-500 font-bold uppercase mb-1">
-                      Nome do Modelo
-                    </label>
-                    <input
-                      className="w-full p-2 border rounded-lg text-sm outline-none focus:border-purple-400"
-                      placeholder="Ex: 15 Litros"
-                      value={tempModel.name}
-                      onChange={(e) =>
-                        setTempModel({ ...tempModel, name: e.target.value })
-                      }
-                    />
+                      {editingModelIndex !== null
+                        ? "Editando Variação"
+                        : "Adicionar Variação"}
+                    </h4>
+                    {editingModelIndex !== null && (
+                      <button
+                        type="button"
+                        onClick={handleCancelEditModel}
+                        className="text-xs font-bold text-purple-600 hover:bg-purple-100 px-2 py-1 rounded flex items-center gap-1"
+                      >
+                        <RotateCcw size={12} /> Cancelar
+                      </button>
+                    )}
                   </div>
 
-                  {/* Campos de Variação Simplificados */}
-                  <div>
-                    <label className="block text-[10px] text-gray-500 font-bold uppercase mb-1">
-                      Foto Específica (URL)
-                    </label>
-                    <input
-                      className="w-full p-2 border rounded-lg text-sm bg-white"
-                      placeholder="Deixe vazio para usar a do pai"
-                      value={tempModel.photo_url}
-                      onChange={(e) =>
-                        setTempModel({
-                          ...tempModel,
-                          photo_url: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-gray-500 font-bold uppercase mb-1">
-                      Vídeo Específico (URL)
-                    </label>
-                    <input
-                      className="w-full p-2 border rounded-lg text-sm bg-white"
-                      placeholder="Deixe vazio para usar o do pai"
-                      value={tempModel.video_url}
-                      onChange={(e) =>
-                        setTempModel({
-                          ...tempModel,
-                          video_url: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div className="h-px bg-gray-200 md:col-span-2 my-2"></div>
-                  <p className="md:col-span-2 text-xs text-gray-400 italic">
-                    Campos técnicos (Deixe vazio para herdar do Pai)
-                  </p>
-
-                  <input
-                    className="w-full p-2 border rounded-lg text-sm"
-                    placeholder="Voltagem (Ex: 220v)"
-                    value={tempModel.voltage}
-                    onChange={(e) =>
-                      setTempModel({
-                        ...tempModel,
-                        voltage: e.target.value,
-                      })
-                    }
-                  />
-                  <input
-                    className="w-full p-2 border rounded-lg text-sm"
-                    placeholder="Peso (Ex: 5kg)"
-                    value={tempModel.weight}
-                    onChange={(e) =>
-                      setTempModel({ ...tempModel, weight: e.target.value })
-                    }
-                  />
-                  <input
-                    className="w-full p-2 border rounded-lg text-sm"
-                    placeholder="Dimensões (LxAxP)"
-                    value={tempModel.dimensions}
-                    onChange={(e) =>
-                      setTempModel({
-                        ...tempModel,
-                        dimensions: e.target.value,
-                      })
-                    }
-                  />
-
-                  {type !== "Coado" && type !== "Moedor" && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
                       <label className="block text-[10px] text-gray-500 font-bold uppercase mb-1">
-                        Sistema de Abastecimento
+                        Nome do Modelo
                       </label>
-                      <select
-                        className="w-full p-2 border rounded-lg text-sm bg-white outline-none"
-                        value={tempModel.water_system || ""}
+                      <input
+                        className="w-full p-2 border rounded-lg text-sm outline-none focus:border-purple-400"
+                        placeholder="Ex: 15 Litros"
+                        value={tempModel.name}
+                        onChange={(e) =>
+                          setTempModel({ ...tempModel, name: e.target.value })
+                        }
+                      />
+                    </div>
+
+                    {/* Campos de Variação Simplificados */}
+                    <div>
+                      <label className="block text-[10px] text-gray-500 font-bold uppercase mb-1">
+                        Foto Específica (URL)
+                      </label>
+                      <input
+                        className="w-full p-2 border rounded-lg text-sm bg-white"
+                        placeholder="Deixe vazio para usar a do pai"
+                        value={tempModel.photo_url}
                         onChange={(e) =>
                           setTempModel({
                             ...tempModel,
-                            water_system: e.target.value,
+                            photo_url: e.target.value,
                           })
                         }
-                      >
-                        <option value="">Padrão do Pai ({waterSystem})</option>
-                        <option value="Reservatório">Somente Tanque</option>
-                        <option value="Rede Hídrica">Somente Rede</option>
-                      </select>
+                      />
                     </div>
-                  )}
+                    <div>
+                      <label className="block text-[10px] text-gray-500 font-bold uppercase mb-1">
+                        Vídeo Específico (URL)
+                      </label>
+                      <input
+                        className="w-full p-2 border rounded-lg text-sm bg-white"
+                        placeholder="Deixe vazio para usar o do pai"
+                        value={tempModel.video_url}
+                        onChange={(e) =>
+                          setTempModel({
+                            ...tempModel,
+                            video_url: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
 
-                  {/* Campos Condicionais da Variação */}
-                  {(type === "Coado" || type === "Moedor") && (
+                    <div className="h-px bg-gray-200 md:col-span-2 my-2"></div>
+                    <p className="md:col-span-2 text-xs text-gray-400 italic">
+                      Campos técnicos (Deixe vazio para herdar do Pai)
+                    </p>
+
                     <input
                       className="w-full p-2 border rounded-lg text-sm"
-                      placeholder={
-                        type === "Moedor"
-                          ? "Capacidade Cúpula"
-                          : "Capacidade (Xícaras)"
-                      }
-                      value={tempModel.cups_capacity || ""}
+                      placeholder="Voltagem (Ex: 220v)"
+                      value={tempModel.voltage}
                       onChange={(e) =>
                         setTempModel({
                           ...tempModel,
-                          cups_capacity: e.target.value,
+                          voltage: e.target.value,
                         })
                       }
                     />
-                  )}
-                  {type === "Coado" && (
                     <input
                       className="w-full p-2 border rounded-lg text-sm"
-                      placeholder="Tipo de Filtro"
-                      value={tempModel.filter_type || ""}
+                      placeholder="Peso (Ex: 5kg)"
+                      value={tempModel.weight}
+                      onChange={(e) =>
+                        setTempModel({ ...tempModel, weight: e.target.value })
+                      }
+                    />
+                    <input
+                      className="w-full p-2 border rounded-lg text-sm"
+                      placeholder="Dimensões (LxAxP)"
+                      value={tempModel.dimensions}
                       onChange={(e) =>
                         setTempModel({
                           ...tempModel,
-                          filter_type: e.target.value,
+                          dimensions: e.target.value,
                         })
                       }
                     />
-                  )}
-                  {type === "Café em Grãos" && (
-                    <input
-                      className="w-full p-2 border rounded-lg text-sm"
-                      placeholder="Capacidade Borras"
-                      value={tempModel.dregs_capacity || ""}
-                      onChange={(e) =>
-                        setTempModel({
-                          ...tempModel,
-                          dregs_capacity: e.target.value,
-                        })
-                      }
-                    />
-                  )}
-                  {type !== "Coado" && type !== "Moedor" && (
-                    <input
-                      className="w-full p-2 border rounded-lg text-sm"
-                      placeholder="Tanque de Água (Litros)"
-                      value={tempModel.water_tank_size || ""}
-                      onChange={(e) =>
-                        setTempModel({
-                          ...tempModel,
-                          water_tank_size: e.target.value,
-                        })
-                      }
-                    />
-                  )}
+
+                    {type !== "Coado" && type !== "Moedor" && (
+                      <div className="md:col-span-2">
+                        <label className="block text-[10px] text-gray-500 font-bold uppercase mb-1">
+                          Sistema de Abastecimento
+                        </label>
+                        <select
+                          className="w-full p-2 border rounded-lg text-sm bg-white outline-none"
+                          value={tempModel.water_system || ""}
+                          onChange={(e) =>
+                            setTempModel({
+                              ...tempModel,
+                              water_system: e.target.value,
+                            })
+                          }
+                        >
+                          <option value="">
+                            Padrão do Pai ({waterSystem})
+                          </option>
+                          <option value="Reservatório">Somente Tanque</option>
+                          <option value="Rede Hídrica">Somente Rede</option>
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Campos Condicionais da Variação */}
+                    {(type === "Coado" || type === "Moedor") && (
+                      <input
+                        className="w-full p-2 border rounded-lg text-sm"
+                        placeholder={
+                          type === "Moedor"
+                            ? "Capacidade Cúpula"
+                            : "Capacidade (Xícaras)"
+                        }
+                        value={tempModel.cups_capacity || ""}
+                        onChange={(e) =>
+                          setTempModel({
+                            ...tempModel,
+                            cups_capacity: e.target.value,
+                          })
+                        }
+                      />
+                    )}
+                    {type === "Coado" && (
+                      <input
+                        className="w-full p-2 border rounded-lg text-sm"
+                        placeholder="Tipo de Filtro"
+                        value={tempModel.filter_type || ""}
+                        onChange={(e) =>
+                          setTempModel({
+                            ...tempModel,
+                            filter_type: e.target.value,
+                          })
+                        }
+                      />
+                    )}
+                    {type === "Café em Grãos" && (
+                      <input
+                        className="w-full p-2 border rounded-lg text-sm"
+                        placeholder="Capacidade Borras"
+                        value={tempModel.dregs_capacity || ""}
+                        onChange={(e) =>
+                          setTempModel({
+                            ...tempModel,
+                            dregs_capacity: e.target.value,
+                          })
+                        }
+                      />
+                    )}
+                    {type !== "Coado" && type !== "Moedor" && (
+                      <input
+                        className="w-full p-2 border rounded-lg text-sm"
+                        placeholder="Tanque de Água (Litros)"
+                        value={tempModel.water_tank_size || ""}
+                        onChange={(e) =>
+                          setTempModel({
+                            ...tempModel,
+                            water_tank_size: e.target.value,
+                          })
+                        }
+                      />
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSaveModel}
+                    className={`mt-4 w-full py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 text-white transition-all active:scale-[0.98] ${editingModelIndex !== null ? "bg-purple-600 hover:bg-purple-700" : "bg-blue-600 hover:bg-blue-700"}`}
+                  >
+                    {editingModelIndex !== null ? (
+                      <>
+                        <Save size={16} /> Salvar Alterações
+                      </>
+                    ) : (
+                      <>
+                        <Plus size={16} /> Adicionar à Lista
+                      </>
+                    )}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleSaveModel}
-                  className={`mt-4 w-full py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 text-white transition-all active:scale-[0.98] ${editingModelIndex !== null ? "bg-purple-600 hover:bg-purple-700" : "bg-blue-600 hover:bg-blue-700"}`}
-                >
-                  {editingModelIndex !== null ? (
-                    <>
-                      <Save size={16} /> Salvar Alterações
-                    </>
-                  ) : (
-                    <>
-                      <Plus size={16} /> Adicionar à Lista
-                    </>
-                  )}
-                </button>
-              </div>
+              )}
             </section>
           ) : (
             // --- MODO ÚNICO ---
@@ -581,10 +628,11 @@ export function MachineForm(props) {
                     <Scale size={12} /> Peso (kg)
                   </label>
                   <input
-                    className="w-full p-2 border border-blue-200 rounded-lg text-sm bg-white"
+                    className="w-full p-2 border border-blue-200 rounded-lg text-sm bg-white disabled:bg-blue-50 disabled:text-blue-500"
                     placeholder="Ex: 35 kg"
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
+                    disabled={isReadOnly}
                   />
                 </div>
                 <div>
@@ -592,12 +640,13 @@ export function MachineForm(props) {
                     <MapPin size={12} /> Indicação de Ambiente
                   </label>
                   <input
-                    className="w-full p-2 border border-blue-200 rounded-lg text-sm bg-white"
+                    className="w-full p-2 border border-blue-200 rounded-lg text-sm bg-white disabled:bg-blue-50 disabled:text-blue-500"
                     placeholder="Ex: Escritórios..."
                     value={environmentRecommendation}
                     onChange={(e) =>
                       setEnvironmentRecommendation(e.target.value)
                     }
+                    disabled={isReadOnly}
                   />
                 </div>
               </div>
@@ -612,13 +661,14 @@ export function MachineForm(props) {
                       {["Reservatório", "Rede Hídrica"].map((opt) => (
                         <label
                           key={opt}
-                          className={`cursor-pointer px-3 py-2 rounded-lg text-xs font-bold border flex-1 text-center transition-all ${waterSystem === opt ? "bg-blue-500 text-white border-blue-500" : "bg-white border-gray-200 text-gray-500"}`}
+                          className={`px-3 py-2 rounded-lg text-xs font-bold border flex-1 text-center transition-all ${isReadOnly ? "opacity-70 cursor-not-allowed" : "cursor-pointer"} ${waterSystem === opt ? "bg-blue-500 text-white border-blue-500" : "bg-white border-gray-200 text-gray-500"}`}
                         >
                           <input
                             type="radio"
                             className="hidden"
                             checked={waterSystem === opt}
-                            onChange={() => setWaterSystem(opt)}
+                            onChange={() => !isReadOnly && setWaterSystem(opt)}
+                            disabled={isReadOnly}
                           />
                           {opt === "Reservatório" ? "Tanque" : "Rede"}
                         </label>
@@ -631,24 +681,26 @@ export function MachineForm(props) {
                     </label>
                     <div className="flex gap-2">
                       <label
-                        className={`cursor-pointer px-3 py-2 rounded-lg text-xs font-bold border flex-1 text-center transition-all ${hasSewage ? "bg-green-500 text-white border-green-500" : "bg-white border-gray-200 text-gray-500"}`}
+                        className={`px-3 py-2 rounded-lg text-xs font-bold border flex-1 text-center transition-all ${isReadOnly ? "opacity-70 cursor-not-allowed" : "cursor-pointer"} ${hasSewage ? "bg-green-500 text-white border-green-500" : "bg-white border-gray-200 text-gray-500"}`}
                       >
                         <input
                           type="radio"
                           className="hidden"
                           checked={hasSewage}
-                          onChange={() => setHasSewage(true)}
+                          onChange={() => !isReadOnly && setHasSewage(true)}
+                          disabled={isReadOnly}
                         />{" "}
                         Sim
                       </label>
                       <label
-                        className={`cursor-pointer px-3 py-2 rounded-lg text-xs font-bold border flex-1 text-center transition-all ${!hasSewage ? "bg-gray-500 text-white border-gray-500" : "bg-white border-gray-200 text-gray-500"}`}
+                        className={`px-3 py-2 rounded-lg text-xs font-bold border flex-1 text-center transition-all ${isReadOnly ? "opacity-70 cursor-not-allowed" : "cursor-pointer"} ${!hasSewage ? "bg-gray-500 text-white border-gray-500" : "bg-white border-gray-200 text-gray-500"}`}
                       >
                         <input
                           type="radio"
                           className="hidden"
                           checked={!hasSewage}
-                          onChange={() => setHasSewage(false)}
+                          onChange={() => !isReadOnly && setHasSewage(false)}
+                          disabled={isReadOnly}
                         />{" "}
                         Não
                       </label>
@@ -665,10 +717,11 @@ export function MachineForm(props) {
                       Tamanho do Tanque de Água
                     </label>
                     <input
-                      className="w-full p-2 border border-blue-200 rounded-lg text-sm bg-white"
+                      className="w-full p-2 border border-blue-200 rounded-lg text-sm bg-white disabled:bg-blue-50 disabled:text-blue-500"
                       placeholder="Ex: 4 Litros"
                       value={waterTankSize}
                       onChange={(e) => setWaterTankSize(e.target.value)}
+                      disabled={isReadOnly}
                     />
                   </div>
                 )}
@@ -681,10 +734,11 @@ export function MachineForm(props) {
                     </label>
                     <input
                       type="number"
-                      className="w-full p-2 border border-purple-200 rounded-lg text-sm bg-white"
+                      className="w-full p-2 border border-purple-200 rounded-lg text-sm bg-white disabled:bg-purple-50 disabled:text-purple-500"
                       placeholder="Ex: 2"
                       value={extractionCups}
                       onChange={(e) => setExtractionCups(e.target.value)}
+                      disabled={isReadOnly}
                     />
                   </div>
                   <div>
@@ -693,10 +747,11 @@ export function MachineForm(props) {
                     </label>
                     <input
                       type="number"
-                      className="w-full p-2 border border-purple-200 rounded-lg text-sm bg-white"
+                      className="w-full p-2 border border-purple-200 rounded-lg text-sm bg-white disabled:bg-purple-50 disabled:text-purple-500"
                       placeholder="Ex: 1"
                       value={extractionNozzles}
                       onChange={(e) => setExtractionNozzles(e.target.value)}
+                      disabled={isReadOnly}
                     />
                   </div>
                 </div>
@@ -709,10 +764,11 @@ export function MachineForm(props) {
                       Variedade (Combinações)
                     </label>
                     <input
-                      className="w-full p-2 border border-indigo-200 rounded-lg text-sm bg-white"
+                      className="w-full p-2 border border-indigo-200 rounded-lg text-sm bg-white disabled:bg-indigo-50 disabled:text-indigo-500"
                       placeholder="Ex: 8 opções"
                       value={drinkCombinations}
                       onChange={(e) => setDrinkCombinations(e.target.value)}
+                      disabled={isReadOnly}
                     />
                   </div>
                   <div>
@@ -720,10 +776,11 @@ export function MachineForm(props) {
                       Autonomia de Doses
                     </label>
                     <input
-                      className="w-full p-2 border border-indigo-200 rounded-lg text-sm bg-white"
+                      className="w-full p-2 border border-indigo-200 rounded-lg text-sm bg-white disabled:bg-indigo-50 disabled:text-indigo-500"
                       placeholder="Ex: 50 doses/dia"
                       value={doseAutonomy}
                       onChange={(e) => setDoseAutonomy(e.target.value)}
+                      disabled={isReadOnly}
                     />
                   </div>
                 </div>
@@ -737,10 +794,11 @@ export function MachineForm(props) {
                     </label>
                     <input
                       type="number"
-                      className="w-full p-2 border border-pink-200 rounded-lg text-sm bg-white"
+                      className="w-full p-2 border border-pink-200 rounded-lg text-sm bg-white disabled:bg-pink-50 disabled:text-pink-500"
                       placeholder="Ex: 6"
                       value={trayCount}
                       onChange={(e) => setTrayCount(e.target.value)}
+                      disabled={isReadOnly}
                     />
                   </div>
                   <div>
@@ -749,10 +807,11 @@ export function MachineForm(props) {
                     </label>
                     <input
                       type="number"
-                      className="w-full p-2 border border-pink-200 rounded-lg text-sm bg-white"
+                      className="w-full p-2 border border-pink-200 rounded-lg text-sm bg-white disabled:bg-pink-50 disabled:text-pink-500"
                       placeholder="Ex: 32"
                       value={selectionCount}
                       onChange={(e) => setSelectionCount(e.target.value)}
+                      disabled={isReadOnly}
                     />
                   </div>
                 </div>
@@ -760,14 +819,18 @@ export function MachineForm(props) {
 
               {type === "Café em Grãos" && (
                 <div className="animate-fade-in bg-amber-50 p-4 rounded-xl border border-amber-100 space-y-4">
-                  <label className="flex items-center gap-3 cursor-pointer">
+                  <label
+                    className={`flex items-center gap-3 ${isReadOnly ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
+                  >
                     <input
                       type="checkbox"
                       className="w-5 h-5 text-amber-600 rounded focus:ring-amber-500 border-gray-300"
                       checked={simultaneousDispenser}
                       onChange={(e) =>
+                        !isReadOnly &&
                         setSimultaneousDispenser(e.target.checked)
                       }
+                      disabled={isReadOnly}
                     />
                     <span className="text-sm font-bold text-amber-900">
                       Dispensador Simultâneo
@@ -778,10 +841,11 @@ export function MachineForm(props) {
                       <Trash size={12} /> Capacidade de Borras
                     </label>
                     <input
-                      className="w-full p-2 border border-amber-200 rounded-lg text-sm bg-white"
+                      className="w-full p-2 border border-amber-200 rounded-lg text-sm bg-white disabled:bg-amber-50 disabled:text-amber-500"
                       placeholder="Ex: 15 borras / 1kg"
                       value={dregsCapacity}
                       onChange={(e) => setDregsCapacity(e.target.value)}
+                      disabled={isReadOnly}
                     />
                   </div>
                 </div>
@@ -794,10 +858,11 @@ export function MachineForm(props) {
                       <Clock size={12} /> Capacidade (Xícaras)
                     </label>
                     <input
-                      className="w-full p-2 border border-orange-200 rounded-lg text-sm bg-white"
+                      className="w-full p-2 border border-orange-200 rounded-lg text-sm bg-white disabled:bg-orange-50 disabled:text-orange-500"
                       placeholder="Ex: 100/hora"
                       value={cupsCapacity}
                       onChange={(e) => setCupsCapacity(e.target.value)}
+                      disabled={isReadOnly}
                     />
                   </div>
                   <div>
@@ -805,10 +870,11 @@ export function MachineForm(props) {
                       <Filter size={12} /> Tipo de Filtro
                     </label>
                     <input
-                      className="w-full p-2 border border-orange-200 rounded-lg text-sm bg-white"
+                      className="w-full p-2 border border-orange-200 rounded-lg text-sm bg-white disabled:bg-orange-50 disabled:text-orange-500"
                       placeholder="Ex: Papel, Metal..."
                       value={filterType}
                       onChange={(e) => setFilterType(e.target.value)}
+                      disabled={isReadOnly}
                     />
                   </div>
                 </div>
@@ -823,12 +889,13 @@ export function MachineForm(props) {
                       </label>
                     </div>
                     <input
-                      className="w-full p-2 border border-orange-200 rounded-lg text-sm"
+                      className="w-full p-2 border border-orange-200 rounded-lg text-sm disabled:bg-orange-50 disabled:text-orange-500"
                       placeholder="Ex: 1.5kg"
                       value={extraReservoirCapacity}
                       onChange={(e) =>
                         setExtraReservoirCapacity(e.target.value)
                       }
+                      disabled={isReadOnly}
                     />
                   </div>
                 ) : (
@@ -837,14 +904,18 @@ export function MachineForm(props) {
                       <label className="text-xs font-bold text-orange-800 uppercase flex items-center gap-1">
                         <Database size={12} /> Reservatórios de Insumos
                       </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      <label
+                        className={`flex items-center gap-2 ${isReadOnly ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
+                      >
                         <input
                           type="checkbox"
                           className="w-4 h-4 text-amiste-primary rounded"
                           checked={!hasExtraReservoir}
                           onChange={(e) =>
+                            !isReadOnly &&
                             setHasExtraReservoir(!e.target.checked)
                           }
+                          disabled={isReadOnly}
                         />
                         <span className="text-xs text-orange-700 font-medium">
                           Não possui
@@ -862,23 +933,25 @@ export function MachineForm(props) {
                             type="number"
                             min="1"
                             max="10"
-                            className="w-full p-2 border border-orange-200 rounded-lg text-sm"
+                            className="w-full p-2 border border-orange-200 rounded-lg text-sm disabled:bg-orange-50 disabled:text-orange-500"
                             placeholder="Qtd (ex: 3)"
                             value={reservoirCount}
                             onChange={(e) => setReservoirCount(e.target.value)}
+                            disabled={isReadOnly}
                           />
                         </div>
                         <div>
                           <label className="block text-[10px] text-orange-600 font-bold mb-1">
-                            Capacidade por Reservatório
+                            Capidade por Reservatório
                           </label>
                           <input
-                            className="w-full p-2 border border-orange-200 rounded-lg text-sm"
+                            className="w-full p-2 border border-orange-200 rounded-lg text-sm disabled:bg-orange-50 disabled:text-orange-500"
                             placeholder="Ex: 1kg"
                             value={extraReservoirCapacity}
                             onChange={(e) =>
                               setExtraReservoirCapacity(e.target.value)
                             }
+                            disabled={isReadOnly}
                           />
                         </div>
                       </div>
@@ -893,9 +966,10 @@ export function MachineForm(props) {
                     Voltagem
                   </label>
                   <select
-                    className="w-full p-3 border border-gray-200 rounded-xl bg-white outline-none"
+                    className="w-full p-3 border border-gray-200 rounded-xl bg-white outline-none disabled:bg-gray-50 disabled:text-gray-500"
                     value={voltage}
                     onChange={(e) => setVoltage(e.target.value)}
+                    disabled={isReadOnly}
                   >
                     <option>220v</option>
                     <option>110v</option>
@@ -910,15 +984,16 @@ export function MachineForm(props) {
                     {["10A", "20A"].map((opt) => (
                       <label
                         key={opt}
-                        className={`flex-1 text-center cursor-pointer py-2 rounded-lg text-sm font-bold border transition-all ${amperage === opt ? "bg-amiste-primary text-white border-amiste-primary" : "bg-white border-gray-200 text-gray-600"}`}
+                        className={`flex-1 text-center py-2 rounded-lg text-sm font-bold border transition-all ${isReadOnly ? "cursor-not-allowed opacity-70" : "cursor-pointer"} ${amperage === opt ? "bg-amiste-primary text-white border-amiste-primary" : "bg-white border-gray-200 text-gray-600"}`}
                       >
                         <input
                           type="radio"
                           name="amp"
                           value={opt}
                           checked={amperage === opt}
-                          onChange={() => setAmperage(opt)}
+                          onChange={() => !isReadOnly && setAmperage(opt)}
                           className="hidden"
+                          disabled={isReadOnly}
                         />
                         {opt}
                       </label>
@@ -932,27 +1007,30 @@ export function MachineForm(props) {
                   <div className="flex gap-1">
                     <input
                       placeholder="L"
-                      className="w-1/3 p-2 border rounded-lg text-center text-sm outline-none focus:border-amiste-primary"
+                      className="w-1/3 p-2 border rounded-lg text-center text-sm outline-none focus:border-amiste-primary disabled:bg-gray-50 disabled:text-gray-500"
                       value={dimensions.w}
                       onChange={(e) =>
                         setDimensions({ ...dimensions, w: e.target.value })
                       }
+                      disabled={isReadOnly}
                     />
                     <input
                       placeholder="A"
-                      className="w-1/3 p-2 border rounded-lg text-center text-sm outline-none focus:border-amiste-primary"
+                      className="w-1/3 p-2 border rounded-lg text-center text-sm outline-none focus:border-amiste-primary disabled:bg-gray-50 disabled:text-gray-500"
                       value={dimensions.h}
                       onChange={(e) =>
                         setDimensions({ ...dimensions, h: e.target.value })
                       }
+                      disabled={isReadOnly}
                     />
                     <input
                       placeholder="P"
-                      className="w-1/3 p-2 border rounded-lg text-center text-sm outline-none focus:border-amiste-primary"
+                      className="w-1/3 p-2 border rounded-lg text-center text-sm outline-none focus:border-amiste-primary disabled:bg-gray-50 disabled:text-gray-500"
                       value={dimensions.d}
                       onChange={(e) =>
                         setDimensions({ ...dimensions, d: e.target.value })
                       }
+                      disabled={isReadOnly}
                     />
                   </div>
                 </div>
@@ -969,10 +1047,11 @@ export function MachineForm(props) {
                       className="absolute left-3 top-3.5 text-gray-400"
                     />
                     <input
-                      className="w-full pl-9 p-3 border border-gray-200 rounded-xl outline-none"
+                      className="w-full pl-9 p-3 border border-gray-200 rounded-xl outline-none disabled:bg-gray-50 disabled:text-gray-500"
                       value={serialNumber}
                       onChange={(e) => setSerialNumber(e.target.value)}
                       placeholder="ABC-123"
+                      disabled={isReadOnly}
                     />
                   </div>
                 </div>
@@ -981,10 +1060,11 @@ export function MachineForm(props) {
                     Patrimônio
                   </label>
                   <input
-                    className="w-full p-3 border border-gray-200 rounded-xl outline-none"
+                    className="w-full p-3 border border-gray-200 rounded-xl outline-none disabled:bg-gray-50 disabled:text-gray-500"
                     value={patrimony}
                     onChange={handlePatrimonyChange}
                     placeholder="Só números"
+                    disabled={isReadOnly}
                   />
                 </div>
               </div>
@@ -997,15 +1077,17 @@ export function MachineForm(props) {
               onClick={() => setShowModal(false)}
               className="px-6 py-3 text-gray-500 hover:bg-gray-100 rounded-xl font-bold transition-colors"
             >
-              Cancelar
+              {isReadOnly ? "Fechar" : "Cancelar"}
             </button>
-            <button
-              type="submit"
-              disabled={loading || uploading}
-              className="px-8 py-3 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-xl font-bold shadow-lg flex items-center gap-2 disabled:opacity-50 transition-all active:scale-[0.98]"
-            >
-              <Save size={20} /> {loading ? "Salvando..." : "Salvar Máquina"}
-            </button>
+            {!isReadOnly && (
+              <button
+                type="submit"
+                disabled={loading || uploading}
+                className="px-8 py-3 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-xl font-bold shadow-lg flex items-center gap-2 disabled:opacity-50 transition-all active:scale-[0.98]"
+              >
+                <Save size={20} /> {loading ? "Salvando..." : "Salvar Máquina"}
+              </button>
+            )}
           </div>
         </form>
       </div>

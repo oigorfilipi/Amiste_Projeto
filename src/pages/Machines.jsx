@@ -110,6 +110,9 @@ export function Machines() {
   }
 
   async function handleImageUpload(e) {
+    // Bloqueia upload se for apenas leitura
+    if (permissions?.Maquinas !== "All") return;
+
     try {
       setUploading(true);
       const file = e.target.files[0];
@@ -135,6 +138,7 @@ export function Machines() {
 
   // --- FUNÇÕES DE MODELOS ---
   function handleSaveModel() {
+    if (permissions?.Maquinas !== "All") return;
     if (!tempModel.name)
       return toast.error("Por favor, dê um nome para o modelo (ex: 15 Litros)");
 
@@ -171,6 +175,7 @@ export function Machines() {
   }
 
   function handleEditModel(index) {
+    if (permissions?.Maquinas !== "All") return;
     setTempModel(modelsList[index]);
     setEditingModelIndex(index);
   }
@@ -199,6 +204,7 @@ export function Machines() {
   }
 
   function removeModel(index) {
+    if (permissions?.Maquinas !== "All") return;
     if (confirm("Remover este modelo da lista?")) {
       const newList = [...modelsList];
       newList.splice(index, 1);
@@ -210,8 +216,15 @@ export function Machines() {
   }
 
   function handleEdit(machine) {
-    if (!permissions.canManageMachines)
-      return toast.error("Você não tem permissão para editar máquinas.");
+    // Aqui nós DEIXAMOS entrar, pois o MachineForm vai bloquear a edição visualmente se a pessoa for apenas Read.
+    // Assim o usuário que tem "Read" consegue abrir pra ver as configs.
+    if (
+      permissions?.Maquinas === "Nothing" ||
+      permissions?.Maquinas === "Ghost"
+    ) {
+      return toast.error("Você não tem permissão para visualizar.");
+    }
+
     setEditingId(machine.id);
     setName(machine.name);
     setDescription(machine.description || "");
@@ -284,7 +297,7 @@ export function Machines() {
   }
 
   function handleNew() {
-    if (!permissions.canManageMachines)
+    if (permissions?.Maquinas !== "All")
       return toast.error("Você não tem permissão para criar máquinas.");
     resetForm();
     setImageMode("url");
@@ -293,6 +306,7 @@ export function Machines() {
 
   async function handleSave(e) {
     e.preventDefault();
+    if (permissions?.Maquinas !== "All") return;
 
     if (hasVariations && modelsList.length === 0) {
       return toast.error(
@@ -376,7 +390,7 @@ export function Machines() {
 
   async function handleDelete(id, e) {
     e.stopPropagation();
-    if (!permissions.canManageMachines)
+    if (permissions?.Maquinas !== "All")
       return toast.error("Você não tem permissão para excluir.");
     if (!confirm("Tem certeza que deseja excluir esta máquina?")) return;
 
@@ -399,6 +413,7 @@ export function Machines() {
 
   function handleOpenConfigs(machine, e) {
     e.stopPropagation();
+    // A página de configs também fará a verificação lá dentro
     navigate("/machine-configs", { state: { machine } });
   }
 

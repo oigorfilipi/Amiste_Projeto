@@ -34,6 +34,9 @@ export function SystemSettings() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile Menu
 
+  // MODO DE LEITURA (Read-Only)
+  const isReadOnly = permissions?.AdicionarOpcao === "Read";
+
   useEffect(() => {
     fetchItems();
   }, []);
@@ -55,6 +58,8 @@ export function SystemSettings() {
 
   async function handleAddItem(e) {
     e.preventDefault();
+    if (isReadOnly)
+      return toast.error("Você não tem permissão para adicionar itens.");
     if (!newItemName.trim()) return;
 
     try {
@@ -79,6 +84,8 @@ export function SystemSettings() {
   }
 
   async function handleDeleteItem(id) {
+    if (isReadOnly)
+      return toast.error("Você não tem permissão para remover itens.");
     if (!confirm("Tem certeza que deseja remover este item?")) return;
     try {
       const { error } = await supabase
@@ -102,7 +109,11 @@ export function SystemSettings() {
   const CurrentIcon =
     CATEGORIES.find((c) => c.id === activeCategory)?.icon || Database;
 
-  if (!permissions.canManageMachines) {
+  // Proteção Extra: Se for Nothing ou Ghost, ele nem chega aqui (barrado no App.jsx), mas a gente garante.
+  if (
+    permissions?.AdicionarOpcao === "Nothing" ||
+    permissions?.AdicionarOpcao === "Ghost"
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500 bg-gray-50">
         <div className="text-center p-8">
@@ -188,26 +199,28 @@ export function SystemSettings() {
                 </div>
               </div>
 
-              {/* Formulário de Adição */}
-              <form
-                onSubmit={handleAddItem}
-                className="flex gap-2 mb-8 bg-gray-50 p-2 rounded-xl border border-gray-100"
-              >
-                <input
-                  className="flex-1 p-3 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-amiste-primary transition-all text-sm"
-                  placeholder={`Adicionar novo item em ${CATEGORIES.find((c) => c.id === activeCategory)?.label}...`}
-                  value={newItemName}
-                  onChange={(e) => setNewItemName(e.target.value)}
-                />
-                <button
-                  type="submit"
-                  disabled={!newItemName.trim()}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 md:px-6 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 transition-all active:scale-[0.98]"
+              {/* Formulário de Adição (Oculto se ReadOnly) */}
+              {!isReadOnly && (
+                <form
+                  onSubmit={handleAddItem}
+                  className="flex gap-2 mb-8 bg-gray-50 p-2 rounded-xl border border-gray-100"
                 >
-                  <Plus size={20} />{" "}
-                  <span className="hidden md:inline">Adicionar</span>
-                </button>
-              </form>
+                  <input
+                    className="flex-1 p-3 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-amiste-primary transition-all text-sm"
+                    placeholder={`Adicionar novo item em ${CATEGORIES.find((c) => c.id === activeCategory)?.label}...`}
+                    value={newItemName}
+                    onChange={(e) => setNewItemName(e.target.value)}
+                  />
+                  <button
+                    type="submit"
+                    disabled={!newItemName.trim()}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 md:px-6 rounded-lg font-bold flex items-center gap-2 disabled:opacity-50 transition-all active:scale-[0.98]"
+                  >
+                    <Plus size={20} />{" "}
+                    <span className="hidden md:inline">Adicionar</span>
+                  </button>
+                </form>
+              )}
 
               {/* Lista de Itens */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -231,13 +244,16 @@ export function SystemSettings() {
                       <span className="font-bold text-gray-700 text-sm truncate pr-2">
                         {item.name}
                       </span>
-                      <button
-                        onClick={() => handleDeleteItem(item.id)}
-                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-100 md:opacity-0 group-hover:opacity-100"
-                        title="Excluir"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      {/* Oculta botão excluir se ReadOnly */}
+                      {!isReadOnly && (
+                        <button
+                          onClick={() => handleDeleteItem(item.id)}
+                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-100 md:opacity-0 group-hover:opacity-100"
+                          title="Excluir"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   ))
                 )}

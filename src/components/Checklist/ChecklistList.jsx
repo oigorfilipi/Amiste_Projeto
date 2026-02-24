@@ -45,17 +45,21 @@ export function ChecklistList({
         </div>
 
         <div className="flex gap-2 w-full md:w-auto">
-          {/* Botão de Imprimir em Branco */}
-          <Link
-            to="/checklists/print-blank"
-            className="bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 px-3 md:px-4 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center gap-2 transition-all hover:-translate-y-1 flex-1 md:flex-none"
-            title="Imprimir Ficha"
-          >
-            <Printer size={20} />
-            <span className="hidden md:inline">Imprimir Ficha</span>
-          </Link>
+          {/* Botão de Imprimir em Branco - Liberado para quem não tem Nothing/Ghost em ImprimirPDFs */}
+          {permissions?.ImprimirPDFs !== "Nothing" &&
+            permissions?.ImprimirPDFs !== "Ghost" && (
+              <Link
+                to="/checklists/print-blank"
+                className="bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 px-3 md:px-4 py-3 rounded-xl font-bold shadow-sm flex items-center justify-center gap-2 transition-all hover:-translate-y-1 flex-1 md:flex-none"
+                title="Imprimir Ficha"
+              >
+                <Printer size={20} />
+                <span className="hidden md:inline">Imprimir Ficha</span>
+              </Link>
+            )}
 
-          {permissions.canCreateChecklist && (
+          {/* Só mostra o botão NOVO se tiver permissão ALL */}
+          {permissions?.Checklist === "All" && (
             <button
               onClick={handleNewChecklist}
               className="bg-amiste-primary hover:bg-amiste-secondary text-white px-4 md:px-6 py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 transition-all hover:-translate-y-1 flex-1 md:flex-none"
@@ -101,7 +105,8 @@ export function ChecklistList({
               Não há ordens de serviço com o status "{filterStatus}".
             </p>
 
-            {permissions.canCreateChecklist && (
+            {/* Só mostra criar primeiro se tiver permissão ALL */}
+            {permissions?.Checklist === "All" && (
               <button
                 onClick={handleNewChecklist}
                 className="bg-amiste-primary hover:bg-amiste-secondary text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all hover:-translate-y-1"
@@ -163,7 +168,8 @@ export function ChecklistList({
                 </span>
 
                 <div className="flex items-center gap-1">
-                  {permissions.canEditChecklist && (
+                  {/* Botão de Editar exige ALL */}
+                  {permissions?.Checklist === "All" && (
                     <button
                       onClick={() => handleEdit(c)}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -172,6 +178,8 @@ export function ChecklistList({
                       <Edit2 size={18} />
                     </button>
                   )}
+
+                  {/* Botão de Visualizar liberado para TODOS que entram na página (Read ou All) */}
                   <Link
                     to={`/checklists/${c.id}`}
                     className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
@@ -179,7 +187,9 @@ export function ChecklistList({
                   >
                     <Search size={18} />
                   </Link>
-                  {permissions.canDeleteChecklist && (
+
+                  {/* Botão de Excluir exige ALL */}
+                  {permissions?.Checklist === "All" && (
                     <button
                       onClick={() => handleDelete(c.id)}
                       className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"

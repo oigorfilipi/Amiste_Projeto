@@ -42,7 +42,8 @@ export function MachinesList({
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          {permissions.canManageMachines && (
+          {/* SÓ MOSTRA O BOTÃO SE TIVER PERMISSÃO "ALL" PARA MÁQUINAS */}
+          {permissions?.Maquinas === "All" && (
             <button
               onClick={handleNew}
               className="bg-amiste-primary hover:bg-amiste-secondary text-white px-4 md:px-6 py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 transition-all hover:-translate-y-1 shrink-0"
@@ -71,7 +72,8 @@ export function MachinesList({
           <p className="text-gray-400 max-w-sm mx-auto mb-8 text-sm px-4">
             Não encontramos nenhum equipamento com esse nome.
           </p>
-          {permissions.canManageMachines && (
+          {/* SÓ MOSTRA O BOTÃO SE TIVER PERMISSÃO "ALL" PARA MÁQUINAS */}
+          {permissions?.Maquinas === "All" && (
             <button
               onClick={handleNew}
               className="bg-amiste-primary hover:bg-amiste-secondary text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all hover:-translate-y-1"
@@ -122,7 +124,8 @@ export function MachinesList({
                     )}
                   </div>
 
-                  {permissions.canManageMachines && (
+                  {/* LIXEIRA SÓ PARA QUEM TEM "ALL" */}
+                  {permissions?.Maquinas === "All" && (
                     <button
                       onClick={(e) => handleDelete(machine.id, e)}
                       className="absolute top-3 right-3 p-2 bg-white rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-50 z-10"

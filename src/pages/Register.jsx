@@ -264,12 +264,14 @@ export function Register() {
                       value={role}
                       onChange={(e) => setRole(e.target.value)}
                     >
-                      <option value="Comercial">Comercial</option>
-                      <option value="Financeiro">Financeiro</option>
-                      <option value="Técnico">Técnico</option>
-                      <option value="ADM">Administrativo</option>
+                      <option value="Comercial">Comercial (Com.)</option>
+                      <option value="Técnico">Técnico (Téc.)</option>
+                      <option value="Financeiro">Financeiro (Fin.)</option>
+                      <option value="Administrativo">
+                        Administrativo (Adm.)
+                      </option>
                       <option value="DEV">DEV (System Admin)</option>
-                      <option value="Dono">Dono</option>
+                      <option value="Dono">Dono (Don.)</option>
                     </select>
                   </div>
                 </div>

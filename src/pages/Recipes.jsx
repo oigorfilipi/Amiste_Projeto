@@ -16,13 +16,16 @@ import {
 } from "lucide-react";
 
 export function Recipes() {
-  const { user } = useContext(AuthContext);
+  const { user, permissions } = useContext(AuthContext);
   const [view, setView] = useState("grid");
   const [supplies, setSupplies] = useState([]);
   const [selectedSupply, setSelectedSupply] = useState(null);
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // MODO DE LEITURA (Read-Only)
+  const isReadOnly = permissions?.Receitas === "Read";
 
   // Form States
   const [showForm, setShowForm] = useState(false);
@@ -76,6 +79,7 @@ export function Recipes() {
   }
 
   function handleEdit(recipe) {
+    if (isReadOnly) return toast.error("Você não tem permissão para editar.");
     setEditingId(recipe.id);
     setFormData({
       name: recipe.name,
@@ -93,6 +97,7 @@ export function Recipes() {
 
   async function handleSave(e) {
     e.preventDefault();
+    if (isReadOnly) return;
     if (!selectedSupply) return;
 
     try {
@@ -130,6 +135,7 @@ export function Recipes() {
 
   async function handleDelete(id, e) {
     e.stopPropagation();
+    if (isReadOnly) return toast.error("Você não tem permissão para excluir.");
     if (!confirm("Tem certeza que deseja excluir esta receita?")) return;
 
     try {
@@ -245,29 +251,31 @@ export function Recipes() {
               </div>
             </div>
 
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className={`p-2 md:px-5 md:py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md transition-all shrink-0 ${
-                showForm
-                  ? "bg-gray-100 text-gray-600"
-                  : "bg-amiste-primary text-white"
-              }`}
-            >
-              {showForm ? (
-                <>
-                  <X size={20} />{" "}
-                  <span className="hidden md:inline">Cancelar</span>
-                </>
-              ) : (
-                <>
-                  <Plus size={20} />{" "}
-                  <span className="hidden md:inline">Nova Receita</span>
-                </>
-              )}
-            </button>
+            {!isReadOnly && (
+              <button
+                onClick={() => setShowForm(!showForm)}
+                className={`p-2 md:px-5 md:py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md transition-all shrink-0 ${
+                  showForm
+                    ? "bg-gray-100 text-gray-600"
+                    : "bg-amiste-primary text-white"
+                }`}
+              >
+                {showForm ? (
+                  <>
+                    <X size={20} />{" "}
+                    <span className="hidden md:inline">Cancelar</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus size={20} />{" "}
+                    <span className="hidden md:inline">Nova Receita</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
 
-          {showForm && (
+          {showForm && !isReadOnly && (
             <div
               id="recipe-form"
               className="bg-white p-5 md:p-8 rounded-2xl shadow-lg border border-amiste-primary/30 ring-4 ring-amiste-primary/5 mb-8 animate-slide-down"
@@ -388,20 +396,22 @@ export function Recipes() {
                       </div>
                     </div>
 
-                    <div className="flex gap-2 self-end md:self-auto">
-                      <button
-                        onClick={() => handleEdit(r)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                      <button
-                        onClick={(e) => handleDelete(r.id, e)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
+                    {!isReadOnly && (
+                      <div className="flex gap-2 self-end md:self-auto">
+                        <button
+                          onClick={() => handleEdit(r)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button
+                          onClick={(e) => handleDelete(r.id, e)}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 text-sm text-gray-600">

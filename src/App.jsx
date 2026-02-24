@@ -17,13 +17,16 @@ import { History } from "./pages/History";
 import { Financial } from "./pages/Financial";
 import { PriceList } from "./pages/PriceList";
 
-// --- NOVAS PÁGINAS ---
+// Páginas Secundárias e Novas
 import { Supplies } from "./pages/Supplies";
 import { Recipes } from "./pages/Recipes";
 import { SupplyPriceList } from "./pages/SupplyPriceList";
 import { MachineConfigs } from "./pages/MachineConfigs";
 import { PrintBlankChecklist } from "./pages/PrintBlankChecklist";
-import { SystemSettings } from "./pages/SystemSettings"; // <--- Importado aqui
+import { SystemSettings } from "./pages/SystemSettings";
+import { Stock } from "./pages/Stock";
+import { ClientStatus } from "./pages/ClientStatus";
+import { Labels } from "./pages/Labels";
 
 // Contexto
 import { AuthProvider, AuthContext } from "./contexts/AuthContext";
@@ -50,14 +53,18 @@ const Private = ({ children }) => {
   return signed ? children : <Navigate to="/" />;
 };
 
-// 2. Rota Protegida por Permissão (RBAC)
+// 2. Rota Protegida por Permissão (A nova lógica com moduleName)
 const ProtectedRoute = ({ children, moduleName }) => {
   const { permissions, loadingAuth } = useContext(AuthContext);
 
   if (loadingAuth) return null;
 
-  // Se a página pede um módulo e o usuário tem permissão "Nothing", manda pra home
-  if (moduleName && permissions && permissions[moduleName] === "Nothing") {
+  // Se a página pede um módulo e o usuário tem permissão "Nothing" ou "Ghost", manda pra home
+  if (
+    moduleName &&
+    permissions &&
+    ["Nothing", "Ghost"].includes(permissions[moduleName])
+  ) {
     return <Navigate to="/home" replace />;
   }
 
@@ -121,30 +128,116 @@ export default function App() {
               </Private>
             }
           >
-            {/* Páginas Gerais */}
-            <Route path="/home" element={<Home />} />
-            <Route path="/wiki" element={<Wiki />} />
-            <Route path="/history" element={<History />} />
-            <Route path="/prices" element={<PriceList />} />
-            <Route path="/supply-prices" element={<SupplyPriceList />} />
-            <Route path="/recipes" element={<Recipes />} />
+            {/* Páginas Gerais protegidas pelos seus respectivos módulos */}
+            <Route
+              path="/home"
+              element={
+                <ProtectedRoute moduleName="Home">
+                  <Home />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/wiki"
+              element={
+                <ProtectedRoute moduleName="Wiki">
+                  <Wiki />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/history"
+              element={
+                <ProtectedRoute moduleName="HistoricoGeral">
+                  <History />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/prices"
+              element={
+                <ProtectedRoute moduleName="PrecosMaquinas">
+                  <PriceList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/supply-prices"
+              element={
+                <ProtectedRoute moduleName="PrecosInsumos">
+                  <SupplyPriceList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/recipes"
+              element={
+                <ProtectedRoute moduleName="Receitas">
+                  <Recipes />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/system-settings"
+              element={
+                <ProtectedRoute moduleName="AdicionarOpcao">
+                  <SystemSettings />
+                </ProtectedRoute>
+              }
+            />
 
-            {/* Configurações do Sistema (A proteção está dentro da página) */}
-            <Route path="/settings" element={<SystemSettings />} />
+            {/* Novas Páginas */}
+            <Route
+              path="/stock"
+              element={
+                <ProtectedRoute moduleName="Contagem">
+                  <Stock />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/client-status"
+              element={
+                <ProtectedRoute moduleName="StatusCliente">
+                  <ClientStatus />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/labels"
+              element={
+                <ProtectedRoute moduleName="Etiquetas">
+                  <Labels />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Checklists */}
             <Route
               path="/checklists"
               element={
-                <ProtectedRoute permissionKey="canCreateChecklist">
+                <ProtectedRoute moduleName="Checklist">
                   <Checklist />
                 </ProtectedRoute>
               }
             />
-            <Route path="/checklists/:id" element={<ChecklistDetails />} />
+            {/* Detalhes do checklist herdam a mesma permissão da lista principal */}
             <Route
-              path="/checklists/print-blank"
-              element={<PrintBlankChecklist />}
+              path="/checklists/:id"
+              element={
+                <ProtectedRoute moduleName="Checklist">
+                  <ChecklistDetails />
+                </ProtectedRoute>
+              }
+            />
+            {/* O PDF Manual tem a sua própria permissão */}
+            <Route
+              path="/print-blank-checklist"
+              element={
+                <ProtectedRoute moduleName="ImprimirPDFs">
+                  <PrintBlankChecklist />
+                </ProtectedRoute>
+              }
             />
 
             {/* Portfólio */}
@@ -161,7 +254,7 @@ export default function App() {
             <Route
               path="/machines"
               element={
-                <ProtectedRoute permissionKey="canManageMachines">
+                <ProtectedRoute moduleName="Maquinas">
                   <Machines />
                 </ProtectedRoute>
               }
@@ -169,7 +262,7 @@ export default function App() {
             <Route
               path="/machine-configs"
               element={
-                <ProtectedRoute permissionKey="canConfigureMachines">
+                <ProtectedRoute moduleName="ConfigMaquinas">
                   <MachineConfigs />
                 </ProtectedRoute>
               }
@@ -179,7 +272,7 @@ export default function App() {
             <Route
               path="/supplies"
               element={
-                <ProtectedRoute permissionKey="canManageSupplies">
+                <ProtectedRoute moduleName="Insumos">
                   <Supplies />
                 </ProtectedRoute>
               }
@@ -189,7 +282,7 @@ export default function App() {
             <Route
               path="/financial"
               element={
-                <ProtectedRoute permissionKey="canViewFinancials">
+                <ProtectedRoute moduleName="Financeiro">
                   <Financial />
                 </ProtectedRoute>
               }

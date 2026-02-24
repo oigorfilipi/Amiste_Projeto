@@ -13,9 +13,12 @@ import {
 import clsx from "clsx";
 
 export function Stock() {
-  const { userProfile } = useContext(AuthContext);
+  const { permissions } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState("supplies"); // 'supplies' ou 'machines'
   const [searchTerm, setSearchTerm] = useState("");
+
+  // MODO DE LEITURA (Read-Only)
+  const isReadOnly = permissions?.Contagem === "Read";
 
   // Dados simulados para a interface inicial (depois ligamos ao Supabase)
   const [items, setItems] = useState([
@@ -92,9 +95,13 @@ export function Stock() {
               className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none"
             />
           </div>
-          <button className="bg-amiste-primary hover:bg-amiste-secondary text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-colors">
-            <Plus size={18} /> Novo Item
-          </button>
+
+          {/* Só mostra botão novo se tiver permissão ALL */}
+          {!isReadOnly && (
+            <button className="bg-amiste-primary hover:bg-amiste-secondary text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-colors">
+              <Plus size={18} /> Novo Item
+            </button>
+          )}
         </div>
 
         {/* Tabela de Estoque */}
@@ -105,7 +112,11 @@ export function Stock() {
                 <th className="pb-3 font-bold">Produto</th>
                 <th className="pb-3 font-bold text-center">Quantidade</th>
                 <th className="pb-3 font-bold">Última Atualização</th>
-                <th className="pb-3 font-bold text-right">Ações</th>
+
+                {/* Coluna de ações some para quem é Read */}
+                {!isReadOnly && (
+                  <th className="pb-3 font-bold text-right">Ações</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -130,14 +141,18 @@ export function Stock() {
                       </span>
                     </button>
                   </td>
-                  <td className="py-4 text-right">
-                    <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg mr-1">
-                      <Edit2 size={16} />
-                    </button>
-                    <button className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
+
+                  {/* Botões de ação somem para quem é Read */}
+                  {!isReadOnly && (
+                    <td className="py-4 text-right">
+                      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg mr-1">
+                        <Edit2 size={16} />
+                      </button>
+                      <button className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

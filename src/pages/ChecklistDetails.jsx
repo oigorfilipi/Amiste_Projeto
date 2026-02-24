@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
+import { AuthContext } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
 import {
   ArrowLeft,
@@ -22,6 +23,7 @@ import { ChecklistPDF } from "../components/ChecklistPDF";
 
 export function ChecklistDetails() {
   const { id } = useParams();
+  const { permissions } = useContext(AuthContext);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -84,6 +86,16 @@ export function ChecklistDetails() {
   // Atalho para dados da máquina (Snapshot salvo no checklist)
   const mData = data.machine_data || {};
 
+  // Verifica se o usuário tem permissão para ver financeiro (Se não for Ghost/Nothing)
+  const canViewFinancials =
+    permissions?.Financeiro !== "Ghost" &&
+    permissions?.Financeiro !== "Nothing";
+
+  // Verifica se pode imprimir
+  const canPrint =
+    permissions?.ImprimirPDFs !== "Ghost" &&
+    permissions?.ImprimirPDFs !== "Nothing";
+
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20 animate-fade-in">
       {/* HEADER */}
@@ -114,21 +126,23 @@ export function ChecklistDetails() {
             </div>
           </div>
 
-          <PDFDownloadLink
-            document={<ChecklistPDF data={data} />}
-            fileName={`checklist_${data.id}_${data.client_name || "evento"}.pdf`}
-            className="w-full md:w-auto bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 transition-all hover:-translate-y-1 active:scale-[0.98]"
-          >
-            {({ loading }) =>
-              loading ? (
-                "Gerando PDF..."
-              ) : (
-                <>
-                  <Printer size={18} /> Baixar PDF
-                </>
-              )
-            }
-          </PDFDownloadLink>
+          {canPrint && (
+            <PDFDownloadLink
+              document={<ChecklistPDF data={data} />}
+              fileName={`checklist_${data.id}_${data.client_name || "evento"}.pdf`}
+              className="w-full md:w-auto bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 transition-all hover:-translate-y-1 active:scale-[0.98]"
+            >
+              {({ loading }) =>
+                loading ? (
+                  "Gerando PDF..."
+                ) : (
+                  <>
+                    <Printer size={18} /> Baixar PDF
+                  </>
+                )
+              }
+            </PDFDownloadLink>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
@@ -363,39 +377,41 @@ export function ChecklistDetails() {
 
           {/* COLUNA LATERAL (FINANCEIRO & CONTRATO) */}
           <div className="space-y-6">
-            {/* Financeiro */}
-            <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white p-6 rounded-2xl shadow-xl">
-              <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
-                <DollarSign size={20} className="text-green-400" /> Resumo
-                Financeiro
-              </h2>
-              <div className="space-y-3 mb-6 border-b border-gray-700/50 pb-6 text-sm text-gray-300">
-                <div className="flex justify-between">
-                  <span>Máquina</span>{" "}
-                  <span>{formatMoney(data.financials?.machine)}</span>
+            {/* Financeiro - SOMENTE SE TIVER PERMISSÃO */}
+            {canViewFinancials && (
+              <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white p-6 rounded-2xl shadow-xl">
+                <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
+                  <DollarSign size={20} className="text-green-400" /> Resumo
+                  Financeiro
+                </h2>
+                <div className="space-y-3 mb-6 border-b border-gray-700/50 pb-6 text-sm text-gray-300">
+                  <div className="flex justify-between">
+                    <span>Máquina</span>{" "}
+                    <span>{formatMoney(data.financials?.machine)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Insumos</span>{" "}
+                    <span>{formatMoney(data.financials?.supplies)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Serviços</span>{" "}
+                    <span>{formatMoney(data.financials?.services)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Extras</span>{" "}
+                    <span>{formatMoney(data.financials?.extras)}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span>Insumos</span>{" "}
-                  <span>{formatMoney(data.financials?.supplies)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Serviços</span>{" "}
-                  <span>{formatMoney(data.financials?.services)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Extras</span>{" "}
-                  <span>{formatMoney(data.financials?.extras)}</span>
+                <div className="flex justify-between items-end">
+                  <span className="text-xs font-bold text-gray-400 uppercase">
+                    Total Geral
+                  </span>
+                  <span className="text-2xl md:text-3xl font-bold text-green-400 tracking-tight">
+                    {formatMoney(data.financials?.total)}
+                  </span>
                 </div>
               </div>
-              <div className="flex justify-between items-end">
-                <span className="text-xs font-bold text-gray-400 uppercase">
-                  Total Geral
-                </span>
-                <span className="text-2xl md:text-3xl font-bold text-green-400 tracking-tight">
-                  {formatMoney(data.financials?.total)}
-                </span>
-              </div>
-            </div>
+            )}
 
             {/* Contrato e Obs */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">

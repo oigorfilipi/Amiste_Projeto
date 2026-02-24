@@ -33,41 +33,67 @@ export function Header({ onOpenSidebar }) {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // --- FUNÇÃO PARA VERIFICAR SE O MENU DEVE APARECER ---
+  const isVisible = (moduleName) => {
+    if (!permissions) return false;
+    return !["Ghost", "Nothing"].includes(permissions[moduleName]);
+  };
+
   // --- NAVEGAÇÃO SECUNDÁRIA (Aparece no Topo no Desktop) ---
   const topNavItems = [
-    { path: "/recipes", icon: ChefHat, label: "Receitas", visible: true },
-    { path: "/prices", icon: Tag, label: "Preços Máquinas", visible: true },
+    {
+      path: "/recipes",
+      icon: ChefHat,
+      label: "Receitas",
+      visible: isVisible("Receitas"),
+    },
+    {
+      path: "/prices",
+      icon: Tag,
+      label: "Preços Máquinas",
+      visible: isVisible("PrecosMaquinas"),
+    },
     {
       path: "/supply-prices",
       icon: Package,
       label: "Preços Insumos",
-      visible: true,
+      visible: isVisible("PrecosInsumos"),
     },
-    { path: "/stock", icon: Database, label: "Contagem", visible: true },
+    {
+      path: "/stock",
+      icon: Database,
+      label: "Contagem",
+      visible: isVisible("Contagem"),
+    },
     {
       path: "/client-status",
       icon: CheckCircle,
       label: "Status Clientes",
-      visible: true,
+      visible: isVisible("StatusCliente"),
     },
     {
       path: "/machine-configs",
       icon: Settings,
       label: "Config. Máquinas",
-      visible: permissions?.canConfigureMachines || true,
+      visible: isVisible("ConfigMaquinas"),
     },
     {
       path: "/system-settings",
       icon: Settings,
       label: "Adicionar Opções",
-      visible: true,
+      visible: isVisible("AdicionarOpcao"),
     },
-    { path: "/labels", icon: Bookmark, label: "Etiquetas", visible: true },
+    {
+      path: "/labels",
+      icon: Bookmark,
+      label: "Etiquetas",
+      visible: isVisible("Etiquetas"),
+    },
     {
       path: "/history",
       icon: History,
       label: "Histórico Geral",
-      visible: permissions?.canViewHistory || true,
+      visible: isVisible("HistoricoGeral"),
     },
   ];
 
@@ -204,12 +230,16 @@ export function Header({ onOpenSidebar }) {
                 {userProfile?.role}
               </p>
             </div>
-            <button
-              onClick={handleOpenProfile}
-              className="w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-amiste-primary rounded-xl flex items-center gap-3 transition-colors font-medium"
-            >
-              <Settings size={16} /> Editar Perfil
-            </button>
+            {/* Como combinado, "Perfil" será ajustado no ProfileModal depois, mas o botão existe para quem não tem Nothing/Ghost */}
+            {permissions?.Perfil !== "Nothing" &&
+              permissions?.Perfil !== "Ghost" && (
+                <button
+                  onClick={handleOpenProfile}
+                  className="w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-amiste-primary rounded-xl flex items-center gap-3 transition-colors font-medium"
+                >
+                  <Settings size={16} /> Editar Perfil
+                </button>
+              )}
             {isImpersonating && (
               <button
                 onClick={handleStopImpersonation}

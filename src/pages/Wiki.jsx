@@ -22,7 +22,10 @@ import {
 } from "lucide-react";
 
 export function Wiki() {
-  const { user } = useContext(AuthContext);
+  const { user, permissions } = useContext(AuthContext);
+
+  // MODO DE LEITURA (Read-Only)
+  const isReadOnly = permissions?.Wiki === "Read";
 
   // Estados de Navegação e Dados
   const [view, setView] = useState("grid"); // 'grid' ou 'details'
@@ -89,6 +92,7 @@ export function Wiki() {
 
   // 3. Preparar Edição
   function handleEdit(sol) {
+    if (isReadOnly) return toast.error("Você não tem permissão para editar.");
     setEditingId(sol.id);
     setProblem(sol.problem_title);
     setCategory(sol.category);
@@ -105,6 +109,7 @@ export function Wiki() {
   // 4. Salvar
   async function handleSaveSolution(e) {
     e.preventDefault();
+    if (isReadOnly) return;
     if (!problem || !description)
       return toast.error("Preencha o problema e a solução!");
 
@@ -144,6 +149,7 @@ export function Wiki() {
   // 5. Excluir
   async function handleDelete(id, e) {
     e.stopPropagation();
+    if (isReadOnly) return toast.error("Você não tem permissão para excluir.");
     if (!confirm("Excluir esta solução permanentemente?")) return;
 
     try {
@@ -314,39 +320,42 @@ export function Wiki() {
               </div>
             </div>
 
-            <button
-              onClick={() => {
-                if (showForm) handleCancel();
-                else {
-                  setShowForm(true);
-                  setEditingId(null);
-                  setProblem("");
-                  setDescription("");
-                }
-              }}
-              className={`p-2 md:px-5 md:py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md transition-all hover:-translate-y-0.5 shrink-0 ${
-                showForm
-                  ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  : "bg-amiste-primary text-white hover:bg-amiste-secondary"
-              }`}
-            >
-              {showForm ? (
-                <>
-                  <X size={20} />{" "}
-                  <span className="hidden md:inline">Cancelar</span>
-                </>
-              ) : (
-                <>
-                  <Plus size={20} />{" "}
-                  <span className="hidden md:inline">Nova Solução</span>
-                </>
-              )}
-            </button>
+            {/* Oculta botão de criar se for Read-Only */}
+            {!isReadOnly && (
+              <button
+                onClick={() => {
+                  if (showForm) handleCancel();
+                  else {
+                    setShowForm(true);
+                    setEditingId(null);
+                    setProblem("");
+                    setDescription("");
+                  }
+                }}
+                className={`p-2 md:px-5 md:py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md transition-all hover:-translate-y-0.5 shrink-0 ${
+                  showForm
+                    ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    : "bg-amiste-primary text-white hover:bg-amiste-secondary"
+                }`}
+              >
+                {showForm ? (
+                  <>
+                    <X size={20} />{" "}
+                    <span className="hidden md:inline">Cancelar</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus size={20} />{" "}
+                    <span className="hidden md:inline">Nova Solução</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* FORMULÁRIO */}
-            {showForm && (
+            {showForm && !isReadOnly && (
               <div
                 id="wiki-form"
                 className="lg:col-span-3 bg-white p-5 md:p-8 rounded-2xl shadow-lg border border-amiste-primary/30 ring-4 ring-amiste-primary/5 mb-2 animate-slide-down relative overflow-hidden"
@@ -504,23 +513,26 @@ export function Wiki() {
                               Atualizado em{" "}
                               {new Date(sol.created_at).toLocaleDateString()}
                             </p>
-                            <div className="flex gap-2 w-full md:w-auto">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEdit(sol);
-                                }}
-                                className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-white border border-gray-200 text-blue-600 hover:bg-blue-50 hover:border-blue-200 rounded-lg text-xs font-bold transition-all shadow-sm"
-                              >
-                                <Edit2 size={14} /> Editar
-                              </button>
-                              <button
-                                onClick={(e) => handleDelete(sol.id, e)}
-                                className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-white border border-gray-200 text-red-500 hover:bg-red-50 hover:border-red-200 rounded-lg text-xs font-bold transition-all shadow-sm"
-                              >
-                                <Trash2 size={14} /> Excluir
-                              </button>
-                            </div>
+                            {/* Oculta botões de edição/exclusão se for Read-Only */}
+                            {!isReadOnly && (
+                              <div className="flex gap-2 w-full md:w-auto">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEdit(sol);
+                                  }}
+                                  className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-white border border-gray-200 text-blue-600 hover:bg-blue-50 hover:border-blue-200 rounded-lg text-xs font-bold transition-all shadow-sm"
+                                >
+                                  <Edit2 size={14} /> Editar
+                                </button>
+                                <button
+                                  onClick={(e) => handleDelete(sol.id, e)}
+                                  className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-white border border-gray-200 text-red-500 hover:bg-red-50 hover:border-red-200 rounded-lg text-xs font-bold transition-all shadow-sm"
+                                >
+                                  <Trash2 size={14} /> Excluir
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}

@@ -6,13 +6,11 @@ import { ProfileModal } from "../components/ProfileModal";
 import { Header } from "../components/Header";
 import toast from "react-hot-toast";
 import {
-  LayoutDashboard,
   ClipboardList,
   Wrench,
   FileText,
   Coffee,
   UserPlus,
-  DollarSign,
   Trash2,
   Edit2,
   Shield,
@@ -22,6 +20,9 @@ import {
   ChefHat,
   Settings,
   History,
+  Database,
+  CheckCircle,
+  Bookmark,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -51,7 +52,6 @@ export function DefaultLayout() {
       .select("*")
       .neq("id", realProfile?.id)
       .order("full_name");
-
     if (data) setTeamMembers(data);
   }
 
@@ -90,63 +90,70 @@ export function DefaultLayout() {
     return "bg-gray-100 text-gray-500 border-gray-200";
   }
 
-  // --- NAVEGAÇÃO PRINCIPAL ---
-  const navItems = [
-    { path: "/home", icon: LayoutDashboard, label: "Início", visible: true },
+  // --- NAVEGAÇÃO PRINCIPAL (Fica na Lateral) ---
+  const primaryNavItems = [
     {
-      path: "/financial",
-      icon: DollarSign,
-      label: "Financeiro",
-      visible: permissions.canViewFinancials,
+      path: "/machines",
+      icon: Coffee,
+      label: "Catálogo de Máquinas",
+      visible: permissions?.canManageMachines || true,
     },
     {
       path: "/checklists",
       icon: ClipboardList,
-      label: "Checklist",
-      visible: permissions.canCreateChecklist,
-    },
-    { path: "/wiki", icon: Wrench, label: "Manutenção", visible: true },
-    {
-      path: "/portfolio",
-      icon: FileText,
-      label: "Portfólio",
-      visible: permissions.canManagePortfolio,
-    },
-    {
-      path: "/machines",
-      icon: Coffee,
-      label: "Máquinas",
-      visible: permissions.canManageMachines,
+      label: "Checklists",
+      visible: permissions?.canCreateChecklist || true,
     },
     {
       path: "/supplies",
       icon: Package,
-      label: "Insumos",
-      visible: permissions.canManageSupplies,
+      label: "Catálogo de Insumos",
+      visible: permissions?.canManageSupplies || true,
+    },
+    { path: "/wiki", icon: Wrench, label: "Wiki de Manutenção", visible: true },
+    {
+      path: "/portfolio",
+      icon: FileText,
+      label: "Portfólio",
+      visible: permissions?.canManagePortfolio || true,
     },
   ];
 
-  // --- NAVEGAÇÃO SECUNDÁRIA (Vem do Header para o Mobile) ---
+  // --- NAVEGAÇÃO SECUNDÁRIA (Aparece no Menu Mobile) ---
   const secondaryNavItems = [
-    { path: "/prices", icon: Tag, label: "Tabela Preços", visible: true },
+    { path: "/recipes", icon: ChefHat, label: "Receitas", visible: true },
+    { path: "/prices", icon: Tag, label: "Preços Máquinas", visible: true },
     {
       path: "/supply-prices",
       icon: Package,
       label: "Preços Insumos",
       visible: true,
     },
-    { path: "/recipes", icon: ChefHat, label: "Receitas", visible: true },
+    { path: "/stock", icon: Database, label: "Contagem", visible: true },
+    {
+      path: "/client-status",
+      icon: CheckCircle,
+      label: "Status Clientes",
+      visible: true,
+    },
     {
       path: "/machine-configs",
       icon: Settings,
-      label: "Configurações",
-      visible: permissions.canConfigureMachines,
+      label: "Config. Máquinas",
+      visible: permissions?.canConfigureMachines || true,
     },
+    {
+      path: "/system-settings",
+      icon: Settings,
+      label: "Adicionar Opções",
+      visible: true,
+    },
+    { path: "/labels", icon: Bookmark, label: "Etiquetas", visible: true },
     {
       path: "/history",
       icon: History,
-      label: "Histórico",
-      visible: permissions.canViewHistory,
+      label: "Histórico Geral",
+      visible: permissions?.canViewHistory || true,
     },
   ];
 
@@ -160,7 +167,6 @@ export function DefaultLayout() {
         onSave={() => fetchTeam()}
       />
 
-      {/* OVERLAY MOBILE */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"
@@ -177,10 +183,9 @@ export function DefaultLayout() {
             : "-translate-x-full lg:translate-x-0",
         )}
       >
-        {/* Logo */}
         <div className="h-20 flex items-center justify-between border-b border-gray-100 px-6 shrink-0">
           <Link
-            to="/home"
+            to="/machines"
             className="bg-amiste-primary w-full py-3 rounded-xl shadow-lg shadow-red-200 flex items-center justify-center"
           >
             <span className="text-white font-black tracking-[0.25em] text-xl">
@@ -195,15 +200,14 @@ export function DefaultLayout() {
           </button>
         </div>
 
-        {/* Scroll Nav */}
         <nav className="flex-1 p-6 space-y-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200">
-          {/* GRUPO 1: OPERACIONAL */}
+          {/* PRIMÁRIOS */}
           <div>
             <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
-              Operacional
+              Principal
             </p>
             <div className="space-y-1">
-              {navItems
+              {primaryNavItems
                 .filter((i) => i.visible)
                 .map((item) => {
                   const Icon = item.icon;
@@ -234,12 +238,10 @@ export function DefaultLayout() {
             </div>
           </div>
 
-          {/* GRUPO 2: CONSULTAS (Visível no Mobile e Desktop na Sidebar) */}
-          {/* Obs: No Desktop o Header já mostra, mas ter na Sidebar não faz mal, ou podemos esconder no desktop com lg:hidden se preferir. 
-              Vou deixar visível sempre para garantir acesso fácil. */}
-          <div className="pt-2 border-t border-gray-100">
+          {/* SECUNDÁRIOS (Mobile) */}
+          <div className="pt-2 border-t border-gray-100 lg:hidden">
             <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 mt-4">
-              Consultas & Ferramentas
+              Menu Secundário
             </p>
             <div className="space-y-1">
               {secondaryNavItems
@@ -252,19 +254,17 @@ export function DefaultLayout() {
                       key={item.path}
                       to={item.path}
                       className={clsx(
-                        "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 group",
+                        "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all",
                         isActive
-                          ? "bg-red-50 text-amiste-primary border border-red-100"
-                          : "text-gray-500 hover:bg-gray-50 hover:text-gray-900 hover:translate-x-1",
+                          ? "bg-red-50 text-amiste-primary"
+                          : "text-gray-500 hover:bg-gray-50",
                       )}
                     >
                       <Icon
                         size={20}
-                        className={clsx(
-                          isActive
-                            ? "text-amiste-primary"
-                            : "text-gray-400 group-hover:text-gray-600 transition-colors",
-                        )}
+                        className={
+                          isActive ? "text-amiste-primary" : "text-gray-400"
+                        }
                       />
                       {item.label}
                     </Link>
@@ -273,19 +273,18 @@ export function DefaultLayout() {
             </div>
           </div>
 
-          {/* Botão Cadastrar Equipe */}
-          {permissions.canManageUsers && !isImpersonating && (
+          {/* ÁREA DEV / GESTÃO */}
+          {permissions?.canManageUsers && !isImpersonating && (
             <div className="pt-4 mt-2">
               <Link
                 to="/register"
-                className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-sm font-bold text-blue-600 bg-blue-50 border border-dashed border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-all"
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-sm font-bold text-blue-600 bg-blue-50 border border-dashed border-blue-200 hover:bg-blue-100 transition-all"
               >
                 <UserPlus size={18} /> Cadastrar Equipe
               </Link>
             </div>
           )}
 
-          {/* LISTA DE EQUIPE */}
           {realProfile &&
             ["DEV", "Dono"].includes(realProfile.role) &&
             !isImpersonating && (
@@ -319,9 +318,7 @@ export function DefaultLayout() {
                           }}
                           className="flex-1 text-left flex items-center gap-3 overflow-hidden"
                         >
-                          <div
-                            className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500 bg-gray-100 border border-gray-200 overflow-hidden`}
-                          >
+                          <div className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500 bg-gray-100 border border-gray-200 overflow-hidden">
                             {member.avatar_url ? (
                               <img
                                 src={member.avatar_url}
@@ -375,7 +372,7 @@ export function DefaultLayout() {
         </nav>
       </aside>
 
-      {/* --- CONTEÚDO PRINCIPAL --- */}
+      {/* CONTEÚDO PRINCIPAL E HEADER */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
         <Header onOpenSidebar={() => setIsSidebarOpen(true)} />
         <main className="flex-1 overflow-auto p-4 md:p-10 scroll-smooth">

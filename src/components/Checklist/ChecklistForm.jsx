@@ -13,13 +13,7 @@ import {
   Droplet,
   FileText,
 } from "lucide-react";
-import {
-  FormSection,
-  RadioGroup,
-  ToggleCard,
-  drinksList,
-  accessoriesList,
-} from "./ChecklistUI";
+import { FormSection, RadioGroup, ToggleCard } from "./ChecklistUI";
 
 export function ChecklistForm(props) {
   const {
@@ -65,6 +59,9 @@ export function ChecklistForm(props) {
     setTestStatus,
     testDate,
     setTestDate,
+
+    // Props Dinâmicas
+    catalogData, // { tools: [], drinks: [], accessories: [], supplies: {} }
     tools,
     setTools,
     gallonQty,
@@ -78,6 +75,7 @@ export function ChecklistForm(props) {
     updateSupplyQty,
     selectedAccessories,
     setSelectedAccessories,
+
     localSocket,
     setLocalSocket,
     localWater,
@@ -149,6 +147,10 @@ export function ChecklistForm(props) {
       <div className="space-y-6 md:space-y-8">
         {/* --- DADOS GERAIS --- */}
         <FormSection title="Dados Gerais" icon={Calendar}>
+          {/* ... (Conteúdo de Dados Gerais inalterado) ... */}
+          {/* MANTENHA O CONTEÚDO ORIGINAL DE 'Dados Gerais' AQUI */}
+          {/* Para poupar espaço na resposta, assumo que você manteve o bloco 'Dados Gerais' e 'Equipamento' do arquivo anterior, pois eles não mudaram com a lógica dinâmica. */}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <div className="col-span-full">
               <RadioGroup
@@ -158,7 +160,6 @@ export function ChecklistForm(props) {
                 onChange={setInstallType}
               />
             </div>
-
             {installType === "Cliente" ? (
               <>
                 <div className="col-span-full">
@@ -238,6 +239,9 @@ export function ChecklistForm(props) {
 
         {/* --- EQUIPAMENTO --- */}
         <FormSection title="Equipamento" icon={Coffee}>
+          {/* ... MANTENHA O BLOCO 'Equipamento' ORIGINAL ... */}
+          {/* Como não mudou a lógica de máquinas, mantenha igual ao arquivo anterior */}
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
             <div className="md:col-span-2">
               <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
@@ -270,7 +274,6 @@ export function ChecklistForm(props) {
             </div>
           </div>
 
-          {/* SELETOR DE VARIAÇÃO DE MODELO */}
           {selectedMachineData &&
             selectedMachineData.models &&
             selectedMachineData.models.length > 0 && (
@@ -412,31 +415,17 @@ export function ChecklistForm(props) {
             <Wrench size={16} /> Ferramentas Necessárias
           </h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-            {[
-              "caixaFerramentas",
-              "luvas",
-              "transformador",
-              "extensao",
-              "pano",
-              "balde",
-              "adaptador",
-            ].map((key) => (
+            {/* ITENS DINÂMICOS DO CATÁLOGO (TOOLS) */}
+            {catalogData?.tools?.map((name) => (
               <ToggleCard
-                key={key}
-                label={key.replace(/([A-Z])/g, " $1")}
-                checked={tools[key]}
-                onChange={(val) => setTools({ ...tools, [key]: val })}
+                key={name}
+                label={name}
+                checked={tools[name]}
+                onChange={(val) => setTools({ ...tools, [name]: val })}
               />
             ))}
-            {waterInstall === "Sim" &&
-              ["conexoes", "filtro", "mangueiras", "tampoes"].map((key) => (
-                <ToggleCard
-                  key={key}
-                  label={key.replace(/([A-Z])/g, " $1")}
-                  checked={tools[key]}
-                  onChange={(val) => setTools({ ...tools, [key]: val })}
-                />
-              ))}
+
+            {/* ITENS LÓGICOS (Fixo, depende de WaterInstall) */}
             {waterInstall === "Não" && (
               <div className="col-span-2 md:col-span-1">
                 <ToggleCard
@@ -468,7 +457,8 @@ export function ChecklistForm(props) {
             <Coffee size={16} /> Bebidas Habilitadas
           </h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {drinksList.map((drink) => (
+            {/* BEBIDAS DINÂMICAS DO CATÁLOGO */}
+            {catalogData?.drinks?.map((drink) => (
               <div
                 key={drink}
                 className={`p-3 rounded-xl border transition-all ${selectedDrinks[drink] !== undefined ? "bg-red-50 border-amiste-primary" : "bg-white"}`}
@@ -510,6 +500,7 @@ export function ChecklistForm(props) {
         {/* --- INSUMOS E ACESSÓRIOS --- */}
         <FormSection title="Insumos e Acessórios" icon={Package}>
           <div className="flex gap-4 overflow-x-auto pb-4 mb-6 scrollbar-thin">
+            {/* ITERA SOBRE AS CATEGORIAS DO CATÁLOGO */}
             {Object.entries(suppliesData).map(([cat, items]) => (
               <div
                 key={cat}
@@ -555,7 +546,8 @@ export function ChecklistForm(props) {
             Acessórios
           </h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {accessoriesList.map((acc) => (
+            {/* ACESSÓRIOS DINÂMICOS DO CATÁLOGO */}
+            {catalogData?.accessories?.map((acc) => (
               <div
                 key={acc}
                 className={`p-3 rounded-xl border transition-all ${selectedAccessories[acc] !== undefined ? "bg-blue-50 border-blue-300" : "bg-white"}`}
@@ -599,6 +591,7 @@ export function ChecklistForm(props) {
 
         {/* --- LOCAL --- */}
         <FormSection title="Local de Instalação" icon={MapPin}>
+          {/* ... MANTENHA O BLOCO 'Local' ORIGINAL ... */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-3 md:p-4 bg-gray-50 rounded-xl border border-gray-100">
               <span className="block text-xs font-bold text-gray-500 uppercase mb-2">
@@ -664,6 +657,7 @@ export function ChecklistForm(props) {
 
         {/* --- FINALIZAÇÃO --- */}
         <FormSection title="Finalização" icon={FileText}>
+          {/* ... MANTENHA O BLOCO 'Finalização' ORIGINAL ... */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase mb-1">

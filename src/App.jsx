@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Toaster } from "react-hot-toast"; // <--- 1. IMPORTAR O TOASTER
+import { Toaster } from "react-hot-toast";
 import { Coffee } from "lucide-react";
 
 // Layout e Páginas
@@ -8,11 +8,11 @@ import { DefaultLayout } from "./layouts/DefaultLayout";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { Home } from "./pages/Home";
-import { Checklist } from "./pages/Checklist"; // O arquivo principal da página Checklist
+import { Checklist } from "./pages/Checklist";
 import { ChecklistDetails } from "./pages/ChecklistDetails";
 import { Wiki } from "./pages/Wiki";
 import { Portfolio } from "./pages/Portfolio";
-import { Machines } from "./pages/Machines"; // O arquivo principal da página Machines
+import { Machines } from "./pages/Machines";
 import { History } from "./pages/History";
 import { Financial } from "./pages/Financial";
 import { PriceList } from "./pages/PriceList";
@@ -23,6 +23,7 @@ import { Recipes } from "./pages/Recipes";
 import { SupplyPriceList } from "./pages/SupplyPriceList";
 import { MachineConfigs } from "./pages/MachineConfigs";
 import { PrintBlankChecklist } from "./pages/PrintBlankChecklist";
+import { SystemSettings } from "./pages/SystemSettings"; // <--- Importado aqui
 
 // Contexto
 import { AuthProvider, AuthContext } from "./contexts/AuthContext";
@@ -53,7 +54,7 @@ const Private = ({ children }) => {
 const ProtectedRoute = ({ children, permissionKey }) => {
   const { permissions, loadingAuth } = useContext(AuthContext);
 
-  if (loadingAuth) return null; // Ou um spinner
+  if (loadingAuth) return null;
 
   // Se não tiver a permissão, redireciona para Home
   if (!permissions || !permissions[permissionKey]) {
@@ -67,12 +68,11 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        {/* --- 2. CONFIGURAÇÃO GLOBAL DAS NOTIFICAÇÕES --- */}
+        {/* --- CONFIGURAÇÃO DAS NOTIFICAÇÕES --- */}
         <Toaster
           position="top-right"
           reverseOrder={false}
           toastOptions={{
-            // Configurações padrão
             duration: 4000,
             style: {
               background: "#333",
@@ -81,11 +81,10 @@ export default function App() {
               fontSize: "14px",
               boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
             },
-            // Estilo para Sucesso
             success: {
               style: {
-                background: "#DEF7EC", // Verde bem clarinho
-                color: "#03543F", // Verde escuro
+                background: "#DEF7EC",
+                color: "#03543F",
                 border: "1px solid #84E1BC",
                 fontWeight: "600",
               },
@@ -94,11 +93,10 @@ export default function App() {
                 secondary: "#EAFBF4",
               },
             },
-            // Estilo para Erro
             error: {
               style: {
-                background: "#FDE8E8", // Vermelho bem clarinho
-                color: "#9B1C1C", // Vermelho escuro
+                background: "#FDE8E8",
+                color: "#9B1C1C",
                 border: "1px solid #F8B4B4",
                 fontWeight: "600",
               },
@@ -123,21 +121,18 @@ export default function App() {
               </Private>
             }
           >
+            {/* Páginas Gerais */}
             <Route path="/home" element={<Home />} />
-            <Route path="/checklists/:id" element={<ChecklistDetails />} />
-            <Route
-              path="/checklists/print-blank"
-              element={<PrintBlankChecklist />}
-            />
             <Route path="/wiki" element={<Wiki />} />
             <Route path="/history" element={<History />} />
             <Route path="/prices" element={<PriceList />} />
             <Route path="/supply-prices" element={<SupplyPriceList />} />
             <Route path="/recipes" element={<Recipes />} />
 
-            {/* Rotas com Permissões Específicas */}
+            {/* Configurações do Sistema (A proteção está dentro da página) */}
+            <Route path="/settings" element={<SystemSettings />} />
 
-            {/* CHECKLISTS (Técnico/Comercial/Dono/DEV) */}
+            {/* Checklists */}
             <Route
               path="/checklists"
               element={
@@ -146,8 +141,13 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/checklists/:id" element={<ChecklistDetails />} />
+            <Route
+              path="/checklists/print-blank"
+              element={<PrintBlankChecklist />}
+            />
 
-            {/* PORTFÓLIO (Comercial/Vendas/Dono/DEV) */}
+            {/* Portfólio */}
             <Route
               path="/portfolio"
               element={
@@ -157,7 +157,7 @@ export default function App() {
               }
             />
 
-            {/* MÁQUINAS (Quem gerencia máquinas) */}
+            {/* Máquinas */}
             <Route
               path="/machines"
               element={
@@ -166,8 +166,6 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-
-            {/* CONFIGURAÇÃO DE MÁQUINAS (Só Técnico/Dono/DEV) */}
             <Route
               path="/machine-configs"
               element={
@@ -177,7 +175,7 @@ export default function App() {
               }
             />
 
-            {/* INSUMOS (Comercial/ADM/Dono/DEV) */}
+            {/* Insumos */}
             <Route
               path="/supplies"
               element={
@@ -187,7 +185,7 @@ export default function App() {
               }
             />
 
-            {/* FINANCEIRO (Só quem pode ver financeiro) */}
+            {/* Financeiro */}
             <Route
               path="/financial"
               element={
@@ -198,7 +196,7 @@ export default function App() {
             />
           </Route>
 
-          {/* Rota 404 - Redireciona para login */}
+          {/* Rota 404 */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

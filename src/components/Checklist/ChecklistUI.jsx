@@ -1,95 +1,13 @@
 import { Check } from "lucide-react";
 
-// --- CONSTANTES ---
-
-export const INITIAL_TOOLS = {
-  caixaFerramentas: false,
-  luvas: false,
-  transformador: false,
-  extensao: false,
-  pano: false,
-  balde: false,
-  adaptador: false,
-  conexoes: false,
-  filtro: false,
-  mangueiras: false,
-  tampoes: false,
-  galao: false,
-  mangueiraEsgoto: false,
-};
-
-export const INITIAL_SUPPLIES = {
-  solubles: {
-    "Café Gourmet (Solúvel)": { active: false, qty: "" },
-    Chocolate: { active: false, qty: "" },
-    Cappuccino: { active: false, qty: "" },
-    "Cappuccino Zero": { active: false, qty: "" },
-    "Chocolate Zero": { active: false, qty: "" },
-    "Latte Zero": { active: false, qty: "" },
-  },
-  grains: {
-    "Café Gourmet": { active: false, qty: "" },
-    "Café Premium": { active: false, qty: "" },
-    "Café Superior": { active: false, qty: "" },
-    "Alta Mogiana": { active: false, qty: "" },
-    "Região Vulcânica": { active: false, qty: "" },
-    "Cerrado Mineiro": { active: false, qty: "" },
-    "Pioneiro do Paraná": { active: false, qty: "" },
-  },
-  frappes: {
-    Original: { active: false, qty: "" },
-    Chocolate: { active: false, qty: "" },
-    Iogurte: { active: false, qty: "" },
-    Baunilha: { active: false, qty: "" },
-  },
-  syrups: {
-    "Vora - Maçã Verde": { active: false, qty: "" },
-    "Vora - Maracujá": { active: false, qty: "" },
-    "Vora - Morango": { active: false, qty: "" },
-    "Vora - Cranberry": { active: false, qty: "" },
-    "Vora - Blue Lemonade": { active: false, qty: "" },
-    "Vora - Pink Lemonade": { active: false, qty: "" },
-    "Vora - Limão Siciliano": { active: false, qty: "" },
-    "Vora - Caramelo": { active: false, qty: "" },
-    "Vora - Caramelo Salgado": { active: false, qty: "" },
-    "Vora - Melancia": { active: false, qty: "" },
-    "Vora - Baunilha": { active: false, qty: "" },
-    "DaVinci - Coco": { active: false, qty: "" },
-    "DaVinci - Kiwi": { active: false, qty: "" },
-    "DaVinci - Maracujá Vermelho": { active: false, qty: "" },
-    "DaVinci - Jabuticaba": { active: false, qty: "" },
-    "DaVinci - Morango": { active: false, qty: "" },
-    "DaVinci - Melancia": { active: false, qty: "" },
-    "Fabri - Maracujá": { active: false, qty: "" },
-    "Fabri - Maça Verde": { active: false, qty: "" },
-    "Fabri - Morango": { active: false, qty: "" },
-    "Fabri - Limão": { active: false, qty: "" },
-    "Fabri - Banana": { active: false, qty: "" },
-  },
-};
-
-export const drinksList = [
-  "Café Expresso",
-  "Café Longo",
-  "Leite",
-  "Café c/ Leite",
-  "Cappuccino",
-  "Cappuccino Zero",
-  "Chocolate",
-  "Chocolate Zero",
-  "Moccaccino",
-  "Moccaccino Zero",
-  "Mocca",
-];
-
-export const accessoriesList = [
-  "Pitcher",
-  "Balança",
-  "Tamper",
-  "Tapete de Compactação",
-  "Nivelador",
-  "Pincel",
-  "Porta Borras",
+// --- CONSTANTES DE FALLBACK (Caso o banco esteja vazio na primeira vez) ---
+export const FALLBACK_TOOLS = [
+  "Caixa Ferramentas",
+  "Luvas",
+  "Transformador",
+  "Extensao",
+  "Pano",
+  "Balde",
 ];
 
 // --- COMPONENTES VISUAIS ---

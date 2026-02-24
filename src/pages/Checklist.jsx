@@ -4,10 +4,6 @@ import { AuthContext } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
 import { ChecklistList } from "../components/Checklist/ChecklistList";
 import { ChecklistForm } from "../components/Checklist/ChecklistForm";
-import {
-  INITIAL_TOOLS,
-  INITIAL_SUPPLIES,
-} from "../components/Checklist/ChecklistUI";
 
 export function Checklist() {
   const { user, permissions = {} } = useContext(AuthContext);
@@ -17,8 +13,17 @@ export function Checklist() {
   const [editingId, setEditingId] = useState(null);
   const [filterStatus, setFilterStatus] = useState("Todos");
 
+  // --- CATALOGO DINÂMICO (Carregado do Banco) ---
+  const [catalog, setCatalog] = useState({
+    tools: [],
+    accessories: [],
+    drinks: [],
+    supplies: {}, // Agrupado por categoria (syrups, grains, etc)
+  });
+
   // --- ESTADOS GERAIS ---
   const [saving, setSaving] = useState(false);
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
   const [machinesList, setMachinesList] = useState([]);
   const [checklistsHistory, setChecklistsHistory] = useState([]);
 
@@ -44,8 +49,8 @@ export function Checklist() {
   const [paymentSystem, setPaymentSystem] = useState("Não");
   const [steamWand, setSteamWand] = useState("Não");
 
-  // Ferramentas
-  const [tools, setTools] = useState(INITIAL_TOOLS);
+  // Estados Dinâmicos (Inicializados vazios, preenchidos após load do catálogo)
+  const [tools, setTools] = useState({});
   const [gallonQty, setGallonQty] = useState("");
 
   const [configStatus, setConfigStatus] = useState("Não");
@@ -59,9 +64,9 @@ export function Checklist() {
   const [customAccessories, setCustomAccessories] = useState([]);
   const [noAccessories, setNoAccessories] = useState(false);
 
-  // --- INSUMOS ---
+  // Insumos Dinâmicos
   const [noSupplies, setNoSupplies] = useState(false);
-  const [suppliesData, setSuppliesData] = useState(INITIAL_SUPPLIES);
+  const [suppliesData, setSuppliesData] = useState({}); // { Categoria: { Item: {active:bool, qty:str} } }
   const [customSupplies, setCustomSupplies] = useState([]);
 
   const [localSocket, setLocalSocket] = useState("");
@@ -81,7 +86,58 @@ export function Checklist() {
   useEffect(() => {
     fetchMachines();
     fetchChecklists();
+    fetchCatalog();
   }, []);
+
+  async function fetchCatalog() {
+    setLoadingCatalog(true);
+    try {
+      const { data, error } = await supabase
+        .from("catalog_items")
+        .select("*")
+        .eq("active", true)
+        .order("name");
+
+      if (error) throw error;
+
+      // Organizar dados por categoria
+      const newCatalog = {
+        tools: [],
+        accessories: [],
+        drinks: [],
+        supplies: {},
+      };
+
+      // Mapeamento de categorias do banco para o front
+      // DB: 'syrups', 'grains', 'solubles', 'frappes' -> Front: suppliesData['Xaropes'] etc
+      const suppliesMap = {
+        syrups: "Xaropes",
+        grains: "Grãos",
+        solubles: "Solúveis",
+        frappes: "Frappés",
+      };
+
+      data.forEach((item) => {
+        if (item.category === "tools") newCatalog.tools.push(item.name);
+        else if (item.category === "accessories")
+          newCatalog.accessories.push(item.name);
+        else if (item.category === "drinks") newCatalog.drinks.push(item.name);
+        else if (suppliesMap[item.category]) {
+          // É um insumo
+          const label = suppliesMap[item.category];
+          if (!newCatalog.supplies[label]) newCatalog.supplies[label] = [];
+          newCatalog.supplies[label].push(item.name);
+        }
+      });
+
+      setCatalog(newCatalog);
+    } catch (err) {
+      console.error("Erro catalogo", err);
+      // Fallback silencioso ou toast
+    } finally {
+      setLoadingCatalog(false);
+    }
+  }
 
   async function fetchMachines() {
     const { data } = await supabase.from("machines").select("*").order("name");
@@ -95,6 +151,36 @@ export function Checklist() {
       .order("created_at", { ascending: false });
     if (data) setChecklistsHistory(data);
   }
+
+  // --- HELPERS DE INICIALIZAÇÃO DE ESTADO ---
+
+  // Reseta os estados baseados no catálogo atual
+  function initializeFormStates() {
+    // Ferramentas: { "Chave": false, ... }
+    const initTools = {};
+    catalog.tools.forEach((t) => (initTools[t] = false));
+    // Adiciona fixos obrigatórios de lógica
+    initTools.galao = false;
+    initTools.mangueiraEsgoto = false;
+    setTools(initTools);
+
+    // Insumos: { "Xaropes": { "Maçã": {active: false, qty: ""} } }
+    const initSupplies = {};
+    Object.keys(catalog.supplies).forEach((cat) => {
+      initSupplies[cat] = {};
+      catalog.supplies[cat].forEach((item) => {
+        initSupplies[cat][item] = { active: false, qty: "" };
+      });
+    });
+    setSuppliesData(initSupplies);
+
+    // Outros resets
+    setGallonQty("");
+    setSelectedDrinks({});
+    setSelectedAccessories({});
+  }
+
+  // --- HANDLERS ---
 
   function handleMachineSelect(e) {
     const id = e.target.value;
@@ -316,6 +402,8 @@ export function Checklist() {
     if (!permissions.canEditChecklist)
       return toast.error("Você não tem permissão para editar.");
     setEditingId(checklist.id);
+
+    // ... (States simples iguais) ...
     setInstallType(checklist.install_type || "Cliente");
     setClientName(checklist.client_name || "");
     setEventName(checklist.event_name || "");
@@ -327,9 +415,7 @@ export function Checklist() {
       checklist.machine_id ? checklist.machine_id.toString() : "",
     );
     setSelectedMachineData(checklist.machine_data || null);
-
     setSelectedModelIndex(checklist.machine_model_index || "");
-
     setMachineItems(
       checklist.machine_units || [
         { voltage: "220v", patrimony: "", serial: "" },
@@ -340,12 +426,21 @@ export function Checklist() {
     setPaymentSystem(checklist.tech_payment || "Não");
     setSteamWand(checklist.tech_steam || "Não");
 
+    // LÓGICA DE MERGE (Para não perder itens salvos que sumiram do catálogo)
+    // 1. Ferramentas
     if (checklist.tools_list) {
       const { gallonQty: gQty, ...tList } = checklist.tools_list;
-      setTools({ ...INITIAL_TOOLS, ...tList });
+      // Mescla o que veio do banco (checklist) com o catálogo atual
+      const mergedTools = { ...tList };
+      // Garante que novos itens do catálogo apareçam desmarcados
+      catalog.tools.forEach((t) => {
+        if (mergedTools[t] === undefined) mergedTools[t] = false;
+      });
+      setTools(mergedTools);
       setGallonQty(gQty || "");
     } else {
-      setTools(INITIAL_TOOLS);
+      // Fallback se for muito antigo
+      initializeFormStates();
     }
 
     if (checklist.preparations) {
@@ -354,29 +449,63 @@ export function Checklist() {
       setTestStatus(checklist.preparations.testStatus || "Não");
       setTestDate(checklist.preparations.testDate || "");
     }
+
+    // 2. Bebidas
     if (checklist.drinks_list) {
       setSelectedDrinks(checklist.drinks_list.standard || {});
       setCustomDrinks(checklist.drinks_list.custom || []);
     }
+
+    // 3. Acessórios
     if (checklist.accessories_list) {
       setSelectedAccessories(checklist.accessories_list.standard || {});
       setCustomAccessories(checklist.accessories_list.custom || []);
       setNoAccessories(checklist.accessories_list.noAccessories || false);
     }
+
+    // 4. Insumos (Merge complexo)
     if (checklist.supplies_list) {
-      setSuppliesData((prev) => {
-        const loaded = checklist.supplies_list.standard || {};
-        const newData = { ...INITIAL_SUPPLIES };
-        Object.keys(newData).forEach((cat) => {
-          if (loaded[cat]) {
-            newData[cat] = { ...newData[cat], ...loaded[cat] };
+      const loadedSupplies = checklist.supplies_list.standard || {};
+
+      // Cria estrutura baseada no catálogo atual
+      const mergedSupplies = {};
+      Object.keys(catalog.supplies).forEach((cat) => {
+        mergedSupplies[cat] = {};
+        catalog.supplies[cat].forEach((item) => {
+          // Se já existia no checklist salvo, preserva. Senão, inicia vazio
+          if (loadedSupplies[cat] && loadedSupplies[cat][item]) {
+            mergedSupplies[cat][item] = loadedSupplies[cat][item];
+          } else {
+            mergedSupplies[cat][item] = { active: false, qty: "" };
           }
         });
-        return newData;
       });
+
+      // Adiciona categorias/itens que estavam no salvo mas não estão no catálogo (legado)
+      Object.keys(loadedSupplies).forEach((cat) => {
+        if (!mergedSupplies[cat]) mergedSupplies[cat] = {};
+        Object.keys(loadedSupplies[cat]).forEach((item) => {
+          if (!mergedSupplies[cat][item]) {
+            mergedSupplies[cat][item] = loadedSupplies[cat][item];
+          }
+        });
+      });
+
+      setSuppliesData(mergedSupplies);
       setCustomSupplies(checklist.supplies_list.custom || []);
       setNoSupplies(checklist.supplies_list.noSupplies || false);
+    } else {
+      // Fallback
+      const initSupplies = {};
+      Object.keys(catalog.supplies).forEach((cat) => {
+        initSupplies[cat] = {};
+        catalog.supplies[cat].forEach((item) => {
+          initSupplies[cat][item] = { active: false, qty: "" };
+        });
+      });
+      setSuppliesData(initSupplies);
     }
+
     if (checklist.local_validation) {
       setLocalSocket(checklist.local_validation.localSocket || "");
       setLocalWater(checklist.local_validation.localWater || "");
@@ -399,6 +528,7 @@ export function Checklist() {
   function handleNewChecklist() {
     if (!permissions.canCreateChecklist)
       return toast.error("Você não tem permissão para criar checklists.");
+
     setEditingId(null);
     setInstallType("Cliente");
     setClientName("");
@@ -416,17 +546,14 @@ export function Checklist() {
     setPaymentSystem("Não");
     setSteamWand("Não");
 
-    setTools(INITIAL_TOOLS);
-    setSuppliesData(INITIAL_SUPPLIES);
+    // INICIALIZA COM DADOS DO CATÁLOGO
+    initializeFormStates();
 
-    setGallonQty("");
     setConfigStatus("Não");
     setConfigDate("");
     setTestStatus("Não");
     setTestDate("");
-    setSelectedDrinks({});
     setCustomDrinks([]);
-    setSelectedAccessories({});
     setCustomAccessories([]);
     setNoAccessories(false);
     setNoSupplies(false);
@@ -448,6 +575,7 @@ export function Checklist() {
 
   // Objeto com todas as props para o Form
   const formProps = {
+    // ... Props normais ...
     editingId,
     setView,
     handleCancelChecklist,
@@ -490,6 +618,9 @@ export function Checklist() {
     setTestStatus,
     testDate,
     setTestDate,
+
+    // PROPS DO CATÁLOGO E STATES
+    catalogData: catalog, // Passamos o catálogo bruto para renderizar listas
     tools,
     setTools,
     gallonQty,
@@ -503,6 +634,7 @@ export function Checklist() {
     updateSupplyQty,
     selectedAccessories,
     setSelectedAccessories,
+    // ...
     localSocket,
     setLocalSocket,
     localWater,
@@ -524,6 +656,9 @@ export function Checklist() {
     setValServices,
     setValExtras,
   };
+
+  if (loadingCatalog)
+    return <div className="p-10 text-center">Carregando sistema...</div>;
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20 animate-fade-in">

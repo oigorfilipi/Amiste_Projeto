@@ -1,3 +1,5 @@
+import { useContext } from "react";
+import { AuthContext } from "../contexts/AuthContext";
 import {
   ArrowLeft,
   XCircle,
@@ -16,6 +18,11 @@ import {
 import { FormSection, RadioGroup, ToggleCard } from "./ChecklistUI";
 
 export function ChecklistForm(props) {
+  const { permissions } = useContext(AuthContext);
+
+  // Se a permissão for apenas Read, ativamos o modo de visualização.
+  const isReadOnly = permissions?.Checklist === "Read";
+
   const {
     editingId,
     setView,
@@ -114,13 +121,16 @@ export function ChecklistForm(props) {
               {editingId ? "Editar Checklist" : "Novo Checklist"}
             </h1>
             <p className="text-xs text-gray-500 hidden md:block">
-              Preencha os dados da instalação.
+              {isReadOnly
+                ? "Modo de Visualização"
+                : "Preencha os dados da instalação."}
             </p>
           </div>
         </div>
 
         <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-          {editingId && (
+          {/* Só mostra Cancelar Edição se NÃO for modo leitura e estiver editando */}
+          {editingId && !isReadOnly && (
             <button
               onClick={handleCancelChecklist}
               className="px-3 md:px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg font-bold text-xs md:text-sm flex items-center gap-2 whitespace-nowrap shrink-0"
@@ -129,28 +139,30 @@ export function ChecklistForm(props) {
               <span className="hidden sm:inline">Cancelar</span>
             </button>
           )}
-          <button
-            onClick={() => handleSave("Rascunho")}
-            className="flex-1 md:flex-none px-3 md:px-4 py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg font-bold text-xs md:text-sm flex items-center justify-center gap-2 whitespace-nowrap"
-          >
-            <Save size={16} /> Rascunho
-          </button>
-          <button
-            onClick={() => handleSave("Finalizado")}
-            className="flex-1 md:flex-none px-4 md:px-6 py-2 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-lg font-bold text-xs md:text-sm shadow-md flex items-center justify-center gap-2 whitespace-nowrap"
-          >
-            <Check size={16} /> Finalizar
-          </button>
+
+          {/* Botões de Salvar ocultos no modo leitura */}
+          {!isReadOnly && (
+            <>
+              <button
+                onClick={() => handleSave("Rascunho")}
+                className="flex-1 md:flex-none px-3 md:px-4 py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg font-bold text-xs md:text-sm flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                <Save size={16} /> Rascunho
+              </button>
+              <button
+                onClick={() => handleSave("Finalizado")}
+                className="flex-1 md:flex-none px-4 md:px-6 py-2 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-lg font-bold text-xs md:text-sm shadow-md flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                <Check size={16} /> Finalizar
+              </button>
+            </>
+          )}
         </div>
       </div>
 
       <div className="space-y-6 md:space-y-8">
         {/* --- DADOS GERAIS --- */}
         <FormSection title="Dados Gerais" icon={Calendar}>
-          {/* ... (Conteúdo de Dados Gerais inalterado) ... */}
-          {/* MANTENHA O CONTEÚDO ORIGINAL DE 'Dados Gerais' AQUI */}
-          {/* Para poupar espaço na resposta, assumo que você manteve o bloco 'Dados Gerais' e 'Equipamento' do arquivo anterior, pois eles não mudaram com a lógica dinâmica. */}
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <div className="col-span-full">
               <RadioGroup
@@ -158,6 +170,7 @@ export function ChecklistForm(props) {
                 options={["Cliente", "Evento"]}
                 value={installType}
                 onChange={setInstallType}
+                disabled={isReadOnly}
               />
             </div>
             {installType === "Cliente" ? (
@@ -167,10 +180,11 @@ export function ChecklistForm(props) {
                     Nome do Cliente *
                   </label>
                   <input
-                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all disabled:bg-gray-50 disabled:text-gray-500"
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
                     placeholder="Ex: Padaria Central"
+                    disabled={isReadOnly}
                   />
                 </div>
                 <div>
@@ -179,9 +193,10 @@ export function ChecklistForm(props) {
                   </label>
                   <input
                     type="date"
-                    className="w-full p-3 border border-gray-200 rounded-xl outline-none transition-all"
+                    className="w-full p-3 border border-gray-200 rounded-xl outline-none transition-all disabled:bg-gray-50 disabled:text-gray-500"
                     value={installDate}
                     onChange={(e) => setInstallDate(e.target.value)}
+                    disabled={isReadOnly}
                   />
                 </div>
               </>
@@ -192,9 +207,10 @@ export function ChecklistForm(props) {
                     Nome do Evento *
                   </label>
                   <input
-                    className="w-full p-3 border border-gray-200 rounded-xl outline-none transition-all"
+                    className="w-full p-3 border border-gray-200 rounded-xl outline-none transition-all disabled:bg-gray-50 disabled:text-gray-500"
                     value={eventName}
                     onChange={(e) => setEventName(e.target.value)}
+                    disabled={isReadOnly}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4 md:contents">
@@ -204,9 +220,10 @@ export function ChecklistForm(props) {
                     </label>
                     <input
                       type="number"
-                      className="w-full p-3 border border-gray-200 rounded-xl outline-none transition-all"
+                      className="w-full p-3 border border-gray-200 rounded-xl outline-none transition-all disabled:bg-gray-50 disabled:text-gray-500"
                       value={eventDays}
                       onChange={(e) => setEventDays(e.target.value)}
+                      disabled={isReadOnly}
                     />
                   </div>
                   <div>
@@ -215,9 +232,10 @@ export function ChecklistForm(props) {
                     </label>
                     <input
                       type="date"
-                      className="w-full p-3 border border-gray-200 rounded-xl outline-none transition-all"
+                      className="w-full p-3 border border-gray-200 rounded-xl outline-none transition-all disabled:bg-gray-50 disabled:text-gray-500"
                       value={installDate}
                       onChange={(e) => setInstallDate(e.target.value)}
+                      disabled={isReadOnly}
                     />
                   </div>
                 </div>
@@ -227,9 +245,10 @@ export function ChecklistForm(props) {
                   </label>
                   <input
                     type="date"
-                    className="w-full p-3 border border-gray-200 rounded-xl outline-none transition-all"
+                    className="w-full p-3 border border-gray-200 rounded-xl outline-none transition-all disabled:bg-gray-50 disabled:text-gray-500"
                     value={pickupDate}
                     onChange={(e) => setPickupDate(e.target.value)}
+                    disabled={isReadOnly}
                   />
                 </div>
               </>
@@ -239,18 +258,16 @@ export function ChecklistForm(props) {
 
         {/* --- EQUIPAMENTO --- */}
         <FormSection title="Equipamento" icon={Coffee}>
-          {/* ... MANTENHA O BLOCO 'Equipamento' ORIGINAL ... */}
-          {/* Como não mudou a lógica de máquinas, mantenha igual ao arquivo anterior */}
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
             <div className="md:col-span-2">
               <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                 Modelo da Máquina *
               </label>
               <select
-                className="w-full p-3 border border-gray-200 rounded-xl bg-white outline-none transition-all"
+                className="w-full p-3 border border-gray-200 rounded-xl bg-white outline-none transition-all disabled:bg-gray-50 disabled:text-gray-500"
                 value={selectedMachineId}
                 onChange={handleMachineSelect}
+                disabled={isReadOnly}
               >
                 <option value="">Selecione...</option>
                 {machinesList.map((m) => (
@@ -267,9 +284,10 @@ export function ChecklistForm(props) {
               <input
                 type="number"
                 min="1"
-                className="w-full p-3 border border-gray-200 rounded-xl outline-none transition-all"
+                className="w-full p-3 border border-gray-200 rounded-xl outline-none transition-all disabled:bg-gray-50 disabled:text-gray-500"
                 value={quantity}
                 onChange={(e) => handleQuantityChange(e.target.value)}
+                disabled={isReadOnly}
               />
             </div>
           </div>
@@ -282,9 +300,10 @@ export function ChecklistForm(props) {
                   <Layers size={12} /> Selecione a Versão/Modelo
                 </label>
                 <select
-                  className="w-full p-2 border border-purple-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-purple-500 outline-none"
+                  className="w-full p-2 border border-purple-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-purple-500 outline-none disabled:bg-purple-50 disabled:text-gray-500"
                   value={selectedModelIndex}
                   onChange={handleModelSelect}
+                  disabled={isReadOnly}
                 >
                   <option value="">-- Padrão (Sem variação) --</option>
                   {selectedMachineData.models.map((mod, idx) => (
@@ -307,31 +326,34 @@ export function ChecklistForm(props) {
                 </span>
                 <div className="grid grid-cols-2 sm:flex sm:flex-1 gap-3 w-full">
                   <select
-                    className="p-2 rounded-lg border-gray-200 text-sm bg-white w-full sm:w-auto"
+                    className="p-2 rounded-lg border-gray-200 text-sm bg-white w-full sm:w-auto disabled:bg-gray-100 disabled:text-gray-500"
                     value={item.voltage}
                     onChange={(e) =>
                       updateMachineItem(idx, "voltage", e.target.value)
                     }
+                    disabled={isReadOnly}
                   >
                     <option>220v</option>
                     <option>110v</option>
                     <option>Bivolt</option>
                   </select>
                   <input
-                    className="flex-1 p-2 rounded-lg border border-gray-200 text-sm outline-none w-full"
+                    className="flex-1 p-2 rounded-lg border border-gray-200 text-sm outline-none w-full disabled:bg-gray-100 disabled:text-gray-500"
                     placeholder="Nº Série"
                     value={item.serial}
                     onChange={(e) =>
                       updateMachineItem(idx, "serial", e.target.value)
                     }
+                    disabled={isReadOnly}
                   />
                   <input
-                    className="flex-1 p-2 rounded-lg border border-gray-200 text-sm outline-none col-span-2 sm:col-span-1"
+                    className="flex-1 p-2 rounded-lg border border-gray-200 text-sm outline-none col-span-2 sm:col-span-1 disabled:bg-gray-100 disabled:text-gray-500"
                     placeholder="Patrimônio"
                     value={item.patrimony}
                     onChange={(e) =>
                       updateMachineItem(idx, "patrimony", e.target.value)
                     }
+                    disabled={isReadOnly}
                   />
                 </div>
               </div>
@@ -344,24 +366,28 @@ export function ChecklistForm(props) {
               options={["Sim", "Não"]}
               value={waterInstall}
               onChange={setWaterInstall}
+              disabled={isReadOnly}
             />
             <RadioGroup
               label="Esgoto"
               options={["Sim", "Não"]}
               value={sewageInstall}
               onChange={setSewageInstall}
+              disabled={isReadOnly}
             />
             <RadioGroup
               label="Vapor"
               options={["Sim", "Não"]}
               value={steamWand}
               onChange={setSteamWand}
+              disabled={isReadOnly}
             />
             <RadioGroup
               label="Pagamento"
               options={["Sim", "Não"]}
               value={paymentSystem}
               onChange={setPaymentSystem}
+              disabled={isReadOnly}
             />
           </div>
         </FormSection>
@@ -378,14 +404,16 @@ export function ChecklistForm(props) {
                   options={["Configurado", "Não"]}
                   value={configStatus}
                   onChange={setConfigStatus}
+                  disabled={isReadOnly}
                 />
               </div>
               {configStatus === "Configurado" && (
                 <input
                   type="date"
-                  className="w-full p-2 border rounded-lg text-sm transition-all animate-fade-in"
+                  className="w-full p-2 border rounded-lg text-sm transition-all animate-fade-in disabled:bg-gray-100 disabled:text-gray-500"
                   value={configDate}
                   onChange={(e) => setConfigDate(e.target.value)}
+                  disabled={isReadOnly}
                 />
               )}
             </div>
@@ -398,14 +426,16 @@ export function ChecklistForm(props) {
                   options={["Testado", "Não"]}
                   value={testStatus}
                   onChange={setTestStatus}
+                  disabled={isReadOnly}
                 />
               </div>
               {testStatus === "Testado" && (
                 <input
                   type="date"
-                  className="w-full p-2 border rounded-lg text-sm transition-all animate-fade-in"
+                  className="w-full p-2 border rounded-lg text-sm transition-all animate-fade-in disabled:bg-gray-100 disabled:text-gray-500"
                   value={testDate}
                   onChange={(e) => setTestDate(e.target.value)}
+                  disabled={isReadOnly}
                 />
               )}
             </div>
@@ -415,31 +445,32 @@ export function ChecklistForm(props) {
             <Wrench size={16} /> Ferramentas Necessárias
           </h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-            {/* ITENS DINÂMICOS DO CATÁLOGO (TOOLS) */}
             {catalogData?.tools?.map((name) => (
               <ToggleCard
                 key={name}
                 label={name}
                 checked={tools[name]}
                 onChange={(val) => setTools({ ...tools, [name]: val })}
+                disabled={isReadOnly}
               />
             ))}
 
-            {/* ITENS LÓGICOS (Fixo, depende de WaterInstall) */}
             {waterInstall === "Não" && (
               <div className="col-span-2 md:col-span-1">
                 <ToggleCard
                   label="Galões"
                   checked={tools.galao}
                   onChange={(val) => setTools({ ...tools, galao: val })}
+                  disabled={isReadOnly}
                 />
                 {tools.galao && (
                   <input
                     type="number"
                     placeholder="Quantos?"
-                    className="w-full mt-2 p-2 border rounded text-sm animate-fade-in"
+                    className="w-full mt-2 p-2 border rounded text-sm animate-fade-in disabled:bg-gray-100 disabled:text-gray-500"
                     value={gallonQty}
                     onChange={(e) => setGallonQty(e.target.value)}
+                    disabled={isReadOnly}
                   />
                 )}
               </div>
@@ -449,6 +480,7 @@ export function ChecklistForm(props) {
                 label="Mangueira Esgoto"
                 checked={tools.mangueiraEsgoto}
                 onChange={(val) => setTools({ ...tools, mangueiraEsgoto: val })}
+                disabled={isReadOnly}
               />
             )}
           </div>
@@ -457,17 +489,17 @@ export function ChecklistForm(props) {
             <Coffee size={16} /> Bebidas Habilitadas
           </h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {/* BEBIDAS DINÂMICAS DO CATÁLOGO */}
             {catalogData?.drinks?.map((drink) => (
               <div
                 key={drink}
-                className={`p-3 rounded-xl border transition-all ${selectedDrinks[drink] !== undefined ? "bg-red-50 border-amiste-primary" : "bg-white"}`}
+                className={`p-3 rounded-xl border transition-all ${selectedDrinks[drink] !== undefined ? "bg-red-50 border-amiste-primary" : "bg-white"} ${isReadOnly ? "opacity-70" : ""}`}
               >
                 <div
                   onClick={() =>
+                    !isReadOnly &&
                     toggleItem(selectedDrinks, setSelectedDrinks, drink, " ")
                   }
-                  className="cursor-pointer flex items-center gap-2 mb-2"
+                  className={`flex items-center gap-2 mb-2 ${isReadOnly ? "cursor-not-allowed" : "cursor-pointer"}`}
                 >
                   <div
                     className={`w-4 h-4 rounded-full border shrink-0 ${selectedDrinks[drink] !== undefined ? "bg-amiste-primary border-amiste-primary" : "border-gray-300"}`}
@@ -480,7 +512,7 @@ export function ChecklistForm(props) {
                   <input
                     type="text"
                     placeholder="ML"
-                    className="w-full p-1 text-xs border rounded bg-white"
+                    className="w-full p-1 text-xs border rounded bg-white disabled:bg-gray-100 disabled:text-gray-500"
                     value={selectedDrinks[drink]}
                     onChange={(e) =>
                       updateItemValue(
@@ -490,6 +522,7 @@ export function ChecklistForm(props) {
                         e.target.value,
                       )
                     }
+                    disabled={isReadOnly}
                   />
                 )}
               </div>
@@ -500,7 +533,6 @@ export function ChecklistForm(props) {
         {/* --- INSUMOS E ACESSÓRIOS --- */}
         <FormSection title="Insumos e Acessórios" icon={Package}>
           <div className="flex gap-4 overflow-x-auto pb-4 mb-6 scrollbar-thin">
-            {/* ITERA SOBRE AS CATEGORIAS DO CATÁLOGO */}
             {Object.entries(suppliesData).map(([cat, items]) => (
               <div
                 key={cat}
@@ -514,8 +546,8 @@ export function ChecklistForm(props) {
                   {Object.keys(items).map((key) => (
                     <div key={key}>
                       <div
-                        onClick={() => toggleSupply(cat, key)}
-                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded"
+                        onClick={() => !isReadOnly && toggleSupply(cat, key)}
+                        className={`flex items-center gap-2 p-1 rounded ${isReadOnly ? "cursor-not-allowed opacity-70" : "cursor-pointer hover:bg-gray-100"}`}
                       >
                         <div
                           className={`w-3 h-3 rounded border shrink-0 ${items[key].active ? "bg-green-500 border-green-500" : "border-gray-400"}`}
@@ -528,11 +560,12 @@ export function ChecklistForm(props) {
                         <input
                           type="text"
                           placeholder="Qtd"
-                          className="w-full p-1 text-xs border rounded mt-1 bg-white animate-fade-in"
+                          className="w-full p-1 text-xs border rounded mt-1 bg-white animate-fade-in disabled:bg-gray-100 disabled:text-gray-500"
                           value={items[key].qty}
                           onChange={(e) =>
                             updateSupplyQty(cat, key, e.target.value)
                           }
+                          disabled={isReadOnly}
                         />
                       )}
                     </div>
@@ -546,14 +579,14 @@ export function ChecklistForm(props) {
             Acessórios
           </h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {/* ACESSÓRIOS DINÂMICOS DO CATÁLOGO */}
             {catalogData?.accessories?.map((acc) => (
               <div
                 key={acc}
-                className={`p-3 rounded-xl border transition-all ${selectedAccessories[acc] !== undefined ? "bg-blue-50 border-blue-300" : "bg-white"}`}
+                className={`p-3 rounded-xl border transition-all ${selectedAccessories[acc] !== undefined ? "bg-blue-50 border-blue-300" : "bg-white"} ${isReadOnly ? "opacity-70" : ""}`}
               >
                 <div
                   onClick={() =>
+                    !isReadOnly &&
                     toggleItem(
                       selectedAccessories,
                       setSelectedAccessories,
@@ -561,7 +594,7 @@ export function ChecklistForm(props) {
                       "1",
                     )
                   }
-                  className="cursor-pointer flex items-center gap-2 mb-1"
+                  className={`flex items-center gap-2 mb-1 ${isReadOnly ? "cursor-not-allowed" : "cursor-pointer"}`}
                 >
                   <div
                     className={`w-3 h-3 rounded border shrink-0 ${selectedAccessories[acc] !== undefined ? "bg-blue-500 border-blue-500" : "border-gray-300"}`}
@@ -572,7 +605,7 @@ export function ChecklistForm(props) {
                   <input
                     type="text"
                     placeholder="Qtd"
-                    className="w-full p-1 text-xs border rounded bg-white animate-fade-in"
+                    className="w-full p-1 text-xs border rounded bg-white animate-fade-in disabled:bg-gray-100 disabled:text-gray-500"
                     value={selectedAccessories[acc]}
                     onChange={(e) =>
                       updateItemValue(
@@ -582,6 +615,7 @@ export function ChecklistForm(props) {
                         e.target.value,
                       )
                     }
+                    disabled={isReadOnly}
                   />
                 )}
               </div>
@@ -591,7 +625,6 @@ export function ChecklistForm(props) {
 
         {/* --- LOCAL --- */}
         <FormSection title="Local de Instalação" icon={MapPin}>
-          {/* ... MANTENHA O BLOCO 'Local' ORIGINAL ... */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-3 md:p-4 bg-gray-50 rounded-xl border border-gray-100">
               <span className="block text-xs font-bold text-gray-500 uppercase mb-2">
@@ -601,6 +634,7 @@ export function ChecklistForm(props) {
                 options={["10A", "20A"]}
                 value={localSocket}
                 onChange={setLocalSocket}
+                disabled={isReadOnly}
               />
               {selectedMachineData?.amperage &&
                 localSocket &&
@@ -618,6 +652,7 @@ export function ChecklistForm(props) {
                 options={["Sim", "Não"]}
                 value={localWater}
                 onChange={setLocalWater}
+                disabled={isReadOnly}
               />
               {waterInstall === "Sim" && localWater === "Não" && (
                 <div className="text-xs text-red-600 font-bold bg-red-50 p-2 rounded mt-2">
@@ -633,6 +668,7 @@ export function ChecklistForm(props) {
                 options={["Sim", "Não"]}
                 value={localSewage}
                 onChange={setLocalSewage}
+                disabled={isReadOnly}
               />
               {sewageInstall === "Sim" && localSewage === "Não" && (
                 <div className="text-xs text-red-600 font-bold bg-red-50 p-2 rounded mt-2">
@@ -647,9 +683,10 @@ export function ChecklistForm(props) {
               <input
                 type="number"
                 placeholder="Qtd Pessoas"
-                className="w-full p-2 border rounded-lg bg-white outline-none"
+                className="w-full p-2 border rounded-lg bg-white outline-none disabled:bg-gray-100 disabled:text-gray-500"
                 value={trainedPeople}
                 onChange={(e) => setTrainedPeople(e.target.value)}
+                disabled={isReadOnly}
               />
             </div>
           </div>
@@ -657,16 +694,16 @@ export function ChecklistForm(props) {
 
         {/* --- FINALIZAÇÃO --- */}
         <FormSection title="Finalização" icon={FileText}>
-          {/* ... MANTENHA O BLOCO 'Finalização' ORIGINAL ... */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                 Nº Contrato
               </label>
               <input
-                className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 transition-all outline-none focus:bg-white focus:ring-2 focus:ring-amiste-primary"
+                className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 transition-all outline-none focus:bg-white focus:ring-2 focus:ring-amiste-primary disabled:bg-gray-100 disabled:text-gray-500"
                 value={contractNum}
                 onChange={(e) => setContractNum(e.target.value)}
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -675,9 +712,10 @@ export function ChecklistForm(props) {
               </label>
               <textarea
                 rows="3"
-                className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 transition-all outline-none focus:bg-white focus:ring-2 focus:ring-amiste-primary resize-none"
+                className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 transition-all outline-none focus:bg-white focus:ring-2 focus:ring-amiste-primary resize-none disabled:bg-gray-100 disabled:text-gray-500"
                 value={salesObs}
                 onChange={(e) => setSalesObs(e.target.value)}
+                disabled={isReadOnly}
               ></textarea>
             </div>
           </div>
@@ -704,13 +742,16 @@ export function ChecklistForm(props) {
                   <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block">
                     {item.l}
                   </label>
-                  <div className="flex items-center bg-gray-800 rounded-lg overflow-hidden border border-gray-700 focus-within:border-green-500 transition-colors">
+                  <div
+                    className={`flex items-center bg-gray-800 rounded-lg overflow-hidden border transition-colors ${isReadOnly ? "border-gray-700 opacity-80" : "border-gray-700 focus-within:border-green-500"}`}
+                  >
                     <span className="pl-3 text-gray-500 text-xs">R$</span>
                     <input
                       type="number"
-                      className="w-full p-2 bg-transparent text-white text-sm outline-none font-bold"
+                      className="w-full p-2 bg-transparent text-white text-sm outline-none font-bold disabled:text-gray-400"
                       value={item.v}
                       onChange={(e) => item.s(parseFloat(e.target.value) || 0)}
+                      disabled={isReadOnly}
                     />
                   </div>
                 </div>

@@ -36,8 +36,13 @@ export function DefaultLayout() {
   const [profileToEdit, setProfileToEdit] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  // Consideramos as grafias possíveis do banco para garantir que o DEV e Dono sempre tenham acesso admin
+  const isMasterReal =
+    realProfile &&
+    ["DEV", "Dev", "Dev.", "Dono", "Don."].includes(realProfile.role);
+
   useEffect(() => {
-    if (realProfile && ["DEV", "Dono"].includes(realProfile.role)) {
+    if (isMasterReal) {
       fetchTeam();
     }
   }, [realProfile, isImpersonating]);
@@ -63,7 +68,7 @@ export function DefaultLayout() {
 
   async function handleDeleteMember(id, name, role, e) {
     e.stopPropagation();
-    if (["DEV", "Dono"].includes(role)) {
+    if (["DEV", "Dev", "Dev.", "Dono", "Don."].includes(role)) {
       return toast.error(
         "Ação Bloqueada: Não é possível excluir contas de nível Superior.",
       );
@@ -81,14 +86,22 @@ export function DefaultLayout() {
     }
   }
 
-  function getRoleStyle(role) {
-    if (role === "DEV")
+  function getRoleStyle(r) {
+    if (["DEV", "Dev", "Dev."].includes(r))
       return "bg-purple-100 text-purple-700 border-purple-200";
-    if (role === "Dono") return "bg-amber-100 text-amber-700 border-amber-200";
-    if (role === "Comercial")
+    if (["Dono", "Don."].includes(r))
+      return "bg-amber-100 text-amber-700 border-amber-200";
+    if (["Comercial", "Com."].includes(r))
       return "bg-blue-100 text-blue-700 border-blue-200";
     return "bg-gray-100 text-gray-500 border-gray-200";
   }
+
+  // --- FUNÇÃO PARA VERIFICAR SE O MENU DEVE APARECER ---
+  // Se for "Ghost" ou "Nothing", o menu não aparece.
+  const isVisible = (moduleName) => {
+    if (!permissions) return false;
+    return !["Ghost", "Nothing"].includes(permissions[moduleName]);
+  };
 
   // --- NAVEGAÇÃO PRINCIPAL (Fica na Lateral) ---
   const primaryNavItems = [
@@ -96,64 +109,89 @@ export function DefaultLayout() {
       path: "/machines",
       icon: Coffee,
       label: "Catálogo de Máquinas",
-      visible: permissions?.canManageMachines || true,
+      visible: isVisible("Maquinas"),
     },
     {
       path: "/checklists",
       icon: ClipboardList,
       label: "Checklists",
-      visible: permissions?.canCreateChecklist || true,
+      visible: isVisible("Checklist"),
     },
     {
       path: "/supplies",
       icon: Package,
       label: "Catálogo de Insumos",
-      visible: permissions?.canManageSupplies || true,
+      visible: isVisible("Insumos"),
     },
-    { path: "/wiki", icon: Wrench, label: "Wiki de Manutenção", visible: true },
+    {
+      path: "/wiki",
+      icon: Wrench,
+      label: "Wiki de Manutenção",
+      visible: isVisible("Wiki"),
+    },
     {
       path: "/portfolio",
       icon: FileText,
       label: "Portfólio",
-      visible: permissions?.canManagePortfolio || true,
+      visible: isVisible("Portfolio"),
     },
   ];
 
-  // --- NAVEGAÇÃO SECUNDÁRIA (Aparece no Menu Mobile) ---
+  // --- NAVEGAÇÃO SECUNDÁRIA (Aparece no Menu Mobile e no Header) ---
   const secondaryNavItems = [
-    { path: "/recipes", icon: ChefHat, label: "Receitas", visible: true },
-    { path: "/prices", icon: Tag, label: "Preços Máquinas", visible: true },
+    {
+      path: "/recipes",
+      icon: ChefHat,
+      label: "Receitas",
+      visible: isVisible("Receitas"),
+    },
+    {
+      path: "/prices",
+      icon: Tag,
+      label: "Preços Máquinas",
+      visible: isVisible("PrecosMaquinas"),
+    },
     {
       path: "/supply-prices",
       icon: Package,
       label: "Preços Insumos",
-      visible: true,
+      visible: isVisible("PrecosInsumos"),
     },
-    { path: "/stock", icon: Database, label: "Contagem", visible: true },
+    {
+      path: "/stock",
+      icon: Database,
+      label: "Contagem",
+      visible: isVisible("Contagem"),
+    },
     {
       path: "/client-status",
       icon: CheckCircle,
       label: "Status Clientes",
-      visible: true,
+      visible: isVisible("StatusCliente"),
     },
     {
       path: "/machine-configs",
       icon: Settings,
       label: "Config. Máquinas",
-      visible: permissions?.canConfigureMachines || true,
+      visible: isVisible("ConfigMaquinas"),
     },
     {
       path: "/system-settings",
       icon: Settings,
       label: "Adicionar Opções",
-      visible: true,
+      visible: isVisible("AdicionarOpcao"),
     },
-    { path: "/labels", icon: Bookmark, label: "Etiquetas", visible: true },
+    {
+      path: "/labels",
+      icon: Bookmark,
+      label: "Etiquetas",
+      visible: isVisible("Etiquetas"),
+    },
     {
       path: "/history",
       icon: History,
       label: "Histórico Geral",
-      visible: permissions?.canViewHistory || true,
+      visible: isVisible("HistoricoGeral"),
     },
   ];
 
@@ -274,7 +312,7 @@ export function DefaultLayout() {
           </div>
 
           {/* ÁREA DEV / GESTÃO */}
-          {permissions?.canManageUsers && !isImpersonating && (
+          {isMasterReal && !isImpersonating && (
             <div className="pt-4 mt-2">
               <Link
                 to="/register"
@@ -285,90 +323,89 @@ export function DefaultLayout() {
             </div>
           )}
 
-          {realProfile &&
-            ["DEV", "Dono"].includes(realProfile.role) &&
-            !isImpersonating && (
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <Shield size={12} /> Controle de Acesso
-                </p>
-                <div className="space-y-2">
-                  {teamMembers.map((member) => {
-                    const isVip = ["DEV", "Dono"].includes(member.role);
-                    const initials = member.full_name
-                      ? member.full_name.substring(0, 2).toUpperCase()
-                      : "??";
-                    return (
-                      <div
-                        key={member.id}
-                        className="group flex items-center justify-between p-2 hover:bg-gray-50 rounded-xl transition-all border border-transparent hover:border-gray-100"
+          {isMasterReal && !isImpersonating && (
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <Shield size={12} /> Controle de Acesso
+              </p>
+              <div className="space-y-2">
+                {teamMembers.map((member) => {
+                  const isVip = ["DEV", "Dev", "Dev.", "Dono", "Don."].includes(
+                    member.role,
+                  );
+                  const initials = member.full_name
+                    ? member.full_name.substring(0, 2).toUpperCase()
+                    : "??";
+                  return (
+                    <div
+                      key={member.id}
+                      className="group flex items-center justify-between p-2 hover:bg-gray-50 rounded-xl transition-all border border-transparent hover:border-gray-100"
+                    >
+                      <button
+                        onClick={() => {
+                          if (
+                            confirm(
+                              `Entrar no modo visualização como ${member.role}?`,
+                            )
+                          ) {
+                            startImpersonation(member);
+                            toast.success(
+                              `Visualizando como ${member.full_name}`,
+                            );
+                          }
+                        }}
+                        className="flex-1 text-left flex items-center gap-3 overflow-hidden"
                       >
-                        <button
-                          onClick={() => {
-                            if (
-                              confirm(
-                                `Entrar no modo visualização como ${member.role}?`,
-                              )
-                            ) {
-                              startImpersonation(member);
-                              toast.success(
-                                `Visualizando como ${member.full_name}`,
-                              );
-                            }
-                          }}
-                          className="flex-1 text-left flex items-center gap-3 overflow-hidden"
-                        >
-                          <div className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500 bg-gray-100 border border-gray-200 overflow-hidden">
-                            {member.avatar_url ? (
-                              <img
-                                src={member.avatar_url}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              initials
-                            )}
-                          </div>
-                          <div className="flex flex-col overflow-hidden">
-                            <span className="text-xs font-bold text-gray-700 truncate">
-                              {member.nickname ||
-                                member.full_name?.split(" ")[0]}
-                            </span>
-                            <span
-                              className={`text-[9px] px-1.5 py-0.5 rounded border w-fit font-bold ${getRoleStyle(member.role)}`}
-                            >
-                              {member.role}
-                            </span>
-                          </div>
-                        </button>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={(e) => handleEditMember(member, e)}
-                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          {!isVip && (
-                            <button
-                              onClick={(e) =>
-                                handleDeleteMember(
-                                  member.id,
-                                  member.full_name,
-                                  member.role,
-                                  e,
-                                )
-                              }
-                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                        <div className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500 bg-gray-100 border border-gray-200 overflow-hidden">
+                          {member.avatar_url ? (
+                            <img
+                              src={member.avatar_url}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            initials
                           )}
                         </div>
+                        <div className="flex flex-col overflow-hidden">
+                          <span className="text-xs font-bold text-gray-700 truncate">
+                            {member.nickname || member.full_name?.split(" ")[0]}
+                          </span>
+                          <span
+                            className={`text-[9px] px-1.5 py-0.5 rounded border w-fit font-bold ${getRoleStyle(member.role)}`}
+                          >
+                            {member.role}
+                          </span>
+                        </div>
+                      </button>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(e) => handleEditMember(member, e)}
+                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        {!isVip && (
+                          <button
+                            onClick={(e) =>
+                              handleDeleteMember(
+                                member.id,
+                                member.full_name,
+                                member.role,
+                                e,
+                              )
+                            }
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
-            )}
+            </div>
+          )}
         </nav>
       </aside>
 

@@ -17,9 +17,12 @@ import {
 } from "lucide-react";
 
 export function MachineConfigs() {
-  const { user } = useContext(AuthContext);
+  const { user, permissions } = useContext(AuthContext);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Verifica se o usuário tem apenas leitura
+  const isReadOnly = permissions?.ConfigMaquinas === "Read";
 
   // Dados da máquina vindo da tela anterior
   const machineData = location.state?.machine;
@@ -97,6 +100,7 @@ export function MachineConfigs() {
   }
 
   function handleNew() {
+    if (isReadOnly) return toast.error("Você não tem permissão para criar.");
     setEditingId(null);
     let initialName = "";
     if (selectedModelIndex !== "" && machineData?.models) {
@@ -110,6 +114,7 @@ export function MachineConfigs() {
   }
 
   function handleEdit(config) {
+    // Deixamos entrar pra ver, mas os campos estarão bloqueados
     setEditingId(config.id);
     setName(config.name);
     setDescription(config.description || "");
@@ -119,6 +124,7 @@ export function MachineConfigs() {
 
   async function handleSave(e) {
     e.preventDefault();
+    if (isReadOnly) return;
     if (!machineData?.id) return;
 
     try {
@@ -152,6 +158,7 @@ export function MachineConfigs() {
   }
 
   async function handleDelete(id) {
+    if (isReadOnly) return toast.error("Você não tem permissão para excluir.");
     if (!confirm("Excluir esta configuração?")) return;
     try {
       const { error } = await supabase
@@ -241,15 +248,17 @@ export function MachineConfigs() {
                     : "Sem Reservatórios"}
                 </p>
               </div>
-              <button
-                onClick={handleNew}
-                disabled={currentReservoirCount === 0}
-                className="w-full md:w-auto bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-2.5 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
-              >
-                <Plus size={20} />{" "}
-                <span className="md:hidden">Nova Config</span>
-                <span className="hidden md:inline">Nova Configuração</span>
-              </button>
+              {!isReadOnly && (
+                <button
+                  onClick={handleNew}
+                  disabled={currentReservoirCount === 0}
+                  className="w-full md:w-auto bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-2.5 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+                >
+                  <Plus size={20} />{" "}
+                  <span className="md:hidden">Nova Config</span>
+                  <span className="hidden md:inline">Nova Configuração</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -279,18 +288,22 @@ export function MachineConfigs() {
                   </h3>
 
                   <div className="flex gap-2 ml-2">
+                    {/* Alterado para o "Read" poder ver, mas o form estará bloqueado */}
                     <button
                       onClick={() => handleEdit(config)}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title={isReadOnly ? "Visualizar" : "Editar"}
                     >
                       <Edit2 size={18} />
                     </button>
-                    <button
-                      onClick={() => handleDelete(config.id)}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    {!isReadOnly && (
+                      <button
+                        onClick={() => handleDelete(config.id)}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -329,7 +342,11 @@ export function MachineConfigs() {
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
               <div className="bg-white border-b border-gray-100 px-5 py-4 flex justify-between items-center shrink-0">
                 <h2 className="text-lg md:text-xl font-bold text-gray-800">
-                  {editingId ? "Editar Configuração" : "Nova Configuração"}
+                  {isReadOnly
+                    ? "Visualizar Configuração"
+                    : editingId
+                      ? "Editar Configuração"
+                      : "Nova Configuração"}
                 </h2>
                 <button
                   onClick={() => setShowModal(false)}
@@ -340,19 +357,29 @@ export function MachineConfigs() {
               </div>
 
               <form
-                onSubmit={handleSave}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!isReadOnly) handleSave(e);
+                }}
                 className="p-5 md:p-6 space-y-6 overflow-y-auto"
               >
+                {isReadOnly && (
+                  <div className="bg-blue-50 text-blue-800 p-3 rounded-lg text-sm font-bold flex items-center gap-2 mb-2">
+                    Modo de visualização. Edições desabilitadas.
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                     Nome da Configuração
                   </label>
                   <input
                     required
-                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all text-sm"
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all text-sm disabled:bg-gray-50 disabled:text-gray-500"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Ex: Padrão Recepção"
+                    disabled={isReadOnly}
                   />
                 </div>
 
@@ -374,12 +401,13 @@ export function MachineConfigs() {
                             Produto {i}
                           </label>
                           <input
-                            className="w-full p-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-1 focus:ring-amiste-primary outline-none"
+                            className="w-full p-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-1 focus:ring-amiste-primary outline-none disabled:bg-gray-100 disabled:text-gray-500"
                             value={productMap[i] || ""}
                             onChange={(e) =>
                               handleProductChange(i, e.target.value)
                             }
                             placeholder={`Conteúdo ${i}`}
+                            disabled={isReadOnly}
                           />
                         </div>
                       ))}
@@ -392,24 +420,35 @@ export function MachineConfigs() {
                     Observações / Detalhes
                   </label>
                   <textarea
-                    className="w-full p-3 border border-gray-200 rounded-xl h-24 resize-none focus:ring-2 focus:ring-amiste-primary outline-none text-sm"
+                    className="w-full p-3 border border-gray-200 rounded-xl h-24 resize-none focus:ring-2 focus:ring-amiste-primary outline-none text-sm disabled:bg-gray-50 disabled:text-gray-500"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Detalhes sobre a regulagem (ex: moagem fina)..."
+                    disabled={isReadOnly}
                   />
                 </div>
 
                 <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={
-                      reservoirs.length === 0 &&
-                      Object.keys(productMap).length === 0
-                    }
-                    className="w-full py-3 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
-                  >
-                    <Save size={20} /> Salvar Configuração
-                  </button>
+                  {!isReadOnly ? (
+                    <button
+                      type="submit"
+                      disabled={
+                        reservoirs.length === 0 &&
+                        Object.keys(productMap).length === 0
+                      }
+                      className="w-full py-3 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+                    >
+                      <Save size={20} /> Salvar Configuração
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowModal(false)}
+                      className="w-full py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold transition-all"
+                    >
+                      Fechar Visualização
+                    </button>
+                  )}
                 </div>
               </form>
             </div>

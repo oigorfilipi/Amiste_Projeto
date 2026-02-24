@@ -32,6 +32,10 @@ const SIZE_OPTIONS = ["1kg", "500g", "1L", "700ml", "250ml", "Unitário"];
 
 export function Supplies() {
   const { permissions } = useContext(AuthContext);
+
+  // MODO DE LEITURA (Read-Only)
+  const isReadOnly = permissions?.Insumos === "Read";
+
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -70,6 +74,7 @@ export function Supplies() {
   }
 
   async function handleImageUpload(e) {
+    if (isReadOnly) return;
     try {
       setUploading(true);
       const file = e.target.files[0];
@@ -97,8 +102,7 @@ export function Supplies() {
   }
 
   function handleEdit(item) {
-    if (!permissions.canManageMachines)
-      return toast.error("Sem permissão para editar.");
+    // Quem for "Read" pode abrir para ver, mas o form será bloqueado
     setEditingId(item.id);
     setFormData({
       name: item.name,
@@ -112,8 +116,7 @@ export function Supplies() {
   }
 
   function handleNew() {
-    if (!permissions.canManageMachines)
-      return toast.error("Sem permissão para criar.");
+    if (isReadOnly) return toast.error("Sem permissão para criar.");
     setEditingId(null);
     setFormData({
       name: "",
@@ -128,6 +131,7 @@ export function Supplies() {
 
   async function handleSave(e) {
     e.preventDefault();
+    if (isReadOnly) return;
     setLoading(true);
     try {
       if (editingId) {
@@ -153,8 +157,7 @@ export function Supplies() {
 
   async function handleDelete(id, e) {
     e.stopPropagation();
-    if (!permissions.canManageMachines)
-      return toast.error("Sem permissão para excluir.");
+    if (isReadOnly) return toast.error("Sem permissão para excluir.");
     if (!confirm("Tem certeza que deseja excluir este insumo?")) return;
 
     try {
@@ -210,7 +213,7 @@ export function Supplies() {
               <span className="hidden md:inline">Receitas</span>
             </Link>
 
-            {permissions.canManageMachines && (
+            {!isReadOnly && (
               <button
                 onClick={handleNew}
                 className="bg-amiste-primary hover:bg-amiste-secondary text-white px-3 md:px-5 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all hover:-translate-y-1 shrink-0"
@@ -242,7 +245,7 @@ export function Supplies() {
               Não encontramos produtos no estoque com esse critério. Cadastre um
               novo item para começar.
             </p>
-            {permissions.canManageMachines && (
+            {!isReadOnly && (
               <button
                 onClick={handleNew}
                 className="bg-amiste-primary hover:bg-amiste-secondary text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all hover:-translate-y-1"
@@ -272,7 +275,7 @@ export function Supplies() {
                       <Package size={48} />
                     </div>
                   )}
-                  {permissions.canManageMachines && (
+                  {!isReadOnly && (
                     <button
                       onClick={(e) => handleDelete(item.id, e)}
                       className="absolute top-3 right-3 p-2 bg-white rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-50 z-10"
@@ -305,12 +308,18 @@ export function Supplies() {
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
               <div className="bg-white border-b border-gray-100 px-5 py-4 flex justify-between items-center shrink-0">
                 <h2 className="text-lg md:text-xl font-bold text-gray-800 flex items-center gap-2">
-                  {editingId ? (
+                  {isReadOnly ? (
+                    <Package size={20} className="text-amiste-primary" />
+                  ) : editingId ? (
                     <Edit2 size={20} className="text-amiste-primary" />
                   ) : (
                     <Plus size={20} className="text-amiste-primary" />
                   )}
-                  {editingId ? "Editar Insumo" : "Novo Insumo"}
+                  {isReadOnly
+                    ? "Visualizar Insumo"
+                    : editingId
+                      ? "Editar Insumo"
+                      : "Novo Insumo"}
                 </h2>
                 <button
                   onClick={() => setShowModal(false)}
@@ -321,21 +330,31 @@ export function Supplies() {
               </div>
 
               <form
-                onSubmit={handleSave}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!isReadOnly) handleSave(e);
+                }}
                 className="p-5 space-y-4 overflow-y-auto"
               >
+                {isReadOnly && (
+                  <div className="bg-blue-50 text-blue-800 p-3 rounded-lg text-sm font-bold flex items-center gap-2 mb-2">
+                    Modo de visualização. Edições desabilitadas.
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                     Nome do Produto
                   </label>
                   <input
                     required
-                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all disabled:bg-gray-50 disabled:text-gray-500"
                     value={formData.name}
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
                     placeholder="Ex: Xarope de Maçã Verde"
+                    disabled={isReadOnly}
                   />
                 </div>
 
@@ -345,11 +364,12 @@ export function Supplies() {
                       Marca
                     </label>
                     <select
-                      className="w-full p-3 border border-gray-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-amiste-primary"
+                      className="w-full p-3 border border-gray-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-amiste-primary disabled:bg-gray-50 disabled:text-gray-500"
                       value={formData.brand}
                       onChange={(e) =>
                         setFormData({ ...formData, brand: e.target.value })
                       }
+                      disabled={isReadOnly}
                     >
                       {BRAND_OPTIONS.map((b) => (
                         <option key={b} value={b}>
@@ -363,11 +383,12 @@ export function Supplies() {
                       Tamanho
                     </label>
                     <select
-                      className="w-full p-3 border border-gray-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-amiste-primary"
+                      className="w-full p-3 border border-gray-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-amiste-primary disabled:bg-gray-50 disabled:text-gray-500"
                       value={formData.size}
                       onChange={(e) =>
                         setFormData({ ...formData, size: e.target.value })
                       }
+                      disabled={isReadOnly}
                     >
                       {SIZE_OPTIONS.map((s) => (
                         <option key={s} value={s}>
@@ -384,52 +405,55 @@ export function Supplies() {
                     Imagem do Produto
                   </label>
 
-                  <div className="flex bg-white rounded-lg p-1 border border-gray-200 mb-3">
-                    <button
-                      type="button"
-                      onClick={() => setImageMode("url")}
-                      className={`flex-1 py-1.5 text-xs font-bold rounded-md flex items-center justify-center gap-1 transition-all ${imageMode === "url" ? "bg-amiste-primary text-white shadow-sm" : "text-gray-500 hover:bg-gray-50"}`}
-                    >
-                      <LinkIcon size={12} /> Link (URL)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setImageMode("file")}
-                      className={`flex-1 py-1.5 text-xs font-bold rounded-md flex items-center justify-center gap-1 transition-all ${imageMode === "file" ? "bg-amiste-primary text-white shadow-sm" : "text-gray-500 hover:bg-gray-50"}`}
-                    >
-                      <Upload size={12} /> Upload
-                    </button>
-                  </div>
+                  {!isReadOnly && (
+                    <div className="flex bg-white rounded-lg p-1 border border-gray-200 mb-3">
+                      <button
+                        type="button"
+                        onClick={() => setImageMode("url")}
+                        className={`flex-1 py-1.5 text-xs font-bold rounded-md flex items-center justify-center gap-1 transition-all ${imageMode === "url" ? "bg-amiste-primary text-white shadow-sm" : "text-gray-500 hover:bg-gray-50"}`}
+                      >
+                        <LinkIcon size={12} /> Link (URL)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setImageMode("file")}
+                        className={`flex-1 py-1.5 text-xs font-bold rounded-md flex items-center justify-center gap-1 transition-all ${imageMode === "file" ? "bg-amiste-primary text-white shadow-sm" : "text-gray-500 hover:bg-gray-50"}`}
+                      >
+                        <Upload size={12} /> Upload
+                      </button>
+                    </div>
+                  )}
 
                   <div className="flex gap-3 items-center">
-                    {imageMode === "url" ? (
-                      <input
-                        className="w-full p-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-amiste-primary outline-none"
-                        value={formData.photo_url}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            photo_url: e.target.value,
-                          })
-                        }
-                        placeholder="https://exemplo.com/foto.png"
-                      />
-                    ) : (
-                      <div className="relative w-full">
+                    {!isReadOnly &&
+                      (imageMode === "url" ? (
                         <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          disabled={uploading}
-                          className="w-full p-2 border border-gray-200 rounded-xl text-sm bg-white file:mr-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                          className="w-full p-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-amiste-primary outline-none"
+                          value={formData.photo_url}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              photo_url: e.target.value,
+                            })
+                          }
+                          placeholder="https://exemplo.com/foto.png"
                         />
-                        {uploading && (
-                          <div className="absolute right-3 top-2.5 text-xs text-blue-600 font-bold animate-pulse">
-                            Enviando...
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      ) : (
+                        <div className="relative w-full">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            disabled={uploading}
+                            className="w-full p-2 border border-gray-200 rounded-xl text-sm bg-white file:mr-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                          />
+                          {uploading && (
+                            <div className="absolute right-3 top-2.5 text-xs text-blue-600 font-bold animate-pulse">
+                              Enviando...
+                            </div>
+                          )}
+                        </div>
+                      ))}
 
                     {formData.photo_url && (
                       <div className="w-12 h-12 bg-white border border-gray-200 rounded-lg flex items-center justify-center shrink-0 p-1">
@@ -443,14 +467,24 @@ export function Supplies() {
                 </div>
 
                 <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={loading || uploading}
-                    className="w-full py-3 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
-                  >
-                    <Save size={20} />{" "}
-                    {loading ? "Salvando..." : "Salvar Insumo"}
-                  </button>
+                  {!isReadOnly ? (
+                    <button
+                      type="submit"
+                      disabled={loading || uploading}
+                      className="w-full py-3 bg-amiste-primary hover:bg-amiste-secondary text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+                    >
+                      <Save size={20} />{" "}
+                      {loading ? "Salvando..." : "Salvar Insumo"}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowModal(false)}
+                      className="w-full py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold transition-all"
+                    >
+                      Fechar Visualização
+                    </button>
+                  )}
                 </div>
               </form>
             </div>

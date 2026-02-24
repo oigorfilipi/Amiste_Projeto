@@ -17,20 +17,26 @@ import { History } from "./pages/History";
 import { Financial } from "./pages/Financial";
 import { PriceList } from "./pages/PriceList";
 
-// --- NOVAS PÁGINAS ---
+// Páginas Secundárias
 import { Supplies } from "./pages/Supplies";
 import { Recipes } from "./pages/Recipes";
 import { SupplyPriceList } from "./pages/SupplyPriceList";
 import { MachineConfigs } from "./pages/MachineConfigs";
 import { PrintBlankChecklist } from "./pages/PrintBlankChecklist";
-import { SystemSettings } from "./pages/SystemSettings"; // <--- Importado aqui
+import { SystemSettings } from "./pages/SystemSettings";
+
+// --- NOVAS PÁGINAS (Fase 1) ---
+import { Stock } from "./pages/Stock";
+import { ClientStatus } from "./pages/ClientStatus";
+import { Labels } from "./pages/Labels";
 
 // Contexto
 import { AuthProvider, AuthContext } from "./contexts/AuthContext";
 
 // 1. Verifica se está logado
 const Private = ({ children }) => {
-  const { signed, loadingAuth } = useContext(AuthContext);
+  // Alterado de "signed" para "user" para refletir o seu AuthContext real
+  const { user, loadingAuth } = useContext(AuthContext);
 
   if (loadingAuth) {
     return (
@@ -47,7 +53,7 @@ const Private = ({ children }) => {
     );
   }
 
-  return signed ? children : <Navigate to="/" />;
+  return user ? children : <Navigate to="/" />;
 };
 
 // 2. Rota Protegida por Permissão (RBAC)
@@ -56,8 +62,8 @@ const ProtectedRoute = ({ children, permissionKey }) => {
 
   if (loadingAuth) return null;
 
-  // Se não tiver a permissão, redireciona para Home
-  if (!permissions || !permissions[permissionKey]) {
+  // Se existir uma chave de permissão obrigatória e o usuário não a tiver, bloqueia.
+  if (permissionKey && permissions && permissions[permissionKey] === false) {
     return <Navigate to="/home" replace />;
   }
 
@@ -68,7 +74,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        {/* --- CONFIGURAÇÃO DAS NOTIFICAÇÕES --- */}
+        {/* --- CONFIGURAÇÃO DAS NOTIFICAÇÕES (Mantidas do seu código original) --- */}
         <Toaster
           position="top-right"
           reverseOrder={false}
@@ -129,8 +135,13 @@ export default function App() {
             <Route path="/supply-prices" element={<SupplyPriceList />} />
             <Route path="/recipes" element={<Recipes />} />
 
-            {/* Configurações do Sistema (A proteção está dentro da página) */}
-            <Route path="/settings" element={<SystemSettings />} />
+            {/* Corrigido o caminho para bater certinho com o Menu DefaultLayout */}
+            <Route path="/system-settings" element={<SystemSettings />} />
+
+            {/* --- NOVAS ROTAS FASE 1 --- */}
+            <Route path="/stock" element={<Stock />} />
+            <Route path="/client-status" element={<ClientStatus />} />
+            <Route path="/labels" element={<Labels />} />
 
             {/* Checklists */}
             <Route
@@ -142,8 +153,9 @@ export default function App() {
               }
             />
             <Route path="/checklists/:id" element={<ChecklistDetails />} />
+            {/* Corrigida a rota do PDF de impressão manual para não bater em conflito com /:id */}
             <Route
-              path="/checklists/print-blank"
+              path="/print-blank-checklist"
               element={<PrintBlankChecklist />}
             />
 
@@ -196,7 +208,7 @@ export default function App() {
             />
           </Route>
 
-          {/* Rota 404 */}
+          {/* Rota 404 - Qualquer URL inválida volta para a base */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

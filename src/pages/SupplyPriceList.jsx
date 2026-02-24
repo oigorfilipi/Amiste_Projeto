@@ -13,16 +13,15 @@ import {
 } from "lucide-react";
 
 export function SupplyPriceList() {
-  const { userProfile } = useContext(AuthContext);
+  const { permissions } = useContext(AuthContext);
   const [supplies, setSupplies] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editPrice, setEditPrice] = useState("");
 
-  const canEditPrice = ["DEV", "Dono", "Comercial", "Vendedor"].includes(
-    userProfile?.role,
-  );
+  // Usando a Matriz de Permissão
+  const canEditPrice = permissions?.PrecosInsumos === "All";
 
   useEffect(() => {
     fetchSupplies();
@@ -45,6 +44,9 @@ export function SupplyPriceList() {
   }
 
   async function handleUpdatePrice(id) {
+    if (!canEditPrice)
+      return toast.error("Você não tem permissão para alterar preços.");
+
     const finalPrice = editPrice === "" ? 0 : parseFloat(editPrice);
     try {
       const { error } = await supabase

@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
+import { AuthContext } from "../contexts/AuthContext";
+import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   DollarSign,
@@ -11,9 +13,11 @@ import {
   CheckCircle,
   Calendar,
   ChevronDown,
+  ShieldAlert,
 } from "lucide-react";
 
 export function Financial() {
+  const { permissions } = useContext(AuthContext);
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
@@ -31,13 +35,25 @@ export function Financial() {
     countRealized: 0,
   });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // VERIFICAÇÃO DE ACESSO (Bloqueia a página se não tiver permissão)
+  const hasAccess =
+    permissions?.Financeiro !== "Nothing" &&
+    permissions?.Financeiro !== "Ghost" &&
+    permissions?.Financeiro !== undefined;
 
   useEffect(() => {
-    filterTransactions();
-  }, [transactions, timeRange, typeFilter]);
+    if (hasAccess) {
+      fetchData();
+    } else {
+      setLoading(false);
+    }
+  }, [hasAccess]);
+
+  useEffect(() => {
+    if (hasAccess && transactions.length > 0) {
+      filterTransactions();
+    }
+  }, [transactions, timeRange, typeFilter, hasAccess]);
 
   async function fetchData() {
     try {
@@ -155,6 +171,29 @@ export function Financial() {
 
   const formatMoney = (val) =>
     val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  // Se o usuário não tiver acesso, renderiza o fallback de bloqueio
+  if (!hasAccess && !loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 max-w-sm w-full text-center">
+          <ShieldAlert size={48} className="text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-800 mb-2">
+            Acesso Restrito
+          </h2>
+          <p className="text-gray-500 mb-6">
+            Você não tem permissão para visualizar o painel financeiro.
+          </p>
+          <Link
+            to="/"
+            className="block w-full bg-gray-900 hover:bg-gray-800 transition-colors text-white py-3 rounded-xl font-bold"
+          >
+            Voltar ao Início
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20 animate-fade-in">

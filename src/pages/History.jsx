@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "../contexts/AuthContext";
+import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   Filter,
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 
 export function History() {
-  const { user } = useContext(AuthContext);
+  const { user, permissions } = useContext(AuthContext);
   const [logs, setLogs] = useState([]);
   const [userMap, setUserMap] = useState({});
   const [loading, setLoading] = useState(true);
@@ -25,7 +26,15 @@ export function History() {
   const [filterModule, setFilterModule] = useState("Todos");
   const [filterAction, setFilterAction] = useState("Todos");
 
+  // VERIFICAÇÃO DE ACESSO (Bloqueia a página se não tiver permissão)
+  const hasAccess =
+    permissions?.Historico !== "Nothing" &&
+    permissions?.Historico !== "Ghost" &&
+    permissions?.Historico !== undefined;
+
   useEffect(() => {
+    if (!hasAccess) return; // Não carrega dados se não tem acesso
+
     fetchData();
 
     // Atualizar em tempo real
@@ -43,7 +52,7 @@ export function History() {
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, []);
+  }, [hasAccess]);
 
   async function fetchData() {
     try {
@@ -126,6 +135,29 @@ export function History() {
         };
     }
   };
+
+  // Se o usuário não tiver acesso, renderiza o fallback de bloqueio
+  if (!hasAccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 max-w-sm w-full text-center">
+          <ShieldAlert size={48} className="text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-800 mb-2">
+            Acesso Restrito
+          </h2>
+          <p className="text-gray-500 mb-6">
+            Você não tem permissão para visualizar o histórico de auditoria.
+          </p>
+          <Link
+            to="/"
+            className="block w-full bg-gray-900 hover:bg-gray-800 transition-colors text-white py-3 rounded-xl font-bold"
+          >
+            Voltar ao Início
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const filteredLogs = logs.filter((log) => {
     const matchModule =

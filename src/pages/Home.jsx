@@ -21,13 +21,28 @@ export function Home() {
   const [recentChecklists, setRecentChecklists] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // --- MAPEAMENTO DE ACESSO DA NOVA MATRIZ ---
+  const hasChecklistAccess =
+    permissions?.Checklist !== "Nothing" && permissions?.Checklist !== "Ghost";
+  const hasFinanceiroAccess =
+    permissions?.Financeiro !== "Nothing" &&
+    permissions?.Financeiro !== "Ghost";
+  const hasMaquinasAccess =
+    permissions?.Maquinas !== "Nothing" && permissions?.Maquinas !== "Ghost";
+  const hasPortfolioAccess =
+    permissions?.Portfolio !== "Nothing" && permissions?.Portfolio !== "Ghost";
+  const hasInsumosAccess =
+    permissions?.Insumos !== "Nothing" && permissions?.Insumos !== "Ghost";
+  const hasWikiAccess =
+    permissions?.Wiki !== "Nothing" && permissions?.Wiki !== "Ghost";
+
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [hasChecklistAccess]);
 
   async function fetchDashboardData() {
     try {
-      if (permissions.canCreateChecklist || permissions.canViewFinancials) {
+      if (hasChecklistAccess) {
         const { data: checklists, error } = await supabase
           .from("checklists")
           .select("*")
@@ -109,7 +124,6 @@ export function Home() {
   return (
     <div className="min-h-screen bg-gray-50/50 animate-fade-in pb-20">
       {/* HEADER BOAS VINDAS */}
-      {/* Ajuste de Padding: px-4 no mobile, px-8 no desktop */}
       <div className="max-w-7xl mx-auto mb-8 px-4 md:px-8 pt-4">
         <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-800">
           Olá, {firstName}!
@@ -127,7 +141,7 @@ export function Home() {
           title="Checklist Digital"
           desc="Crie e gerencie ordens de serviço."
           colorClass="red"
-          permission={permissions.canCreateChecklist}
+          permission={hasChecklistAccess}
         />
 
         <MenuCard
@@ -136,7 +150,7 @@ export function Home() {
           title="Financeiro"
           desc="Resumo de receitas e serviços."
           colorClass="green"
-          permission={permissions.canViewFinancials}
+          permission={hasFinanceiroAccess}
         />
 
         <MenuCard
@@ -145,7 +159,7 @@ export function Home() {
           title="Catálogo Máquinas"
           desc="Inventário de equipamentos."
           colorClass="orange"
-          permission={permissions.canManageMachines}
+          permission={hasMaquinasAccess}
         />
 
         <MenuCard
@@ -154,7 +168,7 @@ export function Home() {
           title="Gerador Propostas"
           desc="Crie orçamentos em PDF."
           colorClass="blue"
-          permission={permissions.canManagePortfolio}
+          permission={hasPortfolioAccess}
         />
 
         <MenuCard
@@ -163,7 +177,7 @@ export function Home() {
           title="Insumos"
           desc="Gestão de produtos e estoque."
           colorClass="pink"
-          permission={permissions.canManageSupplies}
+          permission={hasInsumosAccess}
         />
 
         <MenuCard
@@ -172,12 +186,12 @@ export function Home() {
           title="Wiki Técnica"
           desc="Base de conhecimento."
           colorClass="purple"
-          permission={true}
+          permission={hasWikiAccess}
         />
       </div>
 
       {/* --- ATIVIDADES RECENTES --- */}
-      {(permissions.canCreateChecklist || permissions.canViewFinancials) && (
+      {hasChecklistAccess && (
         <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="flex justify-between items-end mb-4">
             <h2 className="font-bold text-gray-700 text-lg flex items-center gap-2">

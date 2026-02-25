@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { supabase } from "../services/supabaseClient";
+import { AuthContext } from "../contexts/AuthContext";
 import { PDFDownloadLink, PDFViewer } from "@react-pdf/renderer";
 import { PortfolioPDF } from "../components/PortfolioPDF";
 import toast from "react-hot-toast";
@@ -24,11 +25,15 @@ import {
 } from "lucide-react";
 
 export function Portfolio() {
+  const { user, permissions } = useContext(AuthContext);
   const [view, setView] = useState("list");
   const [machines, setMachines] = useState([]);
   const [savedPortfolios, setSavedPortfolios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // MODO DE LEITURA (Read-Only)
+  const isReadOnly = permissions?.Portfolio === "Read";
 
   // --- ESTADOS DO EDITOR ---
   const [editingId, setEditingId] = useState(null);
@@ -138,6 +143,7 @@ export function Portfolio() {
 
   // --- AÇÕES ---
   function handleNewPortfolio() {
+    if (isReadOnly) return toast.error("Sem permissão para criar.");
     setEditingId(null);
     setVersions([]);
     setSelectedMachine(null);
@@ -159,11 +165,7 @@ export function Portfolio() {
     setEditingId(p.id);
     setVersions(p.versions || []);
     setSelectedMachine(p.machine_data);
-
-    // Tenta recuperar o índice do modelo se foi salvo anteriormente
-    // Se não tiver salvo, tenta adivinhar pelo nome ou deixa vazio
     setSelectedModelIndex("");
-
     setCustomerName(p.customer_name);
     setNegotiationType(p.negotiation_type);
     setTotalValue(p.total_value);
@@ -245,6 +247,7 @@ export function Portfolio() {
   const previewData = getPreviewData();
 
   async function handleSave() {
+    if (isReadOnly) return;
     if (!selectedMachine || !customerName)
       return toast.error("Selecione a máquina e informe o cliente.");
 
@@ -260,6 +263,7 @@ export function Portfolio() {
     }
 
     const currentData = {
+      user_id: user.id, // Adicionado user_id para RLS e rastreio
       machine_id: selectedMachine.id,
       machine_data: previewData.machine_data, // Salva já com os dados mesclados
       customer_name: customerName,
@@ -301,6 +305,7 @@ export function Portfolio() {
 
   async function handleDelete(id, e) {
     e.stopPropagation();
+    if (isReadOnly) return toast.error("Sem permissão para excluir.");
     if (!confirm("Excluir esta proposta permanentemente?")) return;
 
     try {
@@ -378,13 +383,15 @@ export function Portfolio() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              <button
-                onClick={handleNewPortfolio}
-                className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-              >
-                <Plus size={20} />{" "}
-                <span className="md:hidden lg:inline">Nova Proposta</span>
-              </button>
+              {!isReadOnly && (
+                <button
+                  onClick={handleNewPortfolio}
+                  className="bg-amiste-primary hover:bg-amiste-secondary text-white px-5 py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+                >
+                  <Plus size={20} />{" "}
+                  <span className="md:hidden lg:inline">Nova Proposta</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -404,12 +411,14 @@ export function Portfolio() {
                 Não encontramos propostas para esse filtro. Crie um novo
                 orçamento para começar.
               </p>
-              <button
-                onClick={handleNewPortfolio}
-                className="bg-amiste-primary hover:bg-amiste-secondary text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all hover:-translate-y-1"
-              >
-                <Plus size={20} /> Criar Nova Proposta
-              </button>
+              {!isReadOnly && (
+                <button
+                  onClick={handleNewPortfolio}
+                  className="bg-amiste-primary hover:bg-amiste-secondary text-white px-6 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all hover:-translate-y-1"
+                >
+                  <Plus size={20} /> Criar Nova Proposta
+                </button>
+              )}
             </div>
           ) : (
             // GRID DE PROPOSTAS
@@ -453,12 +462,15 @@ export function Portfolio() {
                           {formatMoney(p.total_value)}
                         </div>
                       </div>
-                      <button
-                        onClick={(e) => handleDelete(p.id, e)}
-                        className="absolute top-2 right-2 bg-white text-red-500 p-1.5 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50 z-10"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+
+                      {!isReadOnly && (
+                        <button
+                          onClick={(e) => handleDelete(p.id, e)}
+                          className="absolute top-2 right-2 bg-white text-red-500 p-1.5 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all hover:bg-red-50 z-10"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
 
                     {/* Rodapé do Card */}
@@ -500,7 +512,9 @@ export function Portfolio() {
               </button>
               <div>
                 <h1 className="text-base md:text-lg font-bold text-gray-800 leading-tight">
-                  Editor
+                  {isReadOnly
+                    ? "Visualização da Proposta"
+                    : "Editor de Proposta"}
                 </h1>
                 <p className="text-xs text-gray-500 hidden md:block">
                   {selectedMachine ? selectedMachine.name : "Nova Proposta"}
@@ -527,16 +541,18 @@ export function Portfolio() {
                 </PDFDownloadLink>
               )}
 
-              <button
-                onClick={handleSave}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md flex items-center gap-2 transition-all active:scale-95"
-              >
-                <Save size={18} />{" "}
-                <span className="hidden md:inline">
-                  {editingId ? "Salvar Alterações" : "Criar Proposta"}
-                </span>
-                <span className="md:hidden">Salvar</span>
-              </button>
+              {!isReadOnly && (
+                <button
+                  onClick={handleSave}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md flex items-center gap-2 transition-all active:scale-95"
+                >
+                  <Save size={18} />{" "}
+                  <span className="hidden md:inline">
+                    {editingId ? "Salvar Alterações" : "Criar Proposta"}
+                  </span>
+                  <span className="md:hidden">Salvar</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -545,6 +561,12 @@ export function Portfolio() {
             {/* No mobile: w-full. No desktop: w-96 */}
             <div className="w-full lg:w-96 bg-white border-r border-gray-200 flex flex-col z-10 overflow-y-auto">
               <div className="p-4 md:p-6 space-y-6 pb-24">
+                {isReadOnly && (
+                  <div className="bg-blue-50 text-blue-800 p-3 rounded-lg text-sm font-bold flex items-center gap-2 mb-2">
+                    Modo de visualização. Edições desabilitadas.
+                  </div>
+                )}
+
                 {/* Status */}
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                   <label className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-1">
@@ -576,12 +598,13 @@ export function Portfolio() {
                     ].map((st) => (
                       <button
                         key={st.id}
-                        onClick={() => setStatus(st.id)}
+                        onClick={() => !isReadOnly && setStatus(st.id)}
+                        disabled={isReadOnly}
                         className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${
                           status === st.id
                             ? `${st.bg} ${st.border} ${st.color} ring-2 ring-offset-1 ring-${st.color.split("-")[1]}-200`
                             : "bg-white border-gray-100 text-gray-400 hover:bg-gray-50"
-                        }`}
+                        } ${isReadOnly ? "cursor-not-allowed opacity-70" : ""}`}
                       >
                         <st.icon size={20} className="mb-1" />
                         <span className="text-[9px] font-bold uppercase truncate w-full text-center">
@@ -593,7 +616,7 @@ export function Portfolio() {
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide border-b border-gray-100 pb-2">
+                  <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wide border-b border-gray-100 pb-2 pt-4">
                     Configuração Básica
                   </h3>
                   <div>
@@ -601,9 +624,10 @@ export function Portfolio() {
                       Máquina
                     </label>
                     <select
-                      className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
+                      className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:ring-2 focus:ring-amiste-primary outline-none transition-all disabled:text-gray-500"
                       onChange={handleSelectMachine}
                       value={selectedMachine?.id || ""}
+                      disabled={isReadOnly}
                     >
                       <option value="">Selecione...</option>
                       {machines.map((m) => (
@@ -623,11 +647,12 @@ export function Portfolio() {
                           <Layers size={12} /> Selecione o Modelo
                         </label>
                         <select
-                          className="w-full p-2 border border-purple-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-purple-500 outline-none"
+                          className="w-full p-2 border border-purple-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-purple-500 outline-none disabled:bg-purple-50 disabled:text-gray-500"
                           value={selectedModelIndex}
                           onChange={(e) =>
                             setSelectedModelIndex(e.target.value)
                           }
+                          disabled={isReadOnly}
                         >
                           <option value="">-- Escolha a variação --</option>
                           {selectedMachine.models.map((mod, idx) => (
@@ -644,10 +669,11 @@ export function Portfolio() {
                       Cliente
                     </label>
                     <input
-                      className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
+                      className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all disabled:bg-gray-50 disabled:text-gray-500"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                       placeholder="Nome da Empresa/Pessoa"
+                      disabled={isReadOnly}
                     />
                   </div>
 
@@ -657,10 +683,11 @@ export function Portfolio() {
                     </label>
                     <div className="relative">
                       <input
-                        className="w-full p-3 pl-10 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all"
+                        className="w-full p-3 pl-10 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all disabled:bg-gray-50 disabled:text-gray-500"
                         value={videoUrl}
                         onChange={(e) => setVideoUrl(e.target.value)}
                         placeholder="youtube.com/..."
+                        disabled={isReadOnly}
                       />
                       <Youtube
                         size={18}
@@ -680,9 +707,10 @@ export function Portfolio() {
                         Modalidade
                       </label>
                       <select
-                        className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none"
+                        className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none disabled:text-gray-500"
                         value={negotiationType}
                         onChange={(e) => setNegotiationType(e.target.value)}
+                        disabled={isReadOnly}
                       >
                         <option>Venda</option>
                         <option>Aluguel</option>
@@ -695,9 +723,10 @@ export function Portfolio() {
                         Parcelas
                       </label>
                       <select
-                        className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none"
+                        className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 outline-none disabled:text-gray-500"
                         value={installments}
                         onChange={(e) => setInstallments(e.target.value)}
+                        disabled={isReadOnly}
                       >
                         {[1, 2, 3, 4, 5, 6, 10, 12, 18, 24, 36, 48].map((n) => (
                           <option key={n} value={n}>
@@ -714,9 +743,10 @@ export function Portfolio() {
                     <div className="relative">
                       <input
                         type="number"
-                        className="w-full p-3 pl-10 border border-gray-200 rounded-xl bg-gray-50 font-bold text-gray-800 focus:bg-white focus:ring-2 focus:ring-green-500 outline-none transition-all"
+                        className="w-full p-3 pl-10 border border-gray-200 rounded-xl bg-gray-50 font-bold text-gray-800 focus:bg-white focus:ring-2 focus:ring-green-500 outline-none transition-all disabled:text-gray-500"
                         value={totalValue}
                         onChange={(e) => setTotalValue(e.target.value)}
+                        disabled={isReadOnly}
                       />
                       <DollarSign
                         size={18}
@@ -729,9 +759,10 @@ export function Portfolio() {
                       Texto da Proposta
                     </label>
                     <textarea
-                      className="w-full p-3 border border-gray-200 rounded-xl h-32 focus:ring-2 focus:ring-amiste-primary outline-none text-sm leading-relaxed resize-none"
+                      className="w-full p-3 border border-gray-200 rounded-xl h-32 focus:ring-2 focus:ring-amiste-primary outline-none text-sm leading-relaxed resize-none disabled:bg-gray-50 disabled:text-gray-500"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
+                      disabled={isReadOnly}
                     ></textarea>
                   </div>
                   <div>
@@ -739,10 +770,11 @@ export function Portfolio() {
                       Observações Gerais
                     </label>
                     <textarea
-                      className="w-full p-3 border border-gray-200 rounded-xl h-20 focus:ring-2 focus:ring-amiste-primary outline-none text-sm resize-none"
+                      className="w-full p-3 border border-gray-200 rounded-xl h-20 focus:ring-2 focus:ring-amiste-primary outline-none text-sm resize-none disabled:bg-gray-50 disabled:text-gray-500"
                       value={obs}
                       onChange={(e) => setObs(e.target.value)}
                       placeholder="Ex: Incluso kit de insumos inicial..."
+                      disabled={isReadOnly}
                     ></textarea>
                   </div>
                 </div>

@@ -6,12 +6,14 @@ import { UserX, RefreshCw, ShieldAlert } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function DeactivatedAccounts() {
-  const { role } = useContext(AuthContext);
+  const { userProfile } = useContext(AuthContext); // <- Puxando o Perfil inteiro agora
   const [deactivatedUsers, setDeactivatedUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Apenas DEV e Dono podem acessar esta página
-  const hasAccess = role === "Dev." || role === "Don.";
+  // NOVA VERIFICAÇÃO (Abrange qualquer jeito que 'DEV' ou 'Dono' estiver escrito no banco)
+  const hasAccess =
+    userProfile &&
+    ["DEV", "Dev", "Dev.", "Dono", "Don."].includes(userProfile.role);
 
   useEffect(() => {
     if (hasAccess) fetchDeactivated();

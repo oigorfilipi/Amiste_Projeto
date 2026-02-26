@@ -72,12 +72,6 @@ export function Header({ onOpenSidebar }) {
       visible: isVisible("StatusCliente"),
     },
     {
-      path: "/machine-configs",
-      icon: Settings,
-      label: "Config. Máquinas",
-      visible: isVisible("ConfigMaquinas"),
-    },
-    {
       path: "/system-settings",
       icon: Settings,
       label: "Adicionar Opções",

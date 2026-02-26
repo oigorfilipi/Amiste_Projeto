@@ -28,9 +28,9 @@ export function History() {
 
   // VERIFICAÇÃO DE ACESSO (Bloqueia a página se não tiver permissão)
   const hasAccess =
-    permissions?.Historico !== "Nothing" &&
-    permissions?.Historico !== "Ghost" &&
-    permissions?.Historico !== undefined;
+    permissions?.HistoricoGeral !== "Nothing" &&
+    permissions?.HistoricoGeral !== "Ghost" &&
+    permissions?.HistoricoGeral !== undefined;
 
   useEffect(() => {
     if (!hasAccess) return; // Não carrega dados se não tem acesso

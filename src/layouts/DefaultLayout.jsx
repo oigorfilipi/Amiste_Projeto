@@ -56,6 +56,7 @@ export function DefaultLayout() {
       .from("profiles")
       .select("*")
       .neq("id", realProfile?.id)
+      .neq("role", "Desligado") // <- ADICIONADO: Esconde usuários desligados
       .order("full_name");
     if (data) setTeamMembers(data);
   }
@@ -70,19 +71,24 @@ export function DefaultLayout() {
     e.stopPropagation();
     if (["DEV", "Dev", "Dev.", "Dono", "Don."].includes(role)) {
       return toast.error(
-        "Ação Bloqueada: Não é possível excluir contas de nível Superior.",
+        "Ação Bloqueada: Não é possível desligar contas de nível Superior.",
       );
     }
-    if (!confirm(`Tem certeza que deseja EXCLUIR a conta de "${name}"?`))
+    if (!confirm(`Tem certeza que deseja DESLIGAR a conta de "${name}"?`))
       return;
 
     try {
-      const { error } = await supabase.from("profiles").delete().eq("id", id);
+      // SOFT DELETE: Apenas altera o cargo para "Desligado"
+      const { error } = await supabase
+        .from("profiles")
+        .update({ role: "Desligado" })
+        .eq("id", id);
+
       if (error) throw error;
-      toast.success(`Usuário "${name}" excluído com sucesso.`);
-      fetchTeam();
+      toast.success(`Usuário "${name}" desligado com sucesso.`);
+      fetchTeam(); // Atualiza a lista para o usuário sumir
     } catch (error) {
-      toast.error("Erro ao excluir usuário: " + error.message);
+      toast.error("Erro ao desligar usuário: " + error.message);
     }
   }
 
@@ -167,7 +173,7 @@ export function DefaultLayout() {
       path: "/client-status",
       icon: CheckCircle,
       label: "Status Clientes",
-      visible: isVisible("StatusCliente"),
+      visible: isVisible("StatusClientes"), // Corrigido para plural
     },
     {
       path: "/machine-configs",
@@ -325,9 +331,19 @@ export function DefaultLayout() {
 
           {isMasterReal && !isImpersonating && (
             <div className="mt-6 pt-6 border-t border-gray-100">
-              <p className="px-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Shield size={12} /> Controle de Acesso
-              </p>
+              <div className="flex items-center justify-between px-2 mb-4">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                  <Shield size={12} /> Controle de Acesso
+                </p>
+                {/* NOVO: Link para ver as contas desligadas */}
+                <Link
+                  to="/deactivated"
+                  className="text-[10px] font-bold text-red-500 hover:text-red-700 transition-colors"
+                >
+                  Ver Desligados
+                </Link>
+              </div>
+
               <div className="space-y-2">
                 {teamMembers.map((member) => {
                   const isVip = ["DEV", "Dev", "Dev.", "Dono", "Don."].includes(

@@ -52,6 +52,19 @@ export function AuthProvider({ children }) {
       password,
     });
     if (error) throw error;
+
+    // --- NOVA VERIFICAÇÃO: BLOQUEIO DE CONTAS DESLIGADAS ---
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", data.user.id)
+      .single();
+
+    if (profile?.role === "Desligado") {
+      await supabase.auth.signOut(); // Derruba a sessão imediatamente
+      throw new Error("CONTA_DESLIGADA"); // Dispara erro para a tela de login
+    }
+
     return data;
   }
 

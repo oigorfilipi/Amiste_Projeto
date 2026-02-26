@@ -2,18 +2,20 @@ import { useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
-import { User, Lock, ArrowRight, Coffee } from "lucide-react";
+import { User, Lock, ArrowRight, Coffee, ShieldAlert } from "lucide-react";
 
 export function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false); // NOVO ESTADO DE BLOQUEIO
 
   const { signIn } = useContext(AuthContext);
 
   async function handleLogin(e) {
     e.preventDefault();
     setLoading(true);
+    setIsBlocked(false); // Reseta o bloqueio ao tentar de novo
 
     try {
       await signIn(email, password);
@@ -22,20 +24,50 @@ export function Login() {
     } catch (err) {
       console.error("Erro no login:", err);
 
-      // Tratamento de erros comuns do Supabase com TOAST
-      const msg = err.message || "";
-      if (
-        msg.includes("Invalid login credentials") ||
-        msg.includes("invalid_credentials")
-      ) {
-        toast.error("E-mail ou senha incorretos.");
-      } else if (msg.includes("Email not confirmed")) {
-        toast.error("E-mail não confirmado. Verifique sua caixa de entrada.");
+      // VERIFICAÇÃO SE A CONTA FOI DESLIGADA
+      if (err.message === "CONTA_DESLIGADA") {
+        setIsBlocked(true);
       } else {
-        toast.error("Erro ao conectar. Tente novamente.");
+        // Tratamento de erros comuns do Supabase com TOAST
+        const msg = err.message || "";
+        if (
+          msg.includes("Invalid login credentials") ||
+          msg.includes("invalid_credentials")
+        ) {
+          toast.error("E-mail ou senha incorretos.");
+        } else if (msg.includes("Email not confirmed")) {
+          toast.error("E-mail não confirmado. Verifique sua caixa de entrada.");
+        } else {
+          toast.error("Erro ao conectar. Tente novamente.");
+        }
       }
       setLoading(false);
     }
+  }
+
+  // --- TELA DE BLOQUEIO (Aparece se isBlocked for true) ---
+  if (isBlocked) {
+    return (
+      <div className="min-h-screen bg-red-50 flex items-center justify-center p-4">
+        <div className="bg-white p-8 md:p-12 rounded-3xl shadow-2xl max-w-md w-full text-center border-t-8 border-red-600">
+          <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <ShieldAlert size={40} />
+          </div>
+          <h1 className="text-2xl font-black text-gray-800 mb-2">
+            Acesso Revogado
+          </h1>
+          <p className="text-gray-600 mb-8 font-medium">
+            Você não tem mais acesso pois foi desligado da empresa.
+          </p>
+          <button
+            onClick={() => setIsBlocked(false)}
+            className="text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            Voltar ao início
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -27,6 +27,7 @@ import { SystemSettings } from "./pages/SystemSettings";
 import { Stock } from "./pages/Stock";
 import { ClientStatus } from "./pages/ClientStatus";
 import { Labels } from "./pages/Labels";
+import { DeactivatedAccounts } from "./pages/DeactivatedAccounts"; // <-- IMPORTAÇÃO DA TELA NOVA
 
 // Contexto
 import { AuthProvider, AuthContext } from "./contexts/AuthContext";
@@ -198,7 +199,7 @@ export default function App() {
             <Route
               path="/client-status"
               element={
-                <ProtectedRoute moduleName="StatusCliente">
+                <ProtectedRoute moduleName="StatusClientes">
                   <ClientStatus />
                 </ProtectedRoute>
               }
@@ -285,6 +286,17 @@ export default function App() {
                 <ProtectedRoute moduleName="Financeiro">
                   <Financial />
                 </ProtectedRoute>
+              }
+            />
+
+            {/* --- ROTA DE EX-FUNCIONÁRIOS (Acesso apenas DEV/Dono) --- */}
+            <Route
+              path="/deactivated"
+              element={
+                /* Como essa tela é super sensível, a gente deixou a trava de DEV/Dono 
+                   dentro do próprio componente (DeactivatedAccounts.jsx), 
+                   então basta envolver com o <Private> pra garantir que tá logado */
+                <DeactivatedAccounts />
               }
             />
           </Route>

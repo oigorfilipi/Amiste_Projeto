@@ -51,6 +51,14 @@ export function DefaultLayout() {
     }
   }, [realProfile, isImpersonating]);
 
+  // --- O "OLHEIRO" DE SENHA OBRIGATÓRIA ---
+  useEffect(() => {
+    if (realProfile?.must_change_password) {
+      setProfileToEdit(realProfile);
+      setIsModalOpen(true);
+    }
+  }, [realProfile]);
+
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [location.pathname]);
@@ -87,7 +95,6 @@ export function DefaultLayout() {
         .from("profiles")
         .update({ role: "Desligado" })
         .eq("id", id);
-
       if (error) throw error;
       toast.success(`Usuário "${name}" desligado com sucesso.`);
       fetchTeam(); // Atualiza a lista para o usuário sumir
@@ -107,7 +114,6 @@ export function DefaultLayout() {
   }
 
   // --- FUNÇÃO PARA VERIFICAR SE O MENU DEVE APARECER ---
-  // Se for "Ghost" ou "Nothing", o menu não aparece.
   const isVisible = (moduleName) => {
     if (!permissions) return false;
     return !["Ghost", "Nothing"].includes(permissions[moduleName]);
@@ -177,7 +183,7 @@ export function DefaultLayout() {
       path: "/client-status",
       icon: CheckCircle,
       label: "Status Clientes",
-      visible: isVisible("StatusClientes"), // Corrigido para plural
+      visible: isVisible("StatusClientes"),
     },
     {
       path: "/system-settings",
@@ -205,7 +211,6 @@ export function DefaultLayout() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         profileToEdit={profileToEdit}
-        currentUserRole={realProfile?.role}
         onSave={() => fetchTeam()}
       />
 
@@ -315,7 +320,7 @@ export function DefaultLayout() {
             </div>
           </div>
 
-          {/* ÁREA DEV / GESTÃO (Tanto DEV quanto Dono podem cadastrar e ver desligados) */}
+          {/* ÁREA DEV / GESTÃO */}
           {isMasterReal && !isImpersonating && (
             <div className="pt-4 mt-2">
               <Link
@@ -357,7 +362,7 @@ export function DefaultLayout() {
                       {/* BOTÃO DA ESQUERDA (Bloqueado para impersonate se for Dono, liberado se for DEV) */}
                       <button
                         onClick={() => {
-                          if (!isDevReal) return; // Se não for Dev, clicar no nome não faz nada
+                          if (!isDevReal) return;
 
                           if (
                             confirm(

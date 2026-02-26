@@ -88,6 +88,10 @@ export function Machines() {
   const [reservoirCount, setReservoirCount] = useState(0);
   const [extraReservoirCapacity, setExtraReservoirCapacity] = useState("");
   const [hasSteamer, setHasSteamer] = useState("Não");
+
+  // --- NOVO: SISTEMA DE PAGAMENTO ---
+  const [hasPayment, setHasPayment] = useState(false);
+
   const [dimensions, setDimensions] = useState({ w: "", h: "", d: "" });
 
   useEffect(() => {
@@ -110,7 +114,6 @@ export function Machines() {
   }
 
   async function handleImageUpload(e) {
-    // Bloqueia upload se for apenas leitura
     if (permissions?.Maquinas !== "All") return;
 
     try {
@@ -136,23 +139,19 @@ export function Machines() {
   const handlePatrimonyChange = (e) =>
     setPatrimony(e.target.value.replace(/\D/g, ""));
 
-  // --- FUNÇÕES DE MODELOS ---
   function handleSaveModel() {
     if (permissions?.Maquinas !== "All") return;
     if (!tempModel.name)
       return toast.error("Por favor, dê um nome para o modelo (ex: 15 Litros)");
 
     const newList = [...modelsList];
-
     if (editingModelIndex !== null) {
       newList[editingModelIndex] = { ...tempModel };
       setEditingModelIndex(null);
     } else {
       newList.push({ ...tempModel });
     }
-
     setModelsList(newList);
-
     setTempModel({
       name: "",
       photo_url: "",
@@ -216,8 +215,6 @@ export function Machines() {
   }
 
   function handleEdit(machine) {
-    // Aqui nós DEIXAMOS entrar, pois o MachineForm vai bloquear a edição visualmente se a pessoa for apenas Read.
-    // Assim o usuário que tem "Read" consegue abrir pra ver as configs.
     if (
       permissions?.Maquinas === "Nothing" ||
       permissions?.Maquinas === "Ghost"
@@ -268,6 +265,10 @@ export function Machines() {
     setColor(machine.color || "Preto");
     setHasSteamer(machine.has_steamer || "Não");
     setHasSewage(machine.has_sewage || false);
+
+    // --- LÊ SE TEM PAGAMENTO ---
+    setHasPayment(machine.has_payment || false);
+
     setReservoirCount(machine.reservoir_count || 0);
     setExtraReservoirCapacity(machine.extra_reservoir_capacity || "");
     setHasExtraReservoir((machine.reservoir_count || 0) > 0);
@@ -339,6 +340,7 @@ export function Machines() {
         status,
         color,
         has_sewage: hasSewage,
+        has_payment: hasPayment, // <-- SALVA NO BANCO
         reservoir_count: finalReservoirCount,
         extra_reservoir_capacity: finalExtraCapacity,
         has_steamer: hasSteamer,
@@ -413,7 +415,6 @@ export function Machines() {
 
   function handleOpenConfigs(machine, e) {
     e.stopPropagation();
-    // A página de configs também fará a verificação lá dentro
     navigate("/machine-configs", { state: { machine } });
   }
 
@@ -441,6 +442,7 @@ export function Machines() {
     setPatrimony("");
     setSerialNumber("");
     setHasSewage(false);
+    setHasPayment(false); // <-- RESETA O CAMPO
     setReservoirCount(0);
     setExtraReservoirCapacity("");
     setHasExtraReservoir(true);
@@ -510,6 +512,8 @@ export function Machines() {
     setWaterSystem,
     hasSewage,
     setHasSewage,
+    hasPayment,
+    setHasPayment, // <-- PASSA PRO FORMULÁRIO VISUAL
     waterTankSize,
     setWaterTankSize,
     extractionCups,
@@ -563,7 +567,6 @@ export function Machines() {
         handleDelete={handleDelete}
         handleOpenConfigs={handleOpenConfigs}
       />
-
       <MachineForm {...formProps} />
     </div>
   );

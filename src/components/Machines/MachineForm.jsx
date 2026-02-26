@@ -71,6 +71,8 @@ export function MachineForm(props) {
     setWaterSystem,
     hasSewage,
     setHasSewage,
+    hasPayment, // <-- VARIÁVEL AQUI
+    setHasPayment, // <-- FUNÇÃO AQUI
     waterTankSize,
     setWaterTankSize,
     extractionCups,
@@ -703,6 +705,24 @@ export function MachineForm(props) {
                           disabled={isReadOnly}
                         />{" "}
                         Não
+                      </label>
+                    </div>
+
+                    {/* --- AQUI ESTÁ O SISTEMA DE PAGAMENTO --- */}
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <label className="flex items-center gap-3 cursor-pointer w-max">
+                        <input
+                          type="checkbox"
+                          className="w-5 h-5 text-amiste-primary rounded border-gray-300 focus:ring-amiste-primary"
+                          checked={hasPayment}
+                          onChange={(e) =>
+                            !isReadOnly && setHasPayment(e.target.checked)
+                          }
+                          disabled={isReadOnly}
+                        />
+                        <span className="text-sm font-bold text-gray-700">
+                          Possui Sistema de Pagamento?
+                        </span>
                       </label>
                     </div>
                   </div>

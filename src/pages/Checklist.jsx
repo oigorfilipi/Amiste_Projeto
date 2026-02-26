@@ -197,6 +197,8 @@ export function Checklist() {
         );
         setSteamWand(machine.has_steamer === "Sim" ? "Sim" : "Não");
         setSewageInstall(machine.has_sewage === true ? "Sim" : "Não");
+
+        // --- ADICIONADO AQUI: SISTEMA DE PAGAMENTO ---
         setPaymentSystem(machine.has_payment === true ? "Sim" : "Não");
       }
     } else {

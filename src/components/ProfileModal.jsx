@@ -65,7 +65,7 @@ export function ProfileModal({ isOpen, onClose, profileToEdit, onSave }) {
         full_name: profileToEdit.full_name || "",
         nickname: profileToEdit.nickname || "",
         role: profileToEdit.role || "Visitante",
-        email: profileToEdit.email || "Email",
+        email: profileToEdit.email || "Não informado", // <--- EMAIL AQUI
         cpf: profileToEdit.cpf || "Não informado",
         birth_date: formattedDate || "Não informada",
         password: "",
@@ -240,6 +240,7 @@ export function ProfileModal({ isOpen, onClose, profileToEdit, onSave }) {
               <h2 className="text-2xl font-bold text-gray-800 leading-tight">
                 {formData.full_name || "Novo Usuário"}
               </h2>
+              {/* O EMAIL APARECE AQUI */}
               <p className="text-sm text-gray-500 flex items-center gap-2 mt-1 font-medium">
                 <Mail size={14} /> {formData.email}
               </p>

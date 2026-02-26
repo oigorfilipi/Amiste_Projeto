@@ -223,7 +223,7 @@ export function DefaultLayout() {
       >
         <div className="h-20 flex items-center justify-between border-b border-gray-100 px-6 shrink-0">
           <Link
-            to="/machines"
+            to="/home"
             className="bg-amiste-primary w-full py-3 rounded-xl shadow-lg shadow-red-200 flex items-center justify-center"
           >
             <span className="text-white font-black tracking-[0.25em] text-xl">

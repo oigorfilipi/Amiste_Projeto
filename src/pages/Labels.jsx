@@ -8,6 +8,7 @@ import {
   Plus,
   ShieldAlert,
   Trash2,
+  Edit2,
   X,
   Link as LinkIcon,
   FileText,
@@ -20,9 +21,12 @@ export function Labels() {
   const [labels, setLabels] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Estados do Modal
+  // Estados do Modal e Edição
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null); // Controla se está criando ou editando
+  const [oldFileUrl, setOldFileUrl] = useState(""); // Guarda o link antigo para poder apagar se for trocado
+
   const [uploadMode, setUploadMode] = useState("file"); // 'file' ou 'link'
   const [selectedFile, setSelectedFile] = useState(null);
   const [newLabel, setNewLabel] = useState({
@@ -60,6 +64,21 @@ export function Labels() {
     }
   }
 
+  // --- ABRIR MODAL PARA EDITAR ---
+  function handleEdit(item) {
+    setEditingId(item.id);
+    setOldFileUrl(item.file_url);
+    setNewLabel({
+      title: item.title,
+      description: item.description || "",
+      file_url: item.file_url,
+    });
+    setUploadMode(item.file_url.includes("labels_files") ? "file" : "link");
+    setSelectedFile(null); // Limpa o arquivo selecionado (só muda se o usuário escolher outro)
+    setIsModalOpen(true);
+  }
+
+  // --- SALVAR OU ATUALIZAR ---
   async function handleSave(e) {
     e.preventDefault();
     if (!newLabel.title) return toast.error("Preencha o título do arquivo.");
@@ -68,7 +87,7 @@ export function Labels() {
       return toast.error("Cole o link do arquivo.");
     }
 
-    if (uploadMode === "file" && !selectedFile) {
+    if (!editingId && uploadMode === "file" && !selectedFile) {
       return toast.error("Selecione um arquivo PDF ou imagem do seu PC.");
     }
 
@@ -76,13 +95,13 @@ export function Labels() {
     try {
       let finalFileUrl = newLabel.file_url;
 
-      // Se for Upload, envia para o Storage do Supabase primeiro
+      // Se o usuário selecionou um arquivo NOVO do PC para subir
       if (uploadMode === "file" && selectedFile) {
         const fileExt = selectedFile.name.split(".").pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
         const filePath = `etiquetas/${fileName}`;
 
-        // Faz o upload pro Bucket 'labels_files'
+        // 1. Sobe o arquivo novo
         const { error: uploadError } = await supabase.storage
           .from("labels_files")
           .upload(filePath, selectedFile, {
@@ -92,7 +111,7 @@ export function Labels() {
 
         if (uploadError) throw uploadError;
 
-        // Pega o link público do arquivo que acabou de subir
+        // 2. Pega o link público novo
         const { data: publicUrlData } = supabase.storage
           .from("labels_files")
           .getPublicUrl(filePath);
@@ -100,18 +119,43 @@ export function Labels() {
         finalFileUrl = publicUrlData.publicUrl;
       }
 
-      // Salva no banco de dados com o link (seja ele qual for)
-      const { error: dbError } = await supabase.from("labels").insert([
-        {
-          title: newLabel.title,
-          description: newLabel.description,
-          file_url: finalFileUrl,
-        },
-      ]);
+      // Se estamos EDITANDO e o link final ficou diferente do antigo, apagamos o arquivo velho do servidor
+      if (
+        editingId &&
+        oldFileUrl &&
+        oldFileUrl.includes("labels_files") &&
+        finalFileUrl !== oldFileUrl
+      ) {
+        const oldPath = oldFileUrl.split("/labels_files/")[1]?.split("?")[0];
+        if (oldPath) {
+          await supabase.storage.from("labels_files").remove([oldPath]);
+        }
+      }
 
-      if (dbError) throw dbError;
+      // Salva no banco de dados (Update ou Insert)
+      if (editingId) {
+        const { error: dbError } = await supabase
+          .from("labels")
+          .update({
+            title: newLabel.title,
+            description: newLabel.description,
+            file_url: finalFileUrl,
+          })
+          .eq("id", editingId);
+        if (dbError) throw dbError;
+        toast.success("Arquivo atualizado com sucesso!");
+      } else {
+        const { error: dbError } = await supabase.from("labels").insert([
+          {
+            title: newLabel.title,
+            description: newLabel.description,
+            file_url: finalFileUrl,
+          },
+        ]);
+        if (dbError) throw dbError;
+        toast.success("Arquivo salvo com sucesso!");
+      }
 
-      toast.success("Arquivo salvo com sucesso!");
       closeModal();
       fetchLabels();
     } catch (error) {
@@ -121,21 +165,20 @@ export function Labels() {
     }
   }
 
+  // --- APAGAR ARQUIVO E REGISTRO ---
   async function handleDelete(id, title, fileUrl) {
     if (!confirm(`Tem certeza que deseja apagar "${title}"?`)) return;
 
     try {
-      // 1. Tenta deletar o arquivo do Storage, caso seja um arquivo hospedado no Supabase
+      // 1. Apaga o arquivo físico do Supabase Storage (se for um arquivo upado)
       if (fileUrl && fileUrl.includes("labels_files")) {
-        // Extrai o caminho do arquivo a partir da URL
-        const urlParts = fileUrl.split("/labels_files/");
-        if (urlParts.length > 1) {
-          const filePath = urlParts[1];
+        const filePath = fileUrl.split("/labels_files/")[1]?.split("?")[0];
+        if (filePath) {
           await supabase.storage.from("labels_files").remove([filePath]);
         }
       }
 
-      // 2. Deleta o registro do banco de dados
+      // 2. Apaga o registro do banco
       const { error } = await supabase.from("labels").delete().eq("id", id);
       if (error) throw error;
 
@@ -148,10 +191,25 @@ export function Labels() {
 
   function closeModal() {
     setIsModalOpen(false);
+    setEditingId(null);
+    setOldFileUrl("");
     setNewLabel({ title: "", description: "", file_url: "" });
     setSelectedFile(null);
     setUploadMode("file");
   }
+
+  // --- TRUQUE PARA FORÇAR O NOME NO DOWNLOAD ---
+  // Transforma o link do Supabase adicionando "?download=Nome_Da_Etiqueta.pdf"
+  const getDownloadUrl = (url, title) => {
+    if (!url) return "";
+    if (url.includes("labels_files")) {
+      const cleanUrl = url.split("?")[0]; // Tira parâmetros velhos se tiver
+      const ext = cleanUrl.split(".").pop() || "pdf"; // Pega a extensão (.pdf, .png)
+      const safeTitle = title.replace(/[^a-zA-Z0-9]/g, "_"); // Remove acentos e espaços pro nome não quebrar
+      return `${cleanUrl}?download=${safeTitle}.${ext}`;
+    }
+    return url; // Se for link externo (ex: Google Drive), retorna normal
+  };
 
   // Fallback de segurança
   if (!hasAccess && !loading) {
@@ -219,29 +277,41 @@ export function Labels() {
                 key={item.id}
                 className="group bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all flex flex-col items-center text-center relative"
               >
+                {/* Botões de Ação Ocultos (Aparecem no hover) */}
                 {!isReadOnly && (
-                  <button
-                    onClick={() =>
-                      handleDelete(item.id, item.title, item.file_url)
-                    }
-                    className="absolute top-3 right-3 p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                    <button
+                      onClick={() => handleEdit(item)}
+                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                      title="Editar"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleDelete(item.id, item.title, item.file_url)
+                      }
+                      className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
+                      title="Apagar"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 )}
 
                 <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-4">
                   <Bookmark size={24} />
                 </div>
-                <h3 className="font-bold text-gray-800 mb-1 leading-tight break-words w-full">
+                <h3 className="font-bold text-gray-800 mb-1 leading-tight break-words w-full px-2">
                   {item.title}
                 </h3>
-                <p className="text-xs text-gray-500 mb-6 flex-1">
+                <p className="text-xs text-gray-500 mb-6 flex-1 px-2">
                   {item.description || "Formato padrão para impressão."}
                 </p>
 
+                {/* Aqui aplicamos a função que força o nome no download */}
                 <a
-                  href={item.file_url}
+                  href={getDownloadUrl(item.file_url, item.title)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors border border-gray-100"
@@ -254,13 +324,13 @@ export function Labels() {
         )}
       </div>
 
-      {/* MODAL DE NOVO ARQUIVO */}
+      {/* MODAL DE NOVO/EDITAR ARQUIVO */}
       {isModalOpen && !isReadOnly && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
             <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
               <h3 className="font-bold text-gray-800">
-                Adicionar Novo Arquivo
+                {editingId ? "Editar Arquivo" : "Adicionar Novo Arquivo"}
               </h3>
               <button
                 onClick={closeModal}
@@ -343,7 +413,9 @@ export function Labels() {
               ) : (
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
-                    Selecione o PDF/Imagem *
+                    {editingId && newLabel.file_url.includes("labels_files")
+                      ? "Arquivo atual salvo. Selecione outro para substituir:"
+                      : "Selecione o PDF/Imagem *"}
                   </label>
                   <div className="relative flex items-center justify-center w-full">
                     <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
@@ -353,11 +425,14 @@ export function Labels() {
                           <span className="font-bold">Clique para buscar</span>{" "}
                           no computador
                         </p>
-                        <p className="text-[10px] text-gray-400">
+                        <p className="text-[10px] text-gray-400 text-center px-4 truncate w-full">
                           {selectedFile ? (
                             <span className="text-amiste-primary font-bold">
                               {selectedFile.name}
                             </span>
+                          ) : editingId &&
+                            newLabel.file_url.includes("labels_files") ? (
+                            "Manter arquivo atual"
                           ) : (
                             "PDF, PNG, JPG ou DOC"
                           )}
@@ -401,7 +476,11 @@ export function Labels() {
                   disabled={saving}
                   className="bg-amiste-primary hover:bg-amiste-secondary text-white px-6 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-70 flex items-center gap-2"
                 >
-                  {saving ? "Salvando..." : "Salvar Arquivo"}
+                  {saving
+                    ? "Salvando..."
+                    : editingId
+                      ? "Atualizar"
+                      : "Salvar Arquivo"}
                 </button>
               </div>
             </form>

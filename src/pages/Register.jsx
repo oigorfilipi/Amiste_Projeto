@@ -13,6 +13,7 @@ import {
   Briefcase,
   ArrowRight,
   AlertCircle,
+  ArrowLeft, // <-- Importei a seta aqui
 } from "lucide-react";
 
 export function Register() {
@@ -116,7 +117,16 @@ export function Register() {
 
   return (
     <div className="min-h-screen bg-gray-50/50 flex items-center justify-center p-4 md:p-8 font-sans">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row relative">
+        {/* BOTÃO DE VOLTAR (NOVO) */}
+        <button
+          onClick={() => navigate("/home")}
+          className="absolute top-4 right-4 md:top-6 md:right-6 p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition-colors z-20"
+          title="Voltar ao início"
+        >
+          <ArrowLeft size={20} />
+        </button>
+
         {/* Lado Esquerdo (Visual/Info) */}
         <div className="bg-amiste-primary md:w-1/3 p-8 md:p-12 text-white flex flex-col justify-between relative overflow-hidden shrink-0">
           <div className="absolute top-0 left-0 w-full h-full bg-black/10 z-0"></div>
@@ -150,7 +160,7 @@ export function Register() {
         </div>
 
         {/* Lado Direito (Formulário) */}
-        <div className="md:w-2/3 p-6 md:p-12 bg-white">
+        <div className="md:w-2/3 p-6 md:p-12 bg-white pt-14 md:pt-12">
           <div className="mb-6 md:mb-8">
             <h2 className="text-xl md:text-2xl font-bold text-gray-800">
               Cadastro de Colaborador

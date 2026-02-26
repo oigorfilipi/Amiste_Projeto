@@ -36,10 +36,14 @@ export function DefaultLayout() {
   const [profileToEdit, setProfileToEdit] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Consideramos as grafias possíveis do banco para garantir que o DEV e Dono sempre tenham acesso admin
+  // DEV e Dono tem acesso geral à gestão (cadastrar, excluir)
   const isMasterReal =
     realProfile &&
     ["DEV", "Dev", "Dev.", "Dono", "Don."].includes(realProfile.role);
+
+  // Somente o DEV tem permissão para usar o "Modo de Visualização" (Impersonation)
+  const isDevReal =
+    realProfile && ["DEV", "Dev", "Dev."].includes(realProfile.role);
 
   useEffect(() => {
     if (isMasterReal) {
@@ -56,7 +60,7 @@ export function DefaultLayout() {
       .from("profiles")
       .select("*")
       .neq("id", realProfile?.id)
-      .neq("role", "Desligado") // <- ADICIONADO: Esconde usuários desligados
+      .neq("role", "Desligado") // Esconde usuários desligados
       .order("full_name");
     if (data) setTeamMembers(data);
   }
@@ -311,7 +315,7 @@ export function DefaultLayout() {
             </div>
           </div>
 
-          {/* ÁREA DEV / GESTÃO */}
+          {/* ÁREA DEV / GESTÃO (Tanto DEV quanto Dono podem cadastrar e ver desligados) */}
           {isMasterReal && !isImpersonating && (
             <div className="pt-4 mt-2">
               <Link
@@ -329,7 +333,6 @@ export function DefaultLayout() {
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                   <Shield size={12} /> Controle de Acesso
                 </p>
-                {/* NOVO: Link para ver as contas desligadas */}
                 <Link
                   to="/deactivated"
                   className="text-[10px] font-bold text-red-500 hover:text-red-700 transition-colors"
@@ -351,8 +354,11 @@ export function DefaultLayout() {
                       key={member.id}
                       className="group flex items-center justify-between p-2 hover:bg-gray-50 rounded-xl transition-all border border-transparent hover:border-gray-100"
                     >
+                      {/* BOTÃO DA ESQUERDA (Bloqueado para impersonate se for Dono, liberado se for DEV) */}
                       <button
                         onClick={() => {
+                          if (!isDevReal) return; // Se não for Dev, clicar no nome não faz nada
+
                           if (
                             confirm(
                               `Entrar no modo visualização como ${member.role}?`,
@@ -364,7 +370,7 @@ export function DefaultLayout() {
                             );
                           }
                         }}
-                        className="flex-1 text-left flex items-center gap-3 overflow-hidden"
+                        className={`flex-1 text-left flex items-center gap-3 overflow-hidden ${isDevReal ? "cursor-pointer" : "cursor-default"}`}
                       >
                         <div className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500 bg-gray-100 border border-gray-200 overflow-hidden">
                           {member.avatar_url ? (
@@ -387,6 +393,8 @@ export function DefaultLayout() {
                           </span>
                         </div>
                       </button>
+
+                      {/* BOTÕES DA DIREITA (Lápis e Lixeira) */}
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={(e) => handleEditMember(member, e)}

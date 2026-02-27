@@ -18,7 +18,9 @@ export const BRAND_OPTIONS = [
   "Bunn",
   "Fetco",
   "Fiorenzato",
-  "Macap",
+  "Tramontina",
+  "Philips Walita",
+  "Necta",
 ];
 
 export const TYPE_OPTIONS = [

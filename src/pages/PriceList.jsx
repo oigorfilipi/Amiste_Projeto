@@ -26,7 +26,7 @@ export function PriceList() {
   const [editPrice, setEditPrice] = useState("");
 
   // Permissão baseada no novo sistema
-  const canEditPrice = permissions?.Financeiro === "Admin";
+  const canEditPrice = permissions?.PrecoMaquinas === "Admin";
 
   useEffect(() => {
     fetchMachines();

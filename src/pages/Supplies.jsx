@@ -19,15 +19,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 
-const BRAND_OPTIONS = [
-  "DaVinci",
-  "Vora",
-  "Monin",
-  "1883",
-  "Nestlé",
-  "Três Corações",
-  "Amiste",
-];
+const BRAND_OPTIONS = ["DaVinci", "Vora", "Fabri", "Seleções", "Amiste"];
 const SIZE_OPTIONS = ["1kg", "500g", "1L", "700ml", "250ml", "Unitário"];
 
 export function Supplies() {

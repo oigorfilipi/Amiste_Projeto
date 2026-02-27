@@ -1,6 +1,8 @@
 import { useState, useEffect, createContext } from "react";
 import { supabase } from "../services/supabaseClient";
 
+// Desativa o alerta do Vite Fast Refresh para esta constante (já que o arquivo também exporta um componente)
+// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext({});
 
 export function AuthProvider({ children }) {

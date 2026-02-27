@@ -49,7 +49,7 @@ export function Stock() {
       if (error) throw error;
       setStockItems(data || []);
     } catch (error) {
-      toast.error("Erro ao carregar o estoque.");
+      toast.error("Erro ao carregar o estoque: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -70,7 +70,7 @@ export function Stock() {
         .order("name");
       if (sData) setSupplyOptions(sData);
     } catch (error) {
-      console.error("Erro ao carregar opções:", error);
+      console.error("Erro ao carregar opções:", error.message);
     }
   }
 
@@ -142,7 +142,7 @@ export function Stock() {
       toast.success("Item excluído.");
       fetchStock();
     } catch (error) {
-      toast.error("Erro ao excluir.");
+      toast.error("Erro ao excluir: " + error.message);
     }
   }
 

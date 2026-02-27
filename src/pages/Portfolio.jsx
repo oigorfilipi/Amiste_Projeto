@@ -123,7 +123,7 @@ export function Portfolio() {
         .order("name");
       if (data) setMachines(data);
     } catch (error) {
-      toast.error("Erro ao carregar máquinas.");
+      toast.error("Erro ao carregar máquinas: " + error.message);
     }
   }
 
@@ -135,7 +135,7 @@ export function Portfolio() {
         .order("created_at", { ascending: false });
       if (data) setSavedPortfolios(data);
     } catch (error) {
-      toast.error("Erro ao carregar propostas.");
+      toast.error("Erro ao carregar propostas: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -313,8 +313,8 @@ export function Portfolio() {
       if (error) throw error;
       toast.success("Proposta excluída.");
       fetchPortfolios();
-    } catch (err) {
-      toast.error("Erro ao excluir: " + err.message);
+    } catch (error) {
+      toast.error("Erro ao excluir: " + error.message);
     }
   }
 

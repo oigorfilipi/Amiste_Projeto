@@ -50,7 +50,7 @@ export function SystemSettings() {
       if (error) throw error;
       setItems(data || []);
     } catch (error) {
-      toast.error("Erro ao carregar catálogo.");
+      toast.error("Erro ao carregar catálogo: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -97,7 +97,7 @@ export function SystemSettings() {
       setItems((prev) => prev.filter((i) => i.id !== id));
       toast.success("Item removido.");
     } catch (error) {
-      toast.error("Erro ao remover.");
+      toast.error("Erro ao remover: " + error.message);
     }
   }
 
@@ -153,24 +153,27 @@ export function SystemSettings() {
 
             <div className={`${isSidebarOpen ? "block" : "hidden"} lg:block`}>
               <div className="p-2 space-y-1">
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => {
-                      setActiveCategory(cat.id);
-                      setSearchTerm("");
-                      setIsSidebarOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all text-left ${
-                      activeCategory === cat.id
-                        ? "bg-amiste-primary text-white shadow-md"
-                        : "text-gray-500 hover:bg-gray-50"
-                    }`}
-                  >
-                    <cat.icon size={18} />
-                    {cat.label}
-                  </button>
-                ))}
+                {CATEGORIES.map((cat) => {
+                  const Icon = cat.icon;
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => {
+                        setActiveCategory(cat.id);
+                        setSearchTerm("");
+                        setIsSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all text-left ${
+                        activeCategory === cat.id
+                          ? "bg-amiste-primary text-white shadow-md"
+                          : "text-gray-500 hover:bg-gray-50"
+                      }`}
+                    >
+                      <Icon size={18} />
+                      {cat.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>

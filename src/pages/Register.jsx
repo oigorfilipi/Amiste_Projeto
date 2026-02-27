@@ -25,7 +25,6 @@ export function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [nickname, setNickname] = useState("");
   const [cpf, setCpf] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [role, setRole] = useState("Comercial");
@@ -64,11 +63,9 @@ export function Register() {
     setLoading(true);
 
     try {
-      let finalNickname = nickname;
-      if (!finalNickname.trim() && fullName.trim()) {
-        const parts = fullName.trim().split(" ");
-        finalNickname = parts.slice(0, 2).join(" ");
-      }
+      // Gera o nickname automaticamente pegando os dois primeiros nomes
+      const parts = fullName.trim().split(" ");
+      const finalNickname = parts.slice(0, 2).join(" ");
 
       const [d, m, y] = birthDate.split("/");
       const isoDate = `${y}-${m}-${d}`;
@@ -81,16 +78,17 @@ export function Register() {
 
       if (authError) throw authError;
 
-      // 2. Cria perfil na tabela profiles (COM A TRAVA DE SENHA)
+      // 2. Cria perfil na tabela profiles (COM A TRAVA DE SENHA E O EMAIL)
       if (authData.user) {
         const { error: profileError } = await supabase.from("profiles").insert({
           id: authData.user.id,
           full_name: fullName,
           nickname: finalNickname,
+          email: email,
           cpf: cpf,
           birth_date: isoDate,
           role: role,
-          must_change_password: true, // <--- A MÁGICA ESTÁ AQUI
+          must_change_password: true,
         });
 
         if (profileError) {
@@ -323,7 +321,7 @@ export function Register() {
                     />
                     <input
                       required
-                      type="text" // Deixei como text para o admin ver a senha que está criando
+                      type="text"
                       name="password"
                       autoComplete="new-password"
                       className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all text-sm font-medium"

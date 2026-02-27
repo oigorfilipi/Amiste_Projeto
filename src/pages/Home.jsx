@@ -60,8 +60,11 @@ export function Home() {
     }
   }
 
-  function MenuCard({ to, icon: Icon, title, desc, colorClass, permission }) {
+  // --- CORREÇÃO AQUI: icon -> IconComponent ---
+  function MenuCard({ to, icon, title, desc, colorClass, permission }) {
     if (!permission) return null;
+
+    const IconComponent = icon;
 
     const colorStyles = {
       red: "bg-red-50 text-red-600 group-hover:bg-red-100",
@@ -83,7 +86,7 @@ export function Home() {
         <div
           className={`p-3.5 rounded-2xl transition-colors duration-300 ${style}`}
         >
-          <Icon size={28} strokeWidth={1.5} />
+          <IconComponent size={28} strokeWidth={1.5} />
         </div>
 
         <div className="z-10">

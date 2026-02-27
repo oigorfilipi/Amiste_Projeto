@@ -197,8 +197,6 @@ export function Checklist() {
         );
         setSteamWand(machine.has_steamer === "Sim" ? "Sim" : "Não");
         setSewageInstall(machine.has_sewage === true ? "Sim" : "Não");
-
-        // --- ADICIONADO AQUI: SISTEMA DE PAGAMENTO ---
         setPaymentSystem(machine.has_payment === true ? "Sim" : "Não");
       }
     } else {
@@ -278,7 +276,6 @@ export function Checklist() {
   };
 
   async function handleSave(status = "Finalizado") {
-    // Validação de Permissão antes de Salvar
     if (permissions?.Checklist !== "All") {
       return toast.error("Você não tem permissão para salvar checklists.");
     }
@@ -386,7 +383,7 @@ export function Checklist() {
       toast.success("Checklist excluído.");
       fetchChecklists();
     } catch (error) {
-      toast.error("Erro ao excluir.");
+      toast.error("Erro ao excluir: " + error.message);
     }
   }
 
@@ -411,9 +408,6 @@ export function Checklist() {
   }
 
   function handleEdit(checklist) {
-    // Se a pessoa tiver ALL, ela entra pra editar.
-    // Se ela tiver READ, ela NÃO DEVERIA chegar aqui pelo botão editar,
-    // mas se chegar, a gente mostra como leitura
     if (
       permissions?.Checklist === "Nothing" ||
       permissions?.Checklist === "Ghost"
@@ -423,7 +417,6 @@ export function Checklist() {
 
     setEditingId(checklist.id);
 
-    // ... (States simples iguais) ...
     setInstallType(checklist.install_type || "Cliente");
     setClientName(checklist.client_name || "");
     setEventName(checklist.event_name || "");
@@ -446,20 +439,15 @@ export function Checklist() {
     setPaymentSystem(checklist.tech_payment || "Não");
     setSteamWand(checklist.tech_steam || "Não");
 
-    // LÓGICA DE MERGE (Para não perder itens salvos que sumiram do catálogo)
-    // 1. Ferramentas
     if (checklist.tools_list) {
       const { gallonQty: gQty, ...tList } = checklist.tools_list;
-      // Mescla o que veio do banco (checklist) com o catálogo atual
       const mergedTools = { ...tList };
-      // Garante que novos itens do catálogo apareçam desmarcados
       catalog.tools.forEach((t) => {
         if (mergedTools[t] === undefined) mergedTools[t] = false;
       });
       setTools(mergedTools);
       setGallonQty(gQty || "");
     } else {
-      // Fallback se for muito antigo
       initializeFormStates();
     }
 
@@ -470,29 +458,23 @@ export function Checklist() {
       setTestDate(checklist.preparations.testDate || "");
     }
 
-    // 2. Bebidas
     if (checklist.drinks_list) {
       setSelectedDrinks(checklist.drinks_list.standard || {});
       setCustomDrinks(checklist.drinks_list.custom || []);
     }
 
-    // 3. Acessórios
     if (checklist.accessories_list) {
       setSelectedAccessories(checklist.accessories_list.standard || {});
       setCustomAccessories(checklist.accessories_list.custom || []);
       setNoAccessories(checklist.accessories_list.noAccessories || false);
     }
 
-    // 4. Insumos (Merge complexo)
     if (checklist.supplies_list) {
       const loadedSupplies = checklist.supplies_list.standard || {};
-
-      // Cria estrutura baseada no catálogo atual
       const mergedSupplies = {};
       Object.keys(catalog.supplies).forEach((cat) => {
         mergedSupplies[cat] = {};
         catalog.supplies[cat].forEach((item) => {
-          // Se já existia no checklist salvo, preserva. Senão, inicia vazio
           if (loadedSupplies[cat] && loadedSupplies[cat][item]) {
             mergedSupplies[cat][item] = loadedSupplies[cat][item];
           } else {
@@ -501,7 +483,6 @@ export function Checklist() {
         });
       });
 
-      // Adiciona categorias/itens que estavam no salvo mas não estão no catálogo (legado)
       Object.keys(loadedSupplies).forEach((cat) => {
         if (!mergedSupplies[cat]) mergedSupplies[cat] = {};
         Object.keys(loadedSupplies[cat]).forEach((item) => {
@@ -515,7 +496,6 @@ export function Checklist() {
       setCustomSupplies(checklist.supplies_list.custom || []);
       setNoSupplies(checklist.supplies_list.noSupplies || false);
     } else {
-      // Fallback
       const initSupplies = {};
       Object.keys(catalog.supplies).forEach((cat) => {
         initSupplies[cat] = {};
@@ -566,7 +546,6 @@ export function Checklist() {
     setPaymentSystem("Não");
     setSteamWand("Não");
 
-    // INICIALIZA COM DADOS DO CATÁLOGO
     initializeFormStates();
 
     setConfigStatus("Não");
@@ -593,9 +572,8 @@ export function Checklist() {
     setView("form");
   }
 
-  // Objeto com todas as props para o Form
   const formProps = {
-    // ... Props normais ...
+    saving, // Passando a variável para resolver o erro
     editingId,
     setView,
     handleCancelChecklist,
@@ -638,9 +616,7 @@ export function Checklist() {
     setTestStatus,
     testDate,
     setTestDate,
-
-    // PROPS DO CATÁLOGO E STATES
-    catalogData: catalog, // Passamos o catálogo bruto para renderizar listas
+    catalogData: catalog,
     tools,
     setTools,
     gallonQty,
@@ -654,7 +630,6 @@ export function Checklist() {
     updateSupplyQty,
     selectedAccessories,
     setSelectedAccessories,
-    // ...
     localSocket,
     setLocalSocket,
     localWater,

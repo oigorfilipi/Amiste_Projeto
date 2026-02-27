@@ -86,7 +86,7 @@ export function MachineConfigs() {
       if (error) throw error;
       setConfigs(data || []);
     } catch (err) {
-      toast.error("Erro ao buscar configurações.");
+      toast.error("Erro ao buscar configurações: " + err.message);
     } finally {
       setLoading(false);
     }

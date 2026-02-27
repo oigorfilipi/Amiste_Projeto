@@ -30,7 +30,7 @@ export function DeactivatedAccounts() {
       if (error) throw error;
       setDeactivatedUsers(data || []);
     } catch (err) {
-      toast.error("Erro ao carregar contas desligadas.");
+      toast.error("Erro ao carregar contas desligadas: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -55,7 +55,7 @@ export function DeactivatedAccounts() {
       toast.success("Conta reativada com sucesso!");
       fetchDeactivated(); // Atualiza a lista
     } catch (err) {
-      toast.error("Erro ao reativar conta.");
+      toast.error("Erro ao reativar conta: " + err.message);
     }
   }
 

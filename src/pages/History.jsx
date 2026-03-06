@@ -14,6 +14,7 @@ import {
   Clock,
   ShieldAlert,
   Activity,
+  Search,
 } from "lucide-react";
 
 export function History() {
@@ -26,18 +27,17 @@ export function History() {
   const [filterModule, setFilterModule] = useState("Todos");
   const [filterAction, setFilterAction] = useState("Todos");
 
-  // VERIFICAÇÃO DE ACESSO (Bloqueia a página se não tiver permissão)
+  // VERIFICAÇÃO DE ACESSO
   const hasAccess =
     permissions?.HistoricoGeral !== "Nothing" &&
     permissions?.HistoricoGeral !== "Ghost" &&
     permissions?.HistoricoGeral !== undefined;
 
   useEffect(() => {
-    if (!hasAccess) return; // Não carrega dados se não tem acesso
+    if (!hasAccess) return;
 
     fetchData();
 
-    // Atualizar em tempo real
     const subscription = supabase
       .channel("realtime_history")
       .on(
@@ -85,31 +85,26 @@ export function History() {
     }
   }
 
-  // Helpers Visuais
   const getModuleLabel = (mod) => {
-    switch (mod) {
-      case "machines":
-        return "Máquina";
-      case "checklists":
-        return "Checklist";
-      case "portfolios":
-        return "Portfólio";
-      case "wiki_solutions":
-        return "Manutenção";
-      case "financial":
-        return "Financeiro";
-      default:
-        return mod;
-    }
+    const modules = {
+      machines: "Máquina",
+      checklists: "Checklist",
+      portfolios: "Portfólio",
+      wiki_solutions: "Manutenção",
+      financial: "Financeiro",
+      labels: "Etiquetas",
+    };
+    return modules[mod] || mod;
   };
 
   const getActionStyle = (action) => {
     switch (action) {
       case "Criação":
         return {
-          color: "text-green-600",
-          bg: "bg-green-50",
-          border: "border-green-100",
+          color: "text-emerald-600",
+          bg: "bg-emerald-50",
+          border: "border-emerald-100",
+          accent: "bg-emerald-500",
           icon: Plus,
         };
       case "Edição":
@@ -117,6 +112,7 @@ export function History() {
           color: "text-blue-600",
           bg: "bg-blue-50",
           border: "border-blue-100",
+          accent: "bg-blue-500",
           icon: Edit2,
         };
       case "Exclusão":
@@ -124,6 +120,7 @@ export function History() {
           color: "text-red-600",
           bg: "bg-red-50",
           border: "border-red-100",
+          accent: "bg-red-500",
           icon: Trash2,
         };
       default:
@@ -131,26 +128,28 @@ export function History() {
           color: "text-gray-600",
           bg: "bg-gray-50",
           border: "border-gray-100",
+          accent: "bg-gray-400",
           icon: Clock,
         };
     }
   };
 
-  // Se o usuário não tiver acesso, renderiza o fallback de bloqueio
-  if (!hasAccess) {
+  if (!hasAccess && !loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 max-w-sm w-full text-center">
-          <ShieldAlert size={48} className="text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50/50 p-4 animate-fade-in">
+        <div className="bg-white p-8 md:p-12 rounded-3xl shadow-xl border border-gray-100 max-w-md w-full text-center">
+          <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <ShieldAlert size={40} strokeWidth={1.5} />
+          </div>
+          <h2 className="text-2xl font-black text-gray-800 mb-2">
             Acesso Restrito
           </h2>
-          <p className="text-gray-500 mb-6">
+          <p className="text-gray-500 mb-8 font-medium">
             Você não tem permissão para visualizar o histórico de auditoria.
           </p>
           <Link
             to="/"
-            className="block w-full bg-gray-900 hover:bg-gray-800 transition-colors text-white py-3 rounded-xl font-bold"
+            className="flex items-center justify-center w-full bg-gray-900 hover:bg-gray-800 text-white py-3.5 rounded-xl font-bold transition-all shadow-lg"
           >
             Voltar ao Início
           </Link>
@@ -171,71 +170,79 @@ export function History() {
     <div className="min-h-screen bg-gray-50/50 pb-20 animate-fade-in">
       <div className="max-w-5xl mx-auto px-4 md:px-8 pt-6">
         <div className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-800">
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-800 flex items-center gap-3">
+            <div className="p-2.5 bg-white border border-gray-200 rounded-xl shadow-sm">
+              <HistoryIcon className="text-amiste-primary" size={24} />
+            </div>
             Histórico Global
           </h1>
-          <p className="text-gray-500 mt-1 text-sm md:text-base">
-            Linha do tempo de atividades e auditoria do sistema.
+          <p className="text-gray-500 mt-2 text-sm md:text-base">
+            Auditoria em tempo real de todas as ações realizadas no sistema.
           </p>
         </div>
 
         {/* BARRA DE FILTROS */}
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 items-stretch md:items-center mb-8">
-          <div className="flex items-center gap-2 text-gray-400 font-bold text-xs uppercase tracking-wider pl-1">
-            <Filter size={16} /> Filtros
+          <div className="flex items-center gap-2 text-gray-400 font-bold text-[10px] uppercase tracking-widest pl-2">
+            <Filter size={14} /> Filtros
           </div>
 
-          <div className="h-8 w-px bg-gray-100 hidden md:block"></div>
+          <div className="h-6 w-px bg-gray-100 hidden md:block"></div>
 
-          <select
-            className="flex-1 p-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-amiste-primary outline-none transition-all cursor-pointer"
-            value={filterModule}
-            onChange={(e) => setFilterModule(e.target.value)}
-          >
-            <option>Todos</option>
-            <option>Máquina</option>
-            <option>Checklist</option>
-            <option>Portfólio</option>
-            <option>Manutenção</option>
-          </select>
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <select
+              className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-amiste-primary/20 outline-none transition-all cursor-pointer"
+              value={filterModule}
+              onChange={(e) => setFilterModule(e.target.value)}
+            >
+              <option>Todos os Módulos</option>
+              <option>Máquina</option>
+              <option>Checklist</option>
+              <option>Portfólio</option>
+              <option>Manutenção</option>
+              <option>Financeiro</option>
+              <option>Etiquetas</option>
+            </select>
 
-          <select
-            className="flex-1 p-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-amiste-primary outline-none transition-all cursor-pointer"
-            value={filterAction}
-            onChange={(e) => setFilterAction(e.target.value)}
-          >
-            <option>Todos</option>
-            <option>Criação</option>
-            <option>Edição</option>
-            <option>Exclusão</option>
-          </select>
+            <select
+              className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-amiste-primary/20 outline-none transition-all cursor-pointer"
+              value={filterAction}
+              onChange={(e) => setFilterAction(e.target.value)}
+            >
+              <option>Todas as Ações</option>
+              <option>Criação</option>
+              <option>Edição</option>
+              <option>Exclusão</option>
+            </select>
+          </div>
 
-          <div className="text-xs font-bold text-gray-400 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 text-center">
-            {filteredLogs.length} Eventos
+          <div className="text-[11px] font-black text-amiste-primary bg-red-50 px-4 py-2.5 rounded-xl border border-red-100 text-center min-w-[110px]">
+            {filteredLogs.length} EVENTOS
           </div>
         </div>
 
         {/* LISTA DE EVENTOS */}
         {loading ? (
-          <div className="text-center py-20 text-gray-400">
-            <Activity
-              size={48}
-              className="mx-auto mb-4 opacity-20 animate-pulse"
-            />
-            <p>Carregando histórico...</p>
+          <div className="space-y-4 animate-pulse">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div
+                key={i}
+                className="h-24 bg-white rounded-2xl border border-gray-100"
+              ></div>
+            ))}
           </div>
         ) : filteredLogs.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200 mx-auto max-w-lg">
-            <HistoryIcon
-              size={48}
-              className="mx-auto text-gray-300 mb-2 opacity-50"
-            />
-            <p className="text-gray-500 font-medium">
-              Nenhum registro encontrado.
+          <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200 mx-auto max-w-lg shadow-sm">
+            <HistoryIcon size={48} className="mx-auto text-gray-200 mb-4" />
+            <h3 className="text-gray-700 font-bold text-lg">
+              Nenhum registro encontrado
+            </h3>
+            <p className="text-gray-400 text-sm">
+              Tente ajustar os filtros para encontrar o que procura.
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {filteredLogs.map((log) => {
               const style = getActionStyle(log.action_type);
               const Icon = style.icon;
@@ -244,91 +251,88 @@ export function History() {
               const authorName =
                 authorProfile?.nickname ||
                 authorProfile?.full_name?.split(" ")[0] ||
-                "Desconhecido";
-              const authorRole = authorProfile?.role || "Sistema";
+                "Sistema";
+              const authorRole = authorProfile?.role || "Automático";
 
               return (
                 <div
                   key={log.id}
-                  className="group bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-amiste-primary/30 transition-all flex flex-col md:flex-row gap-4 items-start md:items-center relative overflow-hidden"
+                  className="group bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all flex flex-col md:flex-row gap-4 items-start md:items-center relative overflow-hidden"
                 >
-                  {/* Linha colorida lateral */}
+                  {/* Accent Line */}
                   <div
-                    className={`absolute left-0 top-0 bottom-0 w-1 ${style.bg.replace("bg-", "bg-").replace("50", "500")}`}
+                    className={`absolute left-0 top-0 bottom-0 w-1.5 ${style.accent}`}
                   ></div>
 
-                  {/* Topo do Card (Mobile) ou Esquerda (Desktop) */}
-                  <div className="flex w-full md:w-auto items-center gap-3">
+                  {/* Icon & Action Type (Mobile logic integrated) */}
+                  <div className="flex w-full md:w-auto items-center gap-3 shrink-0">
                     <div
-                      className={`p-2.5 rounded-xl ${style.bg} ${style.color} border ${style.border} shrink-0 ml-1`}
+                      className={`p-3 rounded-xl ${style.bg} ${style.color} border ${style.border} shadow-sm`}
                     >
                       <Icon size={20} />
                     </div>
 
-                    {/* Info Mobile (Data e Tipo) */}
                     <div className="md:hidden flex-1">
                       <div className="flex items-center justify-between">
                         <span
-                          className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${style.bg} ${style.color} ${style.border}`}
+                          className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg ${style.bg} ${style.color}`}
                         >
                           {log.action_type}
                         </span>
-                        <span className="text-[10px] text-gray-400">
+                        <span className="text-[10px] font-bold text-gray-400">
                           {new Date(log.created_at).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Info Principal */}
+                  {/* Description */}
                   <div className="flex-1 w-full">
-                    <div className="hidden md:flex flex-wrap items-center gap-2 mb-1">
+                    <div className="hidden md:flex items-center gap-2 mb-1.5">
                       <span
-                        className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${style.bg} ${style.color} ${style.border}`}
+                        className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${style.bg} ${style.color} border ${style.border}`}
                       >
                         {log.action_type}
                       </span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-gray-100 text-gray-500 border border-gray-200">
+                      <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md bg-gray-100 text-gray-500 border border-gray-200">
                         {getModuleLabel(log.module)}
                       </span>
-                      <span className="text-xs text-gray-400 flex items-center gap-1 ml-auto md:ml-2">
-                        <Calendar size={12} />
+                      <div className="ml-auto flex items-center gap-1.5 text-gray-400 font-bold text-[10px]">
+                        <Calendar size={12} className="text-gray-300" />
                         {new Date(log.created_at).toLocaleDateString()}
-                        <span className="text-gray-300">|</span>
+                        <span className="text-gray-200 mx-1">•</span>
+                        <Clock size={12} className="text-gray-300" />
                         {new Date(log.created_at).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
-                      </span>
+                      </div>
                     </div>
-                    <h3 className="font-bold text-gray-800 text-sm md:text-base leading-tight break-words">
+                    <h3 className="font-bold text-gray-700 text-sm md:text-[15px] leading-snug">
                       {log.description}
                     </h3>
                   </div>
 
-                  {/* Divisor Mobile */}
-                  <div className="w-full h-px bg-gray-50 md:hidden"></div>
-
-                  {/* Autor */}
-                  <div className="flex items-center gap-3 md:pl-6 md:border-l border-gray-100 min-w-[140px]">
+                  {/* Author Section */}
+                  <div className="flex items-center gap-3 w-full md:w-auto md:pl-6 md:border-l border-gray-100 min-w-[160px]">
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center border ${
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center border shadow-sm ${
                         authorProfile
-                          ? "bg-gray-50 border-gray-200 text-gray-500"
+                          ? "bg-gray-50 border-gray-200 text-gray-400"
                           : "bg-red-50 border-red-100 text-red-400"
                       }`}
                     >
                       {authorProfile ? (
-                        <User size={14} />
+                        <User size={18} />
                       ) : (
-                        <ShieldAlert size={14} />
+                        <ShieldAlert size={18} />
                       )}
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-xs font-bold text-gray-700">
+                      <span className="text-xs font-black text-gray-800 truncate max-w-[100px]">
                         {log.user_id === user?.id ? "Você" : authorName}
                       </span>
-                      <span className="text-[9px] text-gray-400 uppercase font-bold tracking-wide">
+                      <span className="text-[9px] text-gray-400 uppercase font-black tracking-tighter">
                         {authorRole}
                       </span>
                     </div>

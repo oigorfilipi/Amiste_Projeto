@@ -14,6 +14,7 @@ import {
   ArrowRight,
   AlertCircle,
   ArrowLeft,
+  Loader2,
 } from "lucide-react";
 
 export function Register() {
@@ -100,6 +101,7 @@ export function Register() {
 
         toast.success(
           "Conta criada! A senha precisará ser alterada no primeiro acesso.",
+          { duration: 4000 },
         );
         navigate("/");
       }
@@ -118,11 +120,11 @@ export function Register() {
 
   return (
     <div className="min-h-screen bg-gray-50/50 flex items-center justify-center p-4 md:p-8 font-sans">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row relative">
+      <div className="bg-white rounded-3xl shadow-2xl shadow-gray-200/50 w-full max-w-4xl overflow-hidden flex flex-col md:flex-row relative animate-fade-in">
         {/* BOTÃO DE VOLTAR */}
         <button
-          onClick={() => navigate("/home")}
-          className="absolute top-4 right-4 md:top-6 md:right-6 p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition-colors z-20"
+          onClick={() => navigate("/")}
+          className="absolute top-4 right-4 md:top-6 md:right-6 p-2 bg-gray-50 hover:bg-gray-100 text-gray-400 hover:text-gray-600 rounded-full transition-colors z-20"
           title="Voltar ao início"
         >
           <ArrowLeft size={20} />
@@ -130,31 +132,32 @@ export function Register() {
 
         {/* Lado Esquerdo (Visual/Info) */}
         <div className="bg-amiste-primary md:w-1/3 p-8 md:p-12 text-white flex flex-col justify-between relative overflow-hidden shrink-0">
-          <div className="absolute top-0 left-0 w-full h-full bg-black/10 z-0"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-black/20 to-transparent z-0"></div>
+          <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
 
           <div className="relative z-10">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center mb-6">
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-md shadow-inner rounded-xl flex items-center justify-center mb-6">
               <Briefcase size={24} className="text-white" />
             </div>
-            <h1 className="text-2xl md:text-3xl font-black tracking-tight mb-2">
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight mb-2 uppercase">
               Nova Conta
             </h1>
-            <p className="text-red-100 text-xs md:text-sm leading-relaxed">
+            <p className="text-red-100 text-xs md:text-sm font-medium leading-relaxed border-l-2 border-red-300/50 pl-3">
               Você está criando o acesso para um novo membro da equipe.
             </p>
           </div>
 
           <div className="relative z-10 mt-12 md:mt-0 hidden md:block">
-            <p className="text-xs font-bold text-red-200 uppercase tracking-widest mb-4">
+            <p className="text-[10px] font-bold text-red-200 uppercase tracking-widest mb-4">
               Acesso Seguro
             </p>
             <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-3 text-sm opacity-80">
+              <div className="flex items-center gap-3 text-sm opacity-90 font-medium">
                 <ShieldCheck size={16} /> Senha temporária
               </div>
-              <div className="flex items-center gap-3 text-sm opacity-80 text-left leading-tight">
-                <Lock size={16} className="shrink-0" /> O usuário será forçado a
-                criar uma senha pessoal no 1º acesso.
+              <div className="flex items-start gap-3 text-sm opacity-90 text-left leading-tight font-medium">
+                <Lock size={16} className="shrink-0 mt-0.5" />O usuário será
+                forçado a criar uma senha pessoal no 1º acesso.
               </div>
             </div>
           </div>
@@ -163,10 +166,10 @@ export function Register() {
         {/* Lado Direito (Formulário) */}
         <div className="md:w-2/3 p-6 md:p-12 bg-white pt-14 md:pt-12">
           <div className="mb-6 md:mb-8">
-            <h2 className="text-xl md:text-2xl font-bold text-gray-800">
+            <h2 className="text-xl md:text-2xl font-black text-gray-800 tracking-tight">
               Cadastro de Colaborador
             </h2>
-            <p className="text-gray-500 text-sm">
+            <p className="text-gray-500 text-sm mt-1">
               Sugerimos utilizar a senha{" "}
               <strong className="text-gray-700">mudar123</strong> por padrão.
             </p>
@@ -174,8 +177,8 @@ export function Register() {
 
           {/* Mensagem de Erro Geral */}
           {errorMsg && (
-            <div className="mb-6 flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg text-sm font-medium border border-red-100 animate-pulse">
-              <AlertCircle size={16} />
+            <div className="mb-6 flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-xl text-sm font-bold border border-red-100 animate-fade-in">
+              <AlertCircle size={18} className="shrink-0" />
               {errorMsg}
             </div>
           )}
@@ -183,71 +186,74 @@ export function Register() {
           <form onSubmit={handleRegister} className="space-y-6 md:space-y-8">
             {/* SEÇÃO 1: PESSOAL */}
             <div className="space-y-4">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">
+              <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">
                 Informações Pessoais
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">
                     Nome Completo
                   </label>
-                  <div className="relative">
+                  <div className="relative group">
                     <User
                       size={18}
-                      className="absolute left-3 top-3.5 text-gray-400"
+                      className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-amiste-primary transition-colors"
                     />
                     <input
                       required
                       type="text"
                       name="fullName"
                       autoComplete="name"
-                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all text-sm"
+                      className="w-full pl-11 p-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-amiste-primary/20 focus:border-amiste-primary outline-none transition-all text-sm font-medium"
                       placeholder="Nome completo"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
+                      disabled={loading}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">
                     CPF
                   </label>
-                  <div className="relative">
+                  <div className="relative group">
                     <Fingerprint
                       size={18}
-                      className="absolute left-3 top-3.5 text-gray-400"
+                      className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-amiste-primary transition-colors"
                     />
                     <input
                       required
                       type="text"
-                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all text-sm"
+                      className="w-full pl-11 p-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-amiste-primary/20 focus:border-amiste-primary outline-none transition-all text-sm font-medium"
                       placeholder="000.000.000-00"
                       value={cpf}
                       onChange={handleCpfChange}
                       maxLength={14}
+                      disabled={loading}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">
                     Nascimento
                   </label>
-                  <div className="relative">
+                  <div className="relative group">
                     <Calendar
                       size={18}
-                      className="absolute left-3 top-3.5 text-gray-400"
+                      className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-amiste-primary transition-colors"
                     />
                     <input
                       required
                       type="text"
-                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all text-sm"
+                      className="w-full pl-11 p-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-amiste-primary/20 focus:border-amiste-primary outline-none transition-all text-sm font-medium"
                       placeholder="DD/MM/AAAA"
                       value={birthDate}
                       onChange={handleDateChange}
                       maxLength={10}
+                      disabled={loading}
                     />
                   </div>
                 </div>
@@ -256,25 +262,26 @@ export function Register() {
 
             {/* SEÇÃO 2: ACESSO */}
             <div className="space-y-4">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">
+              <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">
                 Dados de Acesso
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">
                     Função / Cargo
                   </label>
-                  <div className="relative">
+                  <div className="relative group">
                     <Users
                       size={18}
-                      className="absolute left-3 top-3.5 text-gray-400"
+                      className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-amiste-primary transition-colors"
                     />
                     <select
                       required
-                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl bg-white focus:ring-2 focus:ring-amiste-primary outline-none transition-all appearance-none text-sm"
+                      className="w-full pl-11 p-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-amiste-primary/20 focus:border-amiste-primary outline-none transition-all appearance-none text-sm font-medium"
                       value={role}
                       onChange={(e) => setRole(e.target.value)}
+                      disabled={loading}
                     >
                       <option value="Comercial">Comercial (Com.)</option>
                       <option value="Técnico">Técnico (Téc.)</option>
@@ -289,45 +296,47 @@ export function Register() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">
-                    Email
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">
+                    E-mail Corporativo
                   </label>
-                  <div className="relative">
+                  <div className="relative group">
                     <Mail
                       size={18}
-                      className="absolute left-3 top-3.5 text-gray-400"
+                      className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-amiste-primary transition-colors"
                     />
                     <input
                       required
                       type="email"
                       name="email"
                       autoComplete="email"
-                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all text-sm"
+                      className="w-full pl-11 p-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-amiste-primary/20 focus:border-amiste-primary outline-none transition-all text-sm font-medium"
                       placeholder="seu@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      disabled={loading}
                     />
                   </div>
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">
                     Senha Temporária
                   </label>
-                  <div className="relative">
+                  <div className="relative group">
                     <Lock
                       size={18}
-                      className="absolute left-3 top-3.5 text-gray-400"
+                      className="absolute left-3.5 top-3.5 text-gray-400 group-focus-within:text-amiste-primary transition-colors"
                     />
                     <input
                       required
                       type="text"
                       name="password"
                       autoComplete="new-password"
-                      className="w-full pl-10 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amiste-primary outline-none transition-all text-sm font-medium"
+                      className="w-full pl-11 p-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-amiste-primary/20 focus:border-amiste-primary outline-none transition-all text-sm font-medium"
                       placeholder="Ex: mudar123"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      disabled={loading}
                     />
                   </div>
                 </div>
@@ -336,14 +345,14 @@ export function Register() {
 
             {/* VERIFICAÇÃO */}
             <div
-              onClick={() => setIsHuman(!isHuman)}
-              className={`p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between active:scale-[0.98] ${isHuman ? "bg-green-50 border-green-200 shadow-inner" : "bg-gray-50 border-gray-200 hover:bg-gray-100"}`}
+              onClick={() => !loading && setIsHuman(!isHuman)}
+              className={`p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between active:scale-[0.98] ${isHuman ? "bg-green-50 border-green-200 shadow-inner" : "bg-gray-50 border-gray-200 hover:bg-gray-100"} ${loading ? "opacity-60 cursor-not-allowed pointer-events-none" : ""}`}
             >
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-6 h-6 rounded border flex items-center justify-center transition-colors ${isHuman ? "bg-green-500 border-green-500 text-white" : "bg-white border-gray-300"}`}
+                  className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-colors ${isHuman ? "bg-green-500 border-green-500 text-white" : "bg-white border-gray-300"}`}
                 >
-                  {isHuman && <ShieldCheck size={16} />}
+                  {isHuman && <ShieldCheck size={16} strokeWidth={3} />}
                 </div>
                 <span
                   className={`text-sm font-bold ${isHuman ? "text-green-700" : "text-gray-600"}`}
@@ -352,7 +361,7 @@ export function Register() {
                 </span>
               </div>
               {isHuman && (
-                <span className="text-xs font-bold text-green-600 uppercase tracking-wide hidden sm:block">
+                <span className="text-[10px] font-black text-green-600 uppercase tracking-widest hidden sm:block">
                   Aprovado
                 </span>
               )}
@@ -366,12 +375,20 @@ export function Register() {
                 Ir para o Login
               </Link>
               <button
-                disabled={loading}
+                disabled={loading || !isHuman}
                 type="submit"
-                className="w-full md:w-auto bg-amiste-primary hover:bg-amiste-secondary text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-red-100 flex items-center justify-center gap-2 transition-all disabled:opacity-70 hover:-translate-y-1"
+                className="w-full md:w-auto bg-amiste-primary hover:bg-amiste-secondary text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-red-100 flex items-center justify-center gap-2 transition-all disabled:opacity-70 disabled:hover:translate-y-0 hover:-translate-y-1 active:scale-[0.98]"
               >
-                {loading ? "Processando..." : "Criar Acesso"}{" "}
-                <ArrowRight size={20} />
+                {loading ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />{" "}
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <Plus size={20} /> Criar Acesso
+                  </>
+                )}
               </button>
             </div>
           </form>

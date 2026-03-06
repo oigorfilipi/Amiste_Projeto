@@ -15,8 +15,14 @@ export function Machines() {
   const { permissions = {} } = useContext(AuthContext);
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+
+  // Novos Estados de Ação (Para evitar cliques duplos e flashes na tela)
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+
   const [machines, setMachines] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -88,10 +94,7 @@ export function Machines() {
   const [reservoirCount, setReservoirCount] = useState(0);
   const [extraReservoirCapacity, setExtraReservoirCapacity] = useState("");
   const [hasSteamer, setHasSteamer] = useState("Não");
-
-  // --- NOVO: SISTEMA DE PAGAMENTO ---
   const [hasPayment, setHasPayment] = useState(false);
-
   const [dimensions, setDimensions] = useState({ w: "", h: "", d: "" });
 
   useEffect(() => {
@@ -108,6 +111,7 @@ export function Machines() {
       setMachines(data || []);
     } catch (err) {
       console.error(err);
+      toast.error("Erro ao carregar máquinas.");
     } finally {
       setLoading(false);
     }
@@ -152,25 +156,7 @@ export function Machines() {
       newList.push({ ...tempModel });
     }
     setModelsList(newList);
-    setTempModel({
-      name: "",
-      photo_url: "",
-      video_url: "",
-      voltage: "",
-      weight: "",
-      dimensions: "",
-      amperage: "",
-      water_system: "",
-      cups_capacity: "",
-      filter_type: "",
-      dregs_capacity: "",
-      water_tank_size: "",
-      extraction_cups: "",
-      extraction_nozzles: "",
-      drink_combinations: "",
-      dose_autonomy: "",
-      extra_reservoir_capacity: "",
-    });
+    handleCancelEditModel();
   }
 
   function handleEditModel(index) {
@@ -204,7 +190,7 @@ export function Machines() {
 
   function removeModel(index) {
     if (permissions?.Maquinas !== "All") return;
-    if (confirm("Remover este modelo da lista?")) {
+    if (window.confirm("Remover este modelo da lista?")) {
       const newList = [...modelsList];
       newList.splice(index, 1);
       setModelsList(newList);
@@ -265,10 +251,7 @@ export function Machines() {
     setColor(machine.color || "Preto");
     setHasSteamer(machine.has_steamer || "Não");
     setHasSewage(machine.has_sewage || false);
-
-    // --- LÊ SE TEM PAGAMENTO ---
     setHasPayment(machine.has_payment || false);
-
     setReservoirCount(machine.reservoir_count || 0);
     setExtraReservoirCapacity(machine.extra_reservoir_capacity || "");
     setHasExtraReservoir((machine.reservoir_count || 0) > 0);
@@ -315,7 +298,7 @@ export function Machines() {
       );
     }
 
-    setLoading(true);
+    setIsSaving(true);
     try {
       const finalModel = model === "Outro" ? customModel : model;
       const finalBrand = brand === "Outro" ? customBrand : brand;
@@ -340,7 +323,7 @@ export function Machines() {
         status,
         color,
         has_sewage: hasSewage,
-        has_payment: hasPayment, // <-- SALVA NO BANCO
+        has_payment: hasPayment,
         reservoir_count: finalReservoirCount,
         extra_reservoir_capacity: finalExtraCapacity,
         has_steamer: hasSteamer,
@@ -382,11 +365,11 @@ export function Machines() {
       }
       setShowModal(false);
       resetForm();
-      fetchMachines();
+      await fetchMachines();
     } catch (err) {
       toast.error("Erro ao salvar: " + err.message);
     } finally {
-      setLoading(false);
+      setIsSaving(false);
     }
   }
 
@@ -394,8 +377,9 @@ export function Machines() {
     e.stopPropagation();
     if (permissions?.Maquinas !== "All")
       return toast.error("Você não tem permissão para excluir.");
-    if (!confirm("Tem certeza que deseja excluir esta máquina?")) return;
+    if (!window.confirm("Tem certeza que deseja excluir esta máquina?")) return;
 
+    setDeletingId(id);
     try {
       const { error } = await supabase.from("machines").delete().eq("id", id);
       if (error) {
@@ -407,9 +391,11 @@ export function Machines() {
         throw error;
       }
       toast.success("Máquina excluída com sucesso.");
-      fetchMachines();
+      await fetchMachines();
     } catch (err) {
       toast.error("Erro ao excluir: " + err.message);
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -442,7 +428,7 @@ export function Machines() {
     setPatrimony("");
     setSerialNumber("");
     setHasSewage(false);
-    setHasPayment(false); // <-- RESETA O CAMPO
+    setHasPayment(false);
     setReservoirCount(0);
     setExtraReservoirCapacity("");
     setHasExtraReservoir(true);
@@ -473,7 +459,7 @@ export function Machines() {
     setShowModal,
     editingId,
     handleSave,
-    loading,
+    loading: isSaving, // <-- Passa o estado de Loading do botão salvar
     uploading,
     name,
     setName,
@@ -513,7 +499,7 @@ export function Machines() {
     hasSewage,
     setHasSewage,
     hasPayment,
-    setHasPayment, // <-- PASSA PRO FORMULÁRIO VISUAL
+    setHasPayment,
     waterTankSize,
     setWaterTankSize,
     extractionCups,
@@ -559,6 +545,7 @@ export function Machines() {
       <MachinesList
         permissions={permissions || {}}
         loading={loading}
+        deletingId={deletingId} // <-- Passa para a lista saber qual tá apagando
         filteredMachines={filteredMachines}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}

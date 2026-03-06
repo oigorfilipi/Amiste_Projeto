@@ -13,7 +13,6 @@
     "@react-pdf/renderer": "^4.3.2",
     "@supabase/supabase-js": "^2.90.1",
     "clsx": "^2.1.1",
-    "firebase": "^12.8.0",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

@@ -293,10 +293,9 @@ export default function App() {
             <Route
               path="/deactivated"
               element={
-                /* Como essa tela é super sensível, a gente deixou a trava de DEV/Dono 
-                   dentro do próprio componente (DeactivatedAccounts.jsx), 
-                   então basta envolver com o <Private> pra garantir que tá logado */
-                <DeactivatedAccounts />
+                <Private>
+                  <DeactivatedAccounts />
+                </Private>
               }
             />
           </Route>
